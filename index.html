@@ -2194,13 +2194,31 @@ function buildStyle(s) {
       // ADR-048 — Roof tone: derive the 3D extrusion fill color
       const roofBase = p.roof || p.building;
       const roofTone = s.roofTone || 'match';
-      const roofColor =
+      const roofBaseColor =
         roofTone === 'lighter' ? lighten(p.building, 0.18) :
         roofTone === 'darker'  ? darken(p.building, 0.18) :
         roofTone === 'accent'  ? p.accent :
         roofTone === 'custom'  ? roofBase :
         /* match */              p.building;
       const useGradient = s.buildingShading !== false;
+      // ADR-041 in 3D — Building shape composes with roof tone:
+      // shape decides color override + opacity, roofTone decides the
+      // base color when shape doesn't override.
+      const shape3D = s.buildingShape || 'filled';
+      const SHAPE_3D = {
+        filled:    { c: roofBaseColor, op: 0.95 },
+        outlined:  { c: roofBaseColor, op: 0.40 },
+        wireframe: { c: roofBaseColor, op: 0.15 },
+        ghost:     { c: roofBaseColor, op: 0.25 },
+        bold:      { c: roofBaseColor, op: 1.00 },
+        invert:    { c: p.bg,           op: 0.90 },
+        halftone:  { c: roofBaseColor, op: 0.50 },
+        accent:    { c: p.accent,       op: 0.95 },
+        hairline:  { c: roofBaseColor, op: 0.10 },
+      };
+      const r3 = SHAPE_3D[shape3D] || SHAPE_3D.filled;
+      const roofColor = r3.c;
+      const shape3DOpacity = r3.op;
       // Low-zoom 3D fallback: real building footprints aren't in OMT
       // tiles below zoom 13. Extrude the urban-landuse polygons as
       // chunky "city blocks" so the heights multiplier keeps working
@@ -2218,7 +2236,8 @@ function buildStyle(s) {
           'fill-extrusion-vertical-gradient': useGradient,
           'fill-extrusion-height': 60 * hMul,
           'fill-extrusion-base': 0,
-          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.55, 12, 0.85, 13.2, 0],
+          // shape3DOpacity from buildingShape × the existing zoom envelope
+          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.55 * shape3DOpacity, 12, 0.85 * shape3DOpacity, 13.2, 0],
         },
       });
       // Real buildings — start one zoom level earlier than before
@@ -2229,7 +2248,7 @@ function buildStyle(s) {
           'fill-extrusion-vertical-gradient': useGradient,
           'fill-extrusion-height': ['*', ['coalesce', ['get', 'render_height'], 8], hMul],
           'fill-extrusion-base':   ['*', ['coalesce', ['get', 'render_min_height'], 0], hMul],
-          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0, 13.2, 0.95],
+          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0, 13.2, shape3DOpacity],
         } };
     } else {
       // ADR-041 — Building shape: 9 visibly distinct flat-fill modes

@@ -1151,25 +1151,31 @@
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🪄</span><span class="disclose-label"><span class="disclose-title">Effects</span><span class="disclose-desc">Casing, glow, vignette, saturation…</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🪄</span><span class="disclose-label"><span class="disclose-title">Effects</span><span class="disclose-desc">Roads · Filters · Title · Mask</span></span><span class="chev">›</span></button>
         <div class="body"><div>
+
+          <div class="sub-title" style="margin: 4px 0 6px;">🛣 Road effects</div>
           <div class="effects-toggles">
             <label class="toggle"><input type="checkbox" id="roadCasingToggle"> Road casing</label>
             <label class="toggle"><input type="checkbox" id="roadGlowToggle"> Road glow</label>
-            <label class="toggle"><input type="checkbox" id="starsToggle"> Sprinkle stars</label>
           </div>
-          <div class="effects-grid" style="margin-top: 10px;">
+
+          <div class="sub-title" style="margin: 14px 0 6px;">🎬 Filters</div>
+          <div class="effects-grid">
             <select id="vignetteSel">
               <option value="none">No vignette</option>
               <option value="soft">Soft vignette</option>
               <option value="heavy">Heavy vignette</option>
               <option value="spotlight">Spotlight</option>
             </select>
-            <select id="buildingShape">
-              <option value="filled">Filled buildings</option>
-              <option value="outlined">Outlined buildings</option>
-              <option value="wireframe">Wireframe</option>
-            </select>
+            <span></span>
+          </div>
+          <div class="row" style="margin-top: 8px;"><label>Saturation</label><input type="range" id="mapSaturation" min="0" max="200" step="5" value="100"><span class="val" id="mapSaturationVal">100%</span></div>
+          <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
+          <div class="row"><label>Hue</label><input type="range" id="mapHue" min="0" max="360" step="5" value="0"><span class="val" id="mapHueVal">0°</span></div>
+
+          <div class="sub-title" style="margin: 14px 0 6px;">🅰 Title flair</div>
+          <div class="effects-grid">
             <select id="titleOrnament">
               <option value="none">No ornament</option>
               <option value="bullets">● Title ●</option>
@@ -1185,20 +1191,20 @@
               <option value="wave">Wavy</option>
             </select>
           </div>
-          <div class="row" style="margin-top: 10px;"><label>Saturation</label><input type="range" id="mapSaturation" min="0" max="200" step="5" value="100"><span class="val" id="mapSaturationVal">100%</span></div>
-          <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
-          <div class="row"><label>Hue</label><input type="range" id="mapHue" min="0" max="360" step="5" value="0"><span class="val" id="mapHueVal">0°</span></div>
-          <div class="row"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
-          <div class="effects-grid" style="margin-top: 10px;">
-            <select id="mapMask">
-              <option value="none">No mask</option>
-              <option value="circle">Circle</option>
-              <option value="rounded">Rounded corners</option>
-              <option value="hexagon">Hexagon</option>
-              <option value="star">Star</option>
-              <option value="heart">Heart</option>
-              <option value="custom">Custom (PNG/SVG)</option>
-            </select>
+          <div class="row" style="margin-top: 8px;"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
+
+          <div class="sub-title" style="margin: 14px 0 6px;">🎭 Mask & overlays</div>
+          <select id="mapMask" style="width:100%;">
+            <option value="none">No mask</option>
+            <option value="circle">⏺ Circle</option>
+            <option value="rounded">▢ Rounded corners</option>
+            <option value="hexagon">⬡ Hexagon</option>
+            <option value="star">★ Star</option>
+            <option value="heart">♥ Heart</option>
+            <option value="custom">🖼 Custom (PNG/SVG)</option>
+          </select>
+          <div class="effects-toggles" style="margin-top: 8px;">
+            <label class="toggle"><input type="checkbox" id="starsToggle"> Sprinkle stars</label>
             <label class="toggle"><input type="checkbox" id="sketchFrameToggle"> Sketch frame</label>
           </div>
           <label class="drop-zone" id="maskDrop" style="margin-top:8px;">

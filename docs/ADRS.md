@@ -778,6 +778,46 @@ Net: 3 fewer disclosures with no functionality lost.
 
 ---
 
+## ADR-048..053 — 6 more Style-option dials, sub-grouped
+
+**Context.** Style options had only 4 selects (roads / font / border /
+texture), and they sat in a flat grid with no hierarchy. Two issues:
+nothing told the user what kind of thing each select governed, and the
+panel was small enough that "more dials" was a clear ask. Plus 3D
+posters wanted a separate roof color so buildings could be two-toned.
+
+**Decision.** Added `roof` as a 10th palette swatch (defaults to walls
+when missing) and added six new dials in Style options:
+
+- **ADR-048 Roof tone** — match / lighter / darker / accent / Use
+  Roofs swatch. Drives the 3D extrusion fill color.
+- **ADR-049 Building shading** — toggle on `fill-extrusion-vertical-gradient`
+  for both 3D layers.
+- **ADR-050 Label case** — as-is / uppercase / lowercase, applied via
+  text-transform on every place / country / neighborhood symbol layer.
+  When 'as-is' is selected each layer keeps its native casing.
+- **ADR-051 Card shadow** — none / soft / hard / float. CSS box-shadow
+  on `.poster-wrap`, transitions when the user switches.
+- **ADR-052 Park opacity** — subtle (0.35) / normal (0.75) / bold
+  (0.95). Drives the parks fill alpha so user can dial parks in or out
+  without toggling the layer.
+- **ADR-053 Road caps** — round / butt / square. Maps to MapLibre's
+  line-cap layout property. Dashed roads stay butt regardless to keep
+  dash spacing crisp.
+
+The Style options panel itself was reorganized into 5 sub-groups
+(🛣 Roads · 🏢 Buildings · 🅰 Labels · 🌳 Parks · 🖼 Frame) with inline
+sub-titles and selects laid out 2 per row.
+
+`palette.roof` migrates in from `building` for any preset / saved
+state that doesn't define it (clonePreset + mergeState).
+
+**Consequences.** No dial leaks into another section. Randomize style
+now covers 13 dials at once. Existing presets render identically
+because `roof = building` by default and shading is on by default.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

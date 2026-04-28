@@ -670,8 +670,13 @@
     position: relative;
     background: #fff;
     box-shadow: 0 30px 80px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.06);
-    transition: aspect-ratio 0.3s, width 0.3s;
+    transition: aspect-ratio 0.3s, width 0.3s, box-shadow 0.25s ease;
   }
+  /* ADR-051 — card shadow variants */
+  .poster-wrap.shadow-none  { box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+  .poster-wrap.shadow-soft  { box-shadow: 0 30px 80px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.06); }
+  .poster-wrap.shadow-hard  { box-shadow: 12px 12px 0 rgba(0,0,0,0.85); }
+  .poster-wrap.shadow-float { box-shadow: 0 60px 140px rgba(0,0,0,0.32), 0 20px 40px rgba(0,0,0,0.12); }
   .poster-wrap.frame-portrait  { width: min(560px, 90%); aspect-ratio: 2 / 3; }
   .poster-wrap.frame-square    { width: min(640px, 90%); aspect-ratio: 1 / 1; }
   .poster-wrap.frame-landscape { width: min(800px, 95%); aspect-ratio: 3 / 2; }
@@ -1013,20 +1018,62 @@
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">⚙️</span><span class="disclose-label"><span class="disclose-title">Style options</span><span class="disclose-desc">Roads, font, border, texture</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">⚙️</span><span class="disclose-label"><span class="disclose-title">Style options</span><span class="disclose-desc">Roads · Buildings · Labels · Frame · Parks</span></span><span class="chev">›</span></button>
         <div class="body"><div>
+
+          <div class="sub-title" style="margin: 4px 0 6px;">🛣 Roads</div>
           <div class="style-options">
             <select id="roadStyle">
-              <option value="solid">Solid roads</option>
-              <option value="dashed">Dashed roads</option>
-              <option value="dotted">Dotted roads</option>
+              <option value="solid">━ Solid</option>
+              <option value="dashed">┄ Dashed</option>
+              <option value="dotted">┈ Dotted</option>
             </select>
+            <select id="roadCaps">
+              <option value="round">⏺ Round caps</option>
+              <option value="butt">▮ Butt caps</option>
+              <option value="square">▢ Square caps</option>
+            </select>
+          </div>
+
+          <div class="sub-title" style="margin: 12px 0 6px;">🏢 Buildings</div>
+          <div class="style-options">
+            <select id="roofTone">
+              <option value="match">Roof = walls</option>
+              <option value="lighter">Lighter roofs</option>
+              <option value="darker">Darker roofs</option>
+              <option value="accent">Accent roofs</option>
+              <option value="custom">Use Roofs swatch</option>
+            </select>
+            <label class="toggle"><input type="checkbox" id="buildingShading" checked> Side shading</label>
+          </div>
+
+          <div class="sub-title" style="margin: 12px 0 6px;">🅰 Labels</div>
+          <div class="style-options">
             <select id="labelFont">
               <option value="Noto Sans Regular">Sans regular</option>
               <option value="Noto Sans Bold">Sans bold</option>
               <option value="Noto Sans Italic">Sans italic</option>
               <option value="Noto Sans Medium">Sans medium</option>
             </select>
+            <select id="labelCase">
+              <option value="asis">Aa As-is</option>
+              <option value="uppercase">AA Uppercase</option>
+              <option value="lowercase">aa lowercase</option>
+            </select>
+          </div>
+
+          <div class="sub-title" style="margin: 12px 0 6px;">🌳 Parks</div>
+          <div class="style-options">
+            <select id="parkOpacity">
+              <option value="subtle">🌿 Subtle</option>
+              <option value="normal">🌳 Normal</option>
+              <option value="bold">🟢 Bold</option>
+            </select>
+            <span></span>
+          </div>
+
+          <div class="sub-title" style="margin: 12px 0 6px;">🖼 Frame</div>
+          <div class="style-options">
             <select id="border">
               <option value="none">No border</option>
               <option value="thin">Thin border</option>
@@ -1038,8 +1085,16 @@
               <option value="grain">Paper grain</option>
               <option value="halftone">Halftone dots</option>
             </select>
+            <select id="cardShadow">
+              <option value="none">🚫 No shadow</option>
+              <option value="soft">🌫 Soft shadow</option>
+              <option value="hard">🔲 Hard shadow</option>
+              <option value="float">☁ Floating</option>
+            </select>
+            <span></span>
           </div>
-          <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style (all 8)</button>
+
+          <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style</button>
         </div></div>
       </div>
 
@@ -1594,8 +1649,8 @@ const PRESETS = {
 };
 
 const PRESET_KEYS = Object.keys(PRESETS);
-const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'road', 'rail', 'label', 'accent'];
-const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Bldgs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
+const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'roof', 'road', 'rail', 'label', 'accent'];
+const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Walls', roof: 'Roofs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
 const LAYER_ORDER = [
   'water', 'rivers', 'ferries', 'piers',
   'parks', 'greenery', 'wetlands', 'peaks',
@@ -1893,6 +1948,13 @@ function defaultState() {
     titleSpacingDelta: 0,     // -4..+8 px adjustment over preset
     // 5 more creative dials (ADR-042..046)
     buildingHeight: 1,        // multiplier on 3D extrusion height (0.5..8)
+    // 6 more style-option dials (ADR-048..053)
+    roofTone: 'match',        // match | lighter | darker | accent | custom
+    parkOpacity: 'normal',    // subtle | normal | bold
+    labelCase: 'asis',        // asis | uppercase | lowercase
+    cardShadow: 'soft',       // none | soft | hard | float
+    buildingShading: true,    // fill-extrusion-vertical-gradient
+    roadCaps: 'round',        // round | butt | square
     mapHue: 0,                // 0..360° global hue rotation
     mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
     sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
@@ -1915,6 +1977,9 @@ const TEMPLATE_FIELDS = ['frame', 'border', 'texture', 'compass', 'scale'];
 
 function clonePreset(key) {
   const p = PRESETS[key];
+  const palette = { ...p.palette };
+  // Roof color defaults to walls when a preset doesn't specify one
+  if (!palette.roof) palette.roof = palette.building;
   const layers = { roads: true, boundaries: true, ...p.layers };
   // Migrate legacy `places: true|false` → split cities + neighborhoods
   if ('places' in layers) {
@@ -1923,7 +1988,7 @@ function clonePreset(key) {
     delete layers.places;
   }
   const clone = {
-    palette: { ...p.palette },
+    palette,
     layers,
     roadWeight: p.roadWeight,
     roadStyle: p.roadStyle,
@@ -2063,8 +2128,10 @@ function buildStyle(s) {
       paint: { 'fill-color': lighten(p.green, 0.15), 'fill-opacity': 0.5 } });
   }
   if (s.layers.parks) {
+    // ADR-052 — park opacity dial
+    const PARK_OP = { subtle: 0.35, normal: 0.75, bold: 0.95 };
     layers.push({ id: 'park', type: 'fill', source: 'omt', 'source-layer': 'park',
-      paint: { 'fill-color': p.green, 'fill-opacity': 0.75 } });
+      paint: { 'fill-color': p.green, 'fill-opacity': PARK_OP[s.parkOpacity] || 0.75 } });
   }
   // 3D extruded buildings need to draw AFTER the road lines so they
   // physically occlude streets at ground level. We collect the layer
@@ -2078,6 +2145,16 @@ function buildStyle(s) {
 
     if (s.pitch > 8) {
       const hMul = (typeof s.buildingHeight === 'number' && s.buildingHeight > 0) ? s.buildingHeight : 1;
+      // ADR-048 — Roof tone: derive the 3D extrusion fill color
+      const roofBase = p.roof || p.building;
+      const roofTone = s.roofTone || 'match';
+      const roofColor =
+        roofTone === 'lighter' ? lighten(p.building, 0.18) :
+        roofTone === 'darker'  ? darken(p.building, 0.18) :
+        roofTone === 'accent'  ? p.accent :
+        roofTone === 'custom'  ? roofBase :
+        /* match */              p.building;
+      const useGradient = s.buildingShading !== false;
       // Low-zoom 3D fallback: real building footprints aren't in OMT
       // tiles below zoom 13. Extrude the urban-landuse polygons as
       // chunky "city blocks" so the heights multiplier keeps working
@@ -2091,7 +2168,8 @@ function buildStyle(s) {
         minzoom: 8,
         maxzoom: 13.2,
         paint: {
-          'fill-extrusion-color': p.building,
+          'fill-extrusion-color': roofColor,
+          'fill-extrusion-vertical-gradient': useGradient,
           'fill-extrusion-height': 60 * hMul,
           'fill-extrusion-base': 0,
           'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.55, 12, 0.85, 13.2, 0],
@@ -2101,7 +2179,8 @@ function buildStyle(s) {
       // so the handoff with the fallback is seamless.
       building3D = { id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 12,
         paint: {
-          'fill-extrusion-color': p.building,
+          'fill-extrusion-color': roofColor,
+          'fill-extrusion-vertical-gradient': useGradient,
           'fill-extrusion-height': ['*', ['coalesce', ['get', 'render_height'], 8], hMul],
           'fill-extrusion-base':   ['*', ['coalesce', ['get', 'render_min_height'], 0], hMul],
           'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0, 13.2, 0.95],
@@ -2212,12 +2291,15 @@ function buildStyle(s) {
         });
       });
     }
+    // ADR-053 — Road caps: round (default) / butt / square; dashed
+    // patterns force butt regardless to keep the dash spacing crisp.
+    const capChoice = (s.roadCaps === 'butt' || s.roadCaps === 'square') ? s.roadCaps : 'round';
     roadClasses.forEach(rc => {
       const layer = {
         id: 'road-' + rc.id, type: 'line', source: 'omt', 'source-layer': 'transportation',
         filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', rc.match]]],
         minzoom: rc.minzoom,
-        layout: { 'line-cap': dash ? 'butt' : 'round', 'line-join': 'round' },
+        layout: { 'line-cap': dash ? 'butt' : capChoice, 'line-join': 'round' },
         paint: {
           'line-color': p.road,
           'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 5, rc.base * w * 0.15, 12, rc.base * w * 0.9, 18, rc.base * w * 4.5],
@@ -2241,13 +2323,17 @@ function buildStyle(s) {
 
   const labelHalo = haloFor(p.label, p.bg);
   const accentHalo = haloFor(p.accent, p.bg);
+  // ADR-050 — Label case override (default = preserve existing per-layer
+  // text-transform). Each layer reads from this when 'asis'.
+  const lcOverride = (s.labelCase === 'uppercase' || s.labelCase === 'lowercase') ? s.labelCase : null;
 
   // Cities + towns
   if (s.layers.cities) {
     layers.push({ id: 'place-city', type: 'symbol', source: 'omt', 'source-layer': 'place',
       filter: ['in', ['get', 'class'], ['literal', ['city', 'town']]],
       layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 12, 12, 18], 'text-letter-spacing': 0.1, 'text-transform': 'uppercase' },
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 12, 12, 18], 'text-letter-spacing': 0.1,
+        'text-transform': lcOverride || 'uppercase' },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 2.2, 'text-halo-blur': 0.5 } });
   }
   // Neighborhoods, villages, suburbs, hamlets
@@ -2255,7 +2341,8 @@ function buildStyle(s) {
     layers.push({ id: 'place-neigh', type: 'symbol', source: 'omt', 'source-layer': 'place',
       minzoom: 10,
       filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood', 'hamlet']]],
-      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 12 },
+      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 12,
+        'text-transform': lcOverride || 'none' },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
   }
   // Countries, regions, continents — visible at far zooms
@@ -2266,7 +2353,8 @@ function buildStyle(s) {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
         'text-font': [s.labelFont],
         'text-size': ['interpolate', ['linear'], ['zoom'], 0, 10, 4, 14, 8, 20],
-        'text-letter-spacing': 0.2, 'text-transform': 'uppercase',
+        'text-letter-spacing': 0.2,
+        'text-transform': lcOverride || 'uppercase',
       },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 2.5, 'text-halo-blur': 0.5, 'text-opacity': 0.85 } });
   }
@@ -2347,6 +2435,8 @@ function mergeState(saved) {
     if (!('neighborhoods' in merged.layers)) merged.layers.neighborhoods = merged.layers.places;
     delete merged.layers.places;
   }
+  // Roof color defaults to walls when missing (older saved states)
+  if (!merged.palette.roof) merged.palette.roof = merged.palette.building;
   return merged;
 }
 const initialState = loadFromUrlOrStorage();
@@ -2742,16 +2832,21 @@ document.getElementById('coordsStyle').addEventListener('change', e => {
   persist();
 });
 
-// Randomize style — picks a random value for each of the 8 style selects.
+// Randomize style — picks a random value for every style dial.
 const STYLE_OPTIONS = {
   roadStyle:     ['solid', 'dashed', 'dotted'],
+  roadCaps:      ['round', 'butt', 'square'],
   labelFont:     ['Noto Sans Regular', 'Noto Sans Bold', 'Noto Sans Italic', 'Noto Sans Medium'],
+  labelCase:     ['asis', 'uppercase', 'lowercase'],
   border:        ['none', 'thin', 'double', 'bold'],
   texture:       ['none', 'grain', 'halftone'],
   titleWeight:   ['regular', 'medium', 'bold', 'heavy'],
   titleSize:     ['small', 'medium', 'large', 'xl'],
   subtitleStyle: ['regular', 'italic'],
   coordsStyle:   ['decimal', 'dms'],
+  roofTone:      ['match', 'lighter', 'darker', 'accent'],
+  parkOpacity:   ['subtle', 'normal', 'bold'],
+  cardShadow:    ['none', 'soft', 'hard', 'float'],
 };
 document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() => {
   pushHistory();
@@ -3178,6 +3273,8 @@ function applyState({ silent } = {}) {
   applyMapMask();
   applySketchFrame();
   applyWatermark();
+  applyCardShadow();
+  syncStyleDials();
   restyle();
   refreshPOIs();
   renderAnnotations();
@@ -4054,6 +4151,44 @@ const wmEl = document.getElementById('watermark');
 if (wmEl) wmEl.addEventListener('input', safe(() => {
   state.watermark = wmEl.value; applyWatermark(); persist();
 }, 'watermark'));
+
+// ADR-048..053 — 6 new style-option dials
+function applyCardShadow() {
+  const w = document.getElementById('poster-wrap');
+  if (!w) return;
+  ['none','soft','hard','float'].forEach(c => w.classList.remove('shadow-' + c));
+  w.classList.add('shadow-' + (state.cardShadow || 'soft'));
+  const sel = document.getElementById('cardShadow');
+  if (sel) sel.value = state.cardShadow || 'soft';
+}
+const cardShEl = document.getElementById('cardShadow');
+if (cardShEl) cardShEl.addEventListener('change', safe(e => {
+  pushHistory(); state.cardShadow = e.target.value; applyCardShadow(); persist();
+}, 'cardShadow'));
+
+// roof tone, building shading, road caps, label case, park opacity:
+// all live in buildStyle so a change triggers restyle().
+['roofTone','labelCase','parkOpacity','roadCaps'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', safe(e => {
+    pushHistory(); state[id] = e.target.value; restyle(); persist();
+  }, id));
+});
+const buildingShadingEl = document.getElementById('buildingShading');
+if (buildingShadingEl) buildingShadingEl.addEventListener('change', safe(e => {
+  pushHistory(); state.buildingShading = e.target.checked; restyle(); persist();
+}, 'buildingShading'));
+
+function syncStyleDials() {
+  const map2 = { roofTone: 'match', labelCase: 'asis', parkOpacity: 'normal', roadCaps: 'round' };
+  Object.keys(map2).forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = state[k] || map2[k];
+  });
+  const bs = document.getElementById('buildingShading');
+  if (bs) bs.checked = state.buildingShading !== false;
+}
 
 // ADR-046 — Confetti micro-celebration
 function fireConfetti(origin) {

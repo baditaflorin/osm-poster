@@ -2883,14 +2883,9 @@ document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() =
 
 // Decoration toggles (compass / scale / date / grid / cityOutline / sun /
 // sunArrow / zoomDisplay / frameOrnaments) are now driven by the icon-button
-// grid via DECO_HANDLERS. The legacy <input type="checkbox"> handlers have
-// been removed — those elements no longer exist in the DOM after the cute
-// redo, so calling addEventListener on them threw 'reading addEventListener
-// of null'. Any listener bound to a missing element should be wrapped:
-function bindEl(id, event, handler) {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener(event, handler);
-}
+// grid via DECO_HANDLERS. The legacy checkbox handlers were removed — they
+// referenced elements that no longer exist. bindEl (from LIB) makes any
+// future "missing element" no-op silently instead of throwing.
 bindEl('compassStyle', 'change', safe(e => {
   pushHistory(); state.compassStyle = e.target.value; applyCompass(); persist();
 }, 'compassStyle'));

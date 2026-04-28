@@ -1321,6 +1321,18 @@ function refreshPOIs() {
     const size = state.icons.size    || 30;
     const inner = Math.round(size * 0.6);
 
+    // Theme-aware marker chip — derive from active palette so the icons
+    // don't look transplanted onto every theme.
+    const pal = state.palette;
+    const bgLum = lum(pal.bg || '#ffffff');
+    // Dark theme → lighter chip; light theme → very subtle off-white from bg.
+    const chipBg = bgLum < 0.5 ? lighten(pal.bg, 0.22) : darken(pal.bg, 0.04);
+    const ringCol = pal.accent || '#007aff';
+    // Icon color: accent on dark chips reads great; on light chips fall
+    // back to the label color when accent is too pale to see.
+    const accentLum = lum(ringCol);
+    const iconCol = (bgLum >= 0.5 && accentLum > 0.7) ? pal.label : ringCol;
+
     const seen = new Set();
     const picks = [];
     for (const f of features) {
@@ -1344,7 +1356,9 @@ function refreshPOIs() {
       el.className = 'poi-marker';
       el.style.width  = size + 'px';
       el.style.height = size + 'px';
-      el.style.color = state.palette.accent || '#007aff';
+      el.style.background = chipBg;
+      el.style.borderColor = ringCol;
+      el.style.color = iconCol;
       el.title = f.name;
       el.innerHTML = svg;
       const sv = el.querySelector('svg');
@@ -2212,10 +2226,9 @@ PALETTE_KEYS.forEach(k => {
     state.palette[k] = e.target.value;
     syncSwatches();
     restyle();
-    if (k === 'accent') {
-      // Recolor existing POI markers without rebuilding the list.
-      poiMarkers.forEach(m => { try { m.getElement().style.color = e.target.value; } catch (_) {} });
-    }
+    // Marker chip background, ring and icon are all derived from the
+    // palette — rebuild on any change so they keep matching the theme.
+    if (['accent', 'bg', 'label'].includes(k)) refreshPOIs();
     persist();
   }, 'palettePicker'));
   input.addEventListener('change', () => pushHistory());

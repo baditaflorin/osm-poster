@@ -223,6 +223,21 @@
   .footer-note a { color: #6e6e73; text-decoration: none; }
   .footer-note a:hover { color: #007aff; }
 
+  .version-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 4px; padding: 3px 8px; border-radius: 999px;
+    font-size: 10.5px; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    background: rgba(0,0,0,0.04); color: #6e6e73; cursor: help;
+    transition: all 0.15s;
+  }
+  .version-badge:hover { background: rgba(0,0,0,0.08); }
+  .version-badge.latest   { color: #248a3d; background: rgba(52,199,89,0.10); }
+  .version-badge.outdated { color: #c93400; background: rgba(255,149,0,0.14); cursor: pointer; }
+  .version-badge.outdated:hover { background: rgba(255,149,0,0.22); }
+  .version-badge.dev      { color: #8e44ad; background: rgba(175,82,222,0.10); }
+  .version-badge.unknown  { color: #6e6e73; }
+  .version-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
   /* ===== Main ===== */
   main {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -546,7 +561,15 @@
   <div class="footer-note">
     Map data © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a><br>
     Tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> ·
-    <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source</a>
+    <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source</a><br>
+    <span class="version-badge" id="versionBadge"
+      data-build-sha="__BUILD_SHA__"
+      data-build-full="__BUILD_FULL_SHA__"
+      data-build-time="__BUILD_TIME__"
+      title="Checking version…">
+      <span class="version-dot"></span>
+      <span id="versionText">…</span>
+    </span>
   </div>
 </aside>
 
@@ -710,8 +733,8 @@ const PRESETS = {
 const PRESET_KEYS = Object.keys(PRESETS);
 const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'road', 'rail', 'label', 'accent'];
 const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Bldgs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
-const LAYER_ORDER = ['water', 'rivers', 'parks', 'greenery', 'buildings', 'industrial', 'railways', 'paths', 'airports', 'places', 'streets', 'pois'];
-const LAYER_LABELS = { water: 'Water', rivers: 'Rivers', parks: 'Parks', greenery: 'Greenery', buildings: 'Buildings', industrial: 'Industrial', railways: 'Railways', paths: 'Paths', airports: 'Airports', places: 'Place names', streets: 'Streets', pois: 'POIs' };
+const LAYER_ORDER = ['water', 'rivers', 'parks', 'greenery', 'buildings', 'industrial', 'roads', 'railways', 'paths', 'airports', 'boundaries', 'places', 'streets', 'pois'];
+const LAYER_LABELS = { water: 'Water', rivers: 'Rivers', parks: 'Parks', greenery: 'Greenery', buildings: 'Buildings', industrial: 'Industrial', roads: 'Roads', railways: 'Railways', paths: 'Paths', airports: 'Airports', boundaries: 'Boundaries', places: 'Place names', streets: 'Streets', pois: 'POIs' };
 
 // ADR-018: City quick-flys
 const CITIES = [
@@ -818,7 +841,8 @@ function clonePreset(key) {
   const p = PRESETS[key];
   return {
     palette: { ...p.palette },
-    layers: { ...p.layers },
+    // Roads and boundaries default ON (preserve historical behavior)
+    layers: { roads: true, boundaries: true, ...p.layers },
     roadWeight: p.roadWeight,
     roadStyle: p.roadStyle,
     labelFont: p.labelFont,
@@ -929,8 +953,14 @@ function dashFor(style) {
 // =====================================================================
 function buildStyle(s) {
   const layers = [];
-  const w = s.roadWeight;
-  const p = s.palette;
+  const w = (typeof s.roadWeight === 'number' && s.roadWeight > 0) ? s.roadWeight : 1;
+  const FALLBACK = PRESETS.blueprint.palette;
+  const p = new Proxy(s.palette || {}, {
+    get(t, k) {
+      const v = t[k];
+      return (typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v)) ? v : FALLBACK[k] || '#888888';
+    },
+  });
   layers.push({ id: 'bg', type: 'background', paint: { 'background-color': p.bg } });
 
   if (s.layers.water) {
@@ -1002,33 +1032,37 @@ function buildStyle(s) {
       paint: { 'line-color': p.rail, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 14, 1.2, 18, 2.5], 'line-dasharray': [3, 2] } });
   }
 
-  const roadClasses = [
-    { id: 'minor', match: ['minor', 'service'],  base: 0.6, minzoom: 12 },
-    { id: 'tert',  match: ['tertiary'],          base: 1.0, minzoom: 10 },
-    { id: 'sec',   match: ['secondary'],         base: 1.4, minzoom: 9  },
-    { id: 'pri',   match: ['primary'],           base: 1.8, minzoom: 7  },
-    { id: 'trunk', match: ['trunk'],             base: 2.4, minzoom: 6  },
-    { id: 'mot',   match: ['motorway'],          base: 3.0, minzoom: 5  },
-  ];
-  const dash = dashFor(s.roadStyle);
-  roadClasses.forEach(rc => {
-    const layer = {
-      id: 'road-' + rc.id, type: 'line', source: 'omt', 'source-layer': 'transportation',
-      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', rc.match]]],
-      minzoom: rc.minzoom,
-      layout: { 'line-cap': dash ? 'butt' : 'round', 'line-join': 'round' },
-      paint: {
-        'line-color': p.road,
-        'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 5, rc.base * w * 0.15, 12, rc.base * w * 0.9, 18, rc.base * w * 4.5],
-      },
-    };
-    if (dash) layer.paint['line-dasharray'] = dash;
-    layers.push(layer);
-  });
+  if (s.layers.roads) {
+    const roadClasses = [
+      { id: 'minor', match: ['minor', 'service'],  base: 0.6, minzoom: 12 },
+      { id: 'tert',  match: ['tertiary'],          base: 1.0, minzoom: 10 },
+      { id: 'sec',   match: ['secondary'],         base: 1.4, minzoom: 9  },
+      { id: 'pri',   match: ['primary'],           base: 1.8, minzoom: 7  },
+      { id: 'trunk', match: ['trunk'],             base: 2.4, minzoom: 6  },
+      { id: 'mot',   match: ['motorway'],          base: 3.0, minzoom: 5  },
+    ];
+    const dash = dashFor(s.roadStyle);
+    roadClasses.forEach(rc => {
+      const layer = {
+        id: 'road-' + rc.id, type: 'line', source: 'omt', 'source-layer': 'transportation',
+        filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', rc.match]]],
+        minzoom: rc.minzoom,
+        layout: { 'line-cap': dash ? 'butt' : 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': p.road,
+          'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 5, rc.base * w * 0.15, 12, rc.base * w * 0.9, 18, rc.base * w * 4.5],
+        },
+      };
+      if (dash) layer.paint['line-dasharray'] = dash;
+      layers.push(layer);
+    });
+  }
 
-  layers.push({ id: 'boundary', type: 'line', source: 'omt', 'source-layer': 'boundary',
-    filter: ['<=', ['get', 'admin_level'], 4],
-    paint: { 'line-color': p.label, 'line-opacity': 0.18, 'line-width': 0.6, 'line-dasharray': [3, 2] } });
+  if (s.layers.boundaries) {
+    layers.push({ id: 'boundary', type: 'line', source: 'omt', 'source-layer': 'boundary',
+      filter: ['<=', ['get', 'admin_level'], 4],
+      paint: { 'line-color': p.label, 'line-opacity': 0.18, 'line-width': 0.6, 'line-dasharray': [3, 2] } });
+  }
 
   const labelHalo = haloFor(p.label, p.bg);
   const accentHalo = haloFor(p.accent, p.bg);
@@ -1067,8 +1101,20 @@ function buildStyle(s) {
 // =====================================================================
 // MAP
 // =====================================================================
+function mergeState(saved) {
+  const def = defaultState();
+  if (!saved || typeof saved !== 'object') return def;
+  return {
+    ...def, ...saved,
+    palette: { ...def.palette, ...(saved.palette || {}) },
+    layers:  { ...def.layers,  ...(saved.layers  || {}) },
+    marker:  { ...def.marker,  ...(saved.marker  || {}) },
+    caption: { ...def.caption, ...(saved.caption || {}) },
+    view:    { ...def.view,    ...(saved.view    || {}) },
+  };
+}
 const initialState = loadFromUrlOrStorage();
-if (initialState) state = { ...defaultState(), ...initialState, palette: { ...defaultState().palette, ...(initialState.palette || {}) }, layers: { ...defaultState().layers, ...(initialState.layers || {}) }, marker: { ...defaultState().marker, ...(initialState.marker || {}) }, caption: { ...defaultState().caption, ...(initialState.caption || {}) }, view: { ...defaultState().view, ...(initialState.view || {}) } };
+if (initialState) state = mergeState(initialState);
 
 const map = new maplibregl.Map({
   container: 'map',
@@ -1793,7 +1839,7 @@ window.addEventListener('hashchange', () => {
   if (location.hash.length > 1) {
     const decoded = decodeState(location.hash.slice(1));
     if (decoded) {
-      state = { ...defaultState(), ...decoded };
+      state = mergeState(decoded);
       applyState({ silent: true });
       if (state.view) map.jumpTo({ center: state.view.center, zoom: state.view.zoom, bearing: state.bearing || 0, pitch: state.pitch || 0 });
     }
@@ -1809,6 +1855,53 @@ map.on('load', () => {
   applyState({ silent: true });
   history.past = []; // clean undo history at boot
 });
+
+// =====================================================================
+// Version badge — compares baked SHA against latest main commit
+// =====================================================================
+(async function checkVersion() {
+  const badge = document.getElementById('versionBadge');
+  if (!badge) return;
+  const baked = badge.dataset.buildSha;
+  const fullSha = badge.dataset.buildFull;
+  const builtAt = badge.dataset.buildTime;
+  const text = document.getElementById('versionText');
+
+  // Local dev / not-yet-deployed: placeholders weren't substituted
+  if (!baked || baked.startsWith('__')) {
+    badge.classList.add('dev');
+    text.textContent = 'dev';
+    badge.title = 'Local development build (no deploy SHA injected)';
+    return;
+  }
+
+  text.textContent = baked;
+  badge.title = `Build ${baked} · ${builtAt}\nClick to view commit`;
+  badge.style.cursor = 'pointer';
+  const goCommit = () => window.open(`https://github.com/baditaflorin/osm-poster/commit/${fullSha}`, '_blank');
+  badge.addEventListener('click', goCommit);
+
+  try {
+    const r = await fetch('https://api.github.com/repos/baditaflorin/osm-poster/commits/main', {
+      headers: { 'Accept': 'application/vnd.github+json' },
+    });
+    if (!r.ok) throw new Error('GitHub API ' + r.status);
+    const data = await r.json();
+    const latestShort = (data.sha || '').slice(0, 7);
+    if (data.sha === fullSha || data.sha.startsWith(baked) || baked === latestShort) {
+      badge.classList.add('latest');
+      badge.title = `${baked} — latest\nDeployed ${builtAt}`;
+    } else {
+      badge.classList.add('outdated');
+      badge.title = `${baked} — update available (latest: ${latestShort})\nClick to reload`;
+      badge.removeEventListener('click', goCommit);
+      badge.addEventListener('click', () => location.reload());
+    }
+  } catch (e) {
+    badge.classList.add('unknown');
+    badge.title = `${baked}\nCould not check for updates`;
+  }
+})();
 </script>
 </body>
 </html>

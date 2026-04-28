@@ -620,6 +620,31 @@
   .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
 
+  /* ===== Chip group — cute, touch-friendly replacement for short selects */
+  .chip-group {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+  }
+  .chip {
+    flex: 1 1 auto; min-width: 0;
+    padding: 9px 12px;
+    border: none; border-radius: var(--r-pill);
+    background: rgba(0,0,0,0.05);
+    color: var(--text-2);
+    font-family: inherit; font-size: 12.5px; font-weight: 500;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.08s ease;
+    white-space: nowrap; min-height: 38px;
+    text-align: center;
+  }
+  .chip:hover { background: rgba(0,0,0,0.10); color: var(--text); }
+  .chip:active { transform: scale(0.96); }
+  .chip.active { background: var(--accent); color: #fff; }
+  .chip-group.chip-half .chip { flex: 0 1 calc(50% - 3px); }
+  @media (max-width: 800px) {
+    .chip { padding: 12px 14px; font-size: 13.5px; min-height: 44px; }
+    .chip-group { gap: 6px; }
+  }
+
   /* ADR-043 — map mask shapes (clip-path on #map-wrap) */
   #map-wrap.mask-circle   { clip-path: circle(50% at 50% 50%); }
   #map-wrap.mask-rounded  { clip-path: inset(0 round 24px); }
@@ -1060,94 +1085,61 @@
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">⚙️</span><span class="disclose-label"><span class="disclose-title">Style options</span><span class="disclose-desc">Roads · Buildings · Labels · Frame · Parks</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🎨</span><span class="disclose-label"><span class="disclose-title">Map style</span><span class="disclose-desc">Roads · buildings · parks · labels</span></span><span class="chev">›</span></button>
         <div class="body"><div>
 
           <div class="sub-title" style="margin: 4px 0 6px;">🛣 Roads</div>
-          <div class="style-options">
-            <select id="roadStyle">
-              <option value="solid">━ Solid</option>
-              <option value="dashed">┄ Dashed</option>
-              <option value="dotted">┈ Dotted</option>
-            </select>
-            <select id="roadCaps">
-              <option value="round">⏺ Round caps</option>
-              <option value="butt">▮ Butt caps</option>
-              <option value="square">▢ Square caps</option>
-            </select>
-          </div>
+          <div class="chip-group" data-chip-key="roadStyle"
+               data-options='[["solid","━ Solid"],["dashed","┄ Dashed"],["dotted","┈ Dotted"]]'></div>
+          <div class="chip-group" data-chip-key="roadCaps" style="margin-top: 4px;"
+               data-options='[["round","⏺ Round"],["butt","▮ Butt"],["square","▢ Square"]]'></div>
 
-          <div class="sub-title" style="margin: 12px 0 6px;">🏢 Buildings</div>
-          <div class="style-options">
-            <select id="buildingShape">
-              <option value="filled">▣ Filled (solid)</option>
-              <option value="outlined">▢ Outlined (faint fill)</option>
-              <option value="wireframe">⬚ Wireframe (no fill)</option>
-              <option value="ghost">⬛ Ghost (very faint)</option>
-              <option value="bold">█ Bold (heavy outline)</option>
-              <option value="invert">◐ Inverted (bg color, accent edge)</option>
-              <option value="halftone">⠿ Stippled (50% pattern)</option>
-              <option value="accent">★ Accent fill</option>
-              <option value="hairline">┄ Hairline outline only</option>
-            </select>
-            <select id="roofTone">
-              <option value="match">Roof = walls (3D)</option>
-              <option value="lighter">Lighter roofs (3D)</option>
-              <option value="darker">Darker roofs (3D)</option>
-              <option value="accent">Accent roofs (3D)</option>
-              <option value="custom">Use Roofs swatch (3D)</option>
-            </select>
-            <label class="toggle" style="grid-column: span 2;"><input type="checkbox" id="buildingShading" checked> Side shading (3D)</label>
-          </div>
+          <div class="sub-title" style="margin: 14px 0 6px;">🏢 Buildings</div>
+          <select id="buildingShape">
+            <option value="filled">▣ Filled (solid)</option>
+            <option value="outlined">▢ Outlined (faint fill)</option>
+            <option value="wireframe">⬚ Wireframe (no fill)</option>
+            <option value="ghost">⬛ Ghost (very faint)</option>
+            <option value="bold">█ Bold (heavy outline)</option>
+            <option value="invert">◐ Inverted (bg color, accent edge)</option>
+            <option value="halftone">⠿ Stippled (50% pattern)</option>
+            <option value="accent">★ Accent fill</option>
+            <option value="hairline">┄ Hairline outline only</option>
+          </select>
+          <div class="chip-group" data-chip-key="roofTone" style="margin-top: 6px;"
+               data-options='[["match","= walls"],["lighter","Lighter"],["darker","Darker"],["accent","Accent"],["custom","Roofs swatch"]]'></div>
+          <label class="toggle" style="margin-top: 6px;"><input type="checkbox" id="buildingShading" checked> Side shading (3D)</label>
 
-          <div class="sub-title" style="margin: 12px 0 6px;">🅰 Map labels <span class="sec-hint">turn on Cities / Hoods / Streets to see</span></div>
-          <div class="style-options">
-            <select id="labelFont">
-              <option value="Noto Sans Regular">Sans regular</option>
-              <option value="Noto Sans Bold">Sans bold</option>
-              <option value="Noto Sans Italic">Sans italic</option>
-              <option value="Noto Sans Medium">Sans medium</option>
-            </select>
-            <select id="labelCase">
-              <option value="asis">Aa As-is</option>
-              <option value="uppercase">AA Uppercase</option>
-              <option value="lowercase">aa lowercase</option>
-            </select>
-          </div>
+          <div class="sub-title" style="margin: 14px 0 6px;">🌳 Parks</div>
+          <div class="chip-group" data-chip-key="parkOpacity"
+               data-options='[["subtle","🌿 Subtle"],["normal","🌳 Normal"],["bold","🟢 Bold"]]'></div>
 
-          <div class="sub-title" style="margin: 12px 0 6px;">🌳 Parks</div>
-          <div class="style-options">
-            <select id="parkOpacity">
-              <option value="subtle">🌿 Subtle</option>
-              <option value="normal">🌳 Normal</option>
-              <option value="bold">🟢 Bold</option>
-            </select>
-            <span></span>
-          </div>
-
-          <div class="sub-title" style="margin: 12px 0 6px;">🖼 Frame</div>
-          <div class="style-options">
-            <select id="border">
-              <option value="none">No border</option>
-              <option value="thin">Thin border</option>
-              <option value="double">Double border</option>
-              <option value="bold">Bold border</option>
-            </select>
-            <select id="texture">
-              <option value="none">No texture</option>
-              <option value="grain">Paper grain</option>
-              <option value="halftone">Halftone dots</option>
-            </select>
-            <select id="cardShadow">
-              <option value="none">🚫 No shadow</option>
-              <option value="soft">🌫 Soft shadow</option>
-              <option value="hard">🔲 Hard shadow</option>
-              <option value="float">☁ Floating</option>
-            </select>
-            <span></span>
-          </div>
+          <div class="sub-title" style="margin: 14px 0 6px;">🅰 Map labels <span class="sec-hint">enable Cities / Hoods / Streets to see</span></div>
+          <select id="labelFont">
+            <option value="Noto Sans Regular">Sans regular</option>
+            <option value="Noto Sans Bold">Sans bold</option>
+            <option value="Noto Sans Italic">Sans italic</option>
+            <option value="Noto Sans Medium">Sans medium</option>
+          </select>
+          <div class="chip-group" data-chip-key="labelCase" style="margin-top: 6px;"
+               data-options='[["asis","Aa As-is"],["uppercase","AA Upper"],["lowercase","aa lower"]]'></div>
 
           <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style</button>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🖼</span><span class="disclose-label"><span class="disclose-title">Frame</span><span class="disclose-desc">Border · texture · shadow</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="sub-title" style="margin: 4px 0 6px;">Border</div>
+          <div class="chip-group" data-chip-key="border"
+               data-options='[["none","∅ None"],["thin","─ Thin"],["double","═ Double"],["bold","█ Bold"]]'></div>
+          <div class="sub-title" style="margin: 14px 0 6px;">Texture</div>
+          <div class="chip-group" data-chip-key="texture"
+               data-options='[["none","∅ None"],["grain","✦ Grain"],["halftone","⠿ Halftone"]]'></div>
+          <div class="sub-title" style="margin: 14px 0 6px;">Card shadow</div>
+          <div class="chip-group" data-chip-key="cardShadow"
+               data-options='[["none","🚫 None"],["soft","🌫 Soft"],["hard","🔲 Hard"],["float","☁ Float"]]'></div>
         </div></div>
       </div>
 
@@ -2527,10 +2519,9 @@ rw.addEventListener('input', () => {
   restyle(); persist();
 });
 
-document.getElementById('roadStyle').addEventListener('change', e => { pushHistory(); state.roadStyle = e.target.value; restyle(); persist(); });
+// roadStyle, border, texture moved to chip-group machinery (initChipGroups).
+// labelFont stays as a select (4 named font options, too textual for chips).
 document.getElementById('labelFont').addEventListener('change', e => { pushHistory(); state.labelFont = e.target.value; restyle(); persist(); });
-document.getElementById('border').addEventListener('change', e => { pushHistory(); state.border = e.target.value; applyBorder(); persist(); });
-document.getElementById('texture').addEventListener('change', e => { pushHistory(); state.texture = e.target.value; applyTexture(); persist(); });
 document.getElementById('titleWeight').addEventListener('change', e => { pushHistory(); state.titleWeight = e.target.value; applyTypography(); persist(); });
 document.getElementById('titleSize').addEventListener('change', e => { pushHistory(); state.titleSize = e.target.value; applyTypography(); persist(); });
 document.getElementById('subtitleStyle').addEventListener('change', e => { pushHistory(); state.subtitleStyle = e.target.value; applyTypography(); persist(); });
@@ -2815,14 +2806,13 @@ function applyBorder() {
   ['none','thin','double','bold'].forEach(b => p.classList.remove('border-' + b));
   if (state.border !== 'none') p.classList.add('border-' + state.border);
   p.style.setProperty('--border-color', state.palette.label);
-  document.getElementById('border').value = state.border;
+  // The chip group syncs via syncChipGroups() — no select to update.
 }
 function applyTexture() {
   const g = document.getElementById('grain');
   g.classList.remove('grain-on', 'halftone-on');
   if (state.texture === 'grain') g.classList.add('grain-on');
   else if (state.texture === 'halftone') g.classList.add('halftone-on');
-  document.getElementById('texture').value = state.texture;
 }
 // COMPASS_VARIANTS lives in DATA — to add a new compass look, edit data.js.
 
@@ -3820,40 +3810,65 @@ if (wmEl) wmEl.addEventListener('input', safe(() => {
   state.watermark = wmEl.value; applyWatermark(); persist();
 }, 'watermark'));
 
-// ADR-048..053 — 6 new style-option dials
+// ADR-048..053 + ADR-058 — Style option dials
+// Chip-group machinery: any element with [data-chip-key] becomes a
+// touch-friendly pill row whose buttons set state[key] and run the
+// right apply function. ONE handler covers every dial (DRY).
 function applyCardShadow() {
   const w = document.getElementById('poster-wrap');
   if (!w) return;
   ['none','soft','hard','float'].forEach(c => w.classList.remove('shadow-' + c));
   w.classList.add('shadow-' + (state.cardShadow || 'soft'));
-  const sel = document.getElementById('cardShadow');
-  if (sel) sel.value = state.cardShadow || 'soft';
 }
-const cardShEl = document.getElementById('cardShadow');
-if (cardShEl) cardShEl.addEventListener('change', safe(e => {
-  pushHistory(); state.cardShadow = e.target.value; applyCardShadow(); persist();
-}, 'cardShadow'));
 
-// roof tone, building shading, road caps, label case, park opacity:
-// all live in buildStyle so a change triggers restyle().
-['roofTone','labelCase','parkOpacity','roadCaps'].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('change', safe(e => {
-    pushHistory(); state[id] = e.target.value; restyle(); persist();
-  }, id));
-});
+// Per-key effect after a chip is clicked. Default = restyle the map.
+const CHIP_AFTER = {
+  border:     () => applyBorder(),
+  texture:    () => applyTexture(),
+  cardShadow: () => applyCardShadow(),
+};
+
+const _chipDefaults = {
+  roadStyle: 'solid', roadCaps: 'round',
+  roofTone: 'match', labelCase: 'asis', parkOpacity: 'normal',
+  border: 'none', texture: 'none', cardShadow: 'soft',
+};
+
+function initChipGroups() {
+  document.querySelectorAll('.chip-group[data-chip-key]').forEach(group => {
+    const key = group.dataset.chipKey;
+    const opts = JSON.parse(group.dataset.options || '[]');
+    const current = state[key] || _chipDefaults[key];
+    group.innerHTML = opts.map(([val, label]) =>
+      `<button type="button" class="chip${val === current ? ' active' : ''}" data-value="${val}">${label}</button>`
+    ).join('');
+    group.addEventListener('click', safe(e => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      const val = btn.dataset.value;
+      pushHistory();
+      state[key] = val;
+      group.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b === btn));
+      (CHIP_AFTER[key] || (() => restyle()))();
+      persist();
+    }, 'chip:' + key));
+  });
+}
+function syncChipGroups() {
+  document.querySelectorAll('.chip-group[data-chip-key]').forEach(group => {
+    const key = group.dataset.chipKey;
+    const cur = state[key] || _chipDefaults[key];
+    group.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.value === cur));
+  });
+}
+
 const buildingShadingEl = document.getElementById('buildingShading');
 if (buildingShadingEl) buildingShadingEl.addEventListener('change', safe(e => {
   pushHistory(); state.buildingShading = e.target.checked; restyle(); persist();
 }, 'buildingShading'));
 
 function syncStyleDials() {
-  const map2 = { roofTone: 'match', labelCase: 'asis', parkOpacity: 'normal', roadCaps: 'round' };
-  Object.keys(map2).forEach(k => {
-    const el = document.getElementById(k);
-    if (el) el.value = state[k] || map2[k];
-  });
+  syncChipGroups();
   const bs = document.getElementById('buildingShading');
   if (bs) bs.checked = state.buildingShading !== false;
 }
@@ -4016,6 +4031,11 @@ const _randStyleBtn = document.getElementById('randomizeStyleBtn');
 if (_randStyleBtn) _randStyleBtn.addEventListener('click', () => fireConfetti());
 const _exportBtnConfetti = document.getElementById('export');
 if (_exportBtnConfetti) _exportBtnConfetti.addEventListener('click', () => setTimeout(fireConfetti, 50));
+
+// One-time chip group rendering — populates every [data-chip-key] container
+// with its pill buttons. Must run before applyState's syncChipGroups so
+// the active states have buttons to mark.
+initChipGroups();
 
 map.on('load', () => {
   ensureGpx();

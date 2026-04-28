@@ -472,6 +472,29 @@
   }
   .compass.hidden { display: none; }
 
+  /* Date stamp overlay — bottom-left of map area */
+  .date-stamp {
+    position: absolute; bottom: 14px; left: 14px;
+    font-family: var(--mono); font-size: 10px; opacity: 0.8;
+    letter-spacing: 2px; pointer-events: none; z-index: 5;
+    padding: 3px 8px; background: rgba(255,255,255,0.6);
+    border-radius: 3px; backdrop-filter: blur(4px);
+    display: none;
+  }
+  .date-stamp.visible { display: inline-block; }
+
+  /* Coord grid overlay — faint graph-paper lines */
+  .coord-grid {
+    position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    display: none;
+    background-image:
+      linear-gradient(to right, currentColor 0.5px, transparent 0.5px),
+      linear-gradient(to bottom, currentColor 0.5px, transparent 0.5px);
+    background-size: 40px 40px;
+    opacity: 0.08;
+  }
+  .coord-grid.visible { display: block; }
+
   /* grain overlay */
   .grain {
     position: absolute; inset: 0; pointer-events: none;
@@ -677,10 +700,20 @@
       <div class="sub-title" style="margin-top: 14px;">Quick cities</div>
       <div class="cities" id="cities"></div>
 
+      <div class="sub-title" style="margin-top: 14px;">Roads</div>
+      <div class="frames" style="grid-template-columns: 1fr 1fr 1fr;">
+        <button data-roads="off">Off</button>
+        <button data-roads="simple" class="active">Simple</button>
+        <button data-roads="detailed">Detailed</button>
+      </div>
+      <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
+        Simple = main roads only. Detailed adds paths, streets, and cycleways. One click; no extra fetches.
+      </div>
+
       <div class="sub-title" style="margin-top: 14px;">Map view</div>
       <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>
       <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
-      <div class="row"><label>Roads</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
+      <div class="row"><label>Weight</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
     </div></div>
   </div>
 
@@ -778,7 +811,14 @@
       <div class="toggles">
         <label class="toggle"><input type="checkbox" id="compassToggle"> Compass rose</label>
         <label class="toggle"><input type="checkbox" id="scaleToggle"> Scale bar</label>
+        <label class="toggle"><input type="checkbox" id="dateStampToggle"> Date stamp</label>
+        <label class="toggle"><input type="checkbox" id="gridToggle"> Coord grid</label>
       </div>
+      <select id="compassStyle" style="margin-top: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
+        <option value="classic">Classic compass</option>
+        <option value="minimal">Minimal arrow</option>
+        <option value="windrose">Windrose</option>
+      </select>
     </div></div>
   </div>
 
@@ -860,7 +900,9 @@
     <div id="poster">
       <div id="map-wrap">
         <div id="map"></div>
+        <div class="coord-grid" id="coordGrid"></div>
         <div class="grain" id="grain"></div>
+        <div class="date-stamp" id="dateStamp"></div>
         <svg class="compass hidden" id="compass" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.7"/>
           <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
@@ -1317,7 +1359,10 @@ function defaultState() {
     border: 'none',
     texture: 'none',
     compass: false,
+    compassStyle: 'classic',
     scale: false,
+    dateStamp: false,
+    grid: false,
     icons: { density: 25 },
     titleWeight: 'bold',
     titleSize: 'medium',
@@ -2034,10 +2079,30 @@ document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() =
 }, 'randomizeStyle'));
 
 document.getElementById('compassToggle').addEventListener('change', e => { state.compass = e.target.checked; applyCompass(); persist(); });
+document.getElementById('compassStyle').addEventListener('change', safe(e => {
+  pushHistory(); state.compassStyle = e.target.value; applyCompass(); persist();
+}, 'compassStyle'));
 document.getElementById('scaleToggle').addEventListener('change', e => {
   state.scale = e.target.checked;
   if (state.scale) map.addControl(scaleControl, 'bottom-left'); else { try { map.removeControl(scaleControl); } catch (e) {} }
   persist();
+});
+document.getElementById('dateStampToggle').addEventListener('change', safe(e => {
+  pushHistory(); state.dateStamp = e.target.checked; applyDateStamp(); persist();
+}, 'dateStamp'));
+document.getElementById('gridToggle').addEventListener('change', safe(e => {
+  pushHistory(); state.grid = e.target.checked; applyGrid(); persist();
+}, 'grid'));
+
+// Road-mode buttons in the Place panel — Off / Simple / Detailed
+document.querySelectorAll('button[data-roads]').forEach(btn => {
+  btn.addEventListener('click', safe(() => {
+    pushHistory();
+    applyRoadMode(btn.dataset.roads);
+    syncControls();
+    restyle();
+    persist();
+  }, 'roadMode'));
 });
 
 // Map icons disclosure: toggle + density slider, controlling state.layers.pois + state.icons.density
@@ -2232,11 +2297,83 @@ function applyTexture() {
   else if (state.texture === 'halftone') g.classList.add('halftone-on');
   document.getElementById('texture').value = state.texture;
 }
+// Compass SVG variants — three distinct looks. Inner content only;
+// the outer <svg> element provides viewBox + sizing.
+const COMPASS_VARIANTS = {
+  classic: `
+    <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.7"/>
+    <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+    <polygon points="50,8 54,50 50,52 46,50" fill="currentColor"/>
+    <polygon points="50,92 54,52 50,50 46,52" fill="currentColor" opacity="0.45"/>
+    <polygon points="8,50 50,46 52,50 50,54" fill="currentColor" opacity="0.6"/>
+    <polygon points="92,50 52,50 50,46 50,54" fill="currentColor" opacity="0.6"/>
+    <text x="50" y="6" text-anchor="middle" font-size="8" fill="currentColor" font-family="ui-serif, Georgia">N</text>`,
+  minimal: `
+    <polygon points="50,12 56,52 50,48 44,52" fill="currentColor"/>
+    <line x1="50" y1="48" x2="50" y2="86" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
+    <text x="50" y="9" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">N</text>`,
+  windrose: `
+    <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.5"/>
+    <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.3"/>
+    <polygon points="50,4 55,50 50,52 45,50" fill="currentColor"/>
+    <polygon points="50,96 55,52 50,50 45,52" fill="currentColor" opacity="0.4"/>
+    <polygon points="4,50 50,45 52,50 50,55" fill="currentColor" opacity="0.55"/>
+    <polygon points="96,50 52,50 50,45 50,55" fill="currentColor" opacity="0.55"/>
+    <polygon points="22,22 49,49 51,51 23,23" fill="currentColor" opacity="0.32"/>
+    <polygon points="78,22 51,49 49,51 77,23" fill="currentColor" opacity="0.32"/>
+    <polygon points="22,78 49,51 51,49 23,77" fill="currentColor" opacity="0.32"/>
+    <polygon points="78,78 51,51 49,49 77,77" fill="currentColor" opacity="0.32"/>
+    <circle cx="50" cy="50" r="2" fill="currentColor"/>
+    <text x="50" y="3" text-anchor="middle" font-size="7" fill="currentColor" font-family="ui-serif, Georgia">N</text>`,
+};
+
 function applyCompass() {
   const c = document.getElementById('compass');
   c.classList.toggle('hidden', !state.compass);
   c.style.color = state.palette.label;
+  c.innerHTML = COMPASS_VARIANTS[state.compassStyle] || COMPASS_VARIANTS.classic;
   document.getElementById('compassToggle').checked = state.compass;
+  const sel = document.getElementById('compassStyle');
+  if (sel) sel.value = state.compassStyle || 'classic';
+}
+
+function applyDateStamp() {
+  const el = document.getElementById('dateStamp');
+  if (!el) return;
+  el.classList.toggle('visible', !!state.dateStamp);
+  el.style.color = state.palette.label;
+  if (state.dateStamp) {
+    const d = new Date();
+    el.textContent = `${d.getFullYear()} · ${String(d.getMonth()+1).padStart(2,'0')} · ${String(d.getDate()).padStart(2,'0')}`;
+  }
+  const cb = document.getElementById('dateStampToggle');
+  if (cb) cb.checked = !!state.dateStamp;
+}
+
+function applyGrid() {
+  const el = document.getElementById('coordGrid');
+  if (!el) return;
+  el.classList.toggle('visible', !!state.grid);
+  el.style.color = state.palette.label;
+  const cb = document.getElementById('gridToggle');
+  if (cb) cb.checked = !!state.grid;
+}
+
+// Road-mode preset (Off / Simple / Detailed) — batches multiple layer
+// toggles in one click. Only touches road-family keys; everything else
+// (water, buildings, etc.) stays as the user left it.
+const ROAD_MODES = {
+  off:      { roads: false, paths: false, streets: false, cycleways: false, ferries: false },
+  simple:   { roads: true,  paths: false, streets: false, cycleways: false },
+  detailed: { roads: true,  paths: true,  streets: true,  cycleways: true,  boundaries: true },
+};
+function applyRoadMode(mode) {
+  if (!ROAD_MODES[mode]) return;
+  Object.assign(state.layers, ROAD_MODES[mode]);
+  state.roadMode = mode;
+  document.querySelectorAll('button[data-roads]').forEach(b => {
+    b.classList.toggle('active', b.dataset.roads === mode);
+  });
 }
 function syncSwatches() {
   PALETTE_KEYS.forEach(k => {
@@ -2286,6 +2423,8 @@ function applyState({ silent } = {}) {
   applyBorder();
   applyTexture();
   applyCompass();
+  applyDateStamp();
+  applyGrid();
   applyTypography();
   applyCaption();
   restyle();

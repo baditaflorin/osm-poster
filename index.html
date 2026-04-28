@@ -476,6 +476,102 @@
      will appear on the map, so the picker matches what you'll see. */
   .layer-icon svg { width: 20px; height: 20px; fill: currentColor; }
 
+  /* ADR-023 — time-of-day atmospheric tint (CSS filter on the map area) */
+  #map-wrap.tod-dawn   { filter: hue-rotate(-12deg) saturate(0.85) brightness(0.96); }
+  #map-wrap.tod-day    { /* no-op */ }
+  #map-wrap.tod-golden { filter: sepia(0.32) saturate(1.18) hue-rotate(-12deg); }
+  #map-wrap.tod-dusk   { filter: hue-rotate(15deg) saturate(0.90) brightness(0.84); }
+  #map-wrap.tod-night  { filter: brightness(0.66) saturate(0.65) contrast(1.05); }
+
+  /* ADR-029 — edition serial pinned alongside the URL watermark */
+  .caption-edition {
+    position: absolute; bottom: 6px; left: 12px;
+    font-size: 8px; color: #c8c8c8; opacity: 0.85;
+    font-family: var(--mono); letter-spacing: 0.5px;
+    pointer-events: none; user-select: none;
+  }
+
+  /* ADR-027 — applied when a user-supplied font is enabled */
+  #caption.custom-font #caption-title,
+  #caption.custom-font #caption-subtitle { font-family: 'OSMPosterCustom', var(--font); }
+
+  /* ADR-022 / 027 / 028 — generic file drop zones */
+  .drop-zone {
+    border: 1.5px dashed var(--input-stroke);
+    border-radius: var(--r-2); padding: 12px;
+    text-align: center; font-size: 12.5px; color: var(--text-3);
+    background: rgba(0,0,0,0.02); cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent); color: var(--accent); background: var(--accent-bg-2);
+  }
+  .drop-zone input[type="file"] { display: none; }
+  .drop-status { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+  .drop-status .clear { color: #ff3b30; cursor: pointer; }
+
+  /* ADR-024 — click-to-place inline annotation editor + DOM markers */
+  .annotation-marker {
+    pointer-events: auto;
+    background: var(--surface);
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 500;
+    border: 1.5px solid currentColor;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transform: translateY(-22px);
+  }
+  .annotation-marker::after {
+    content: ''; position: absolute; left: 50%; top: 100%;
+    width: 1.5px; height: 18px; background: currentColor;
+    transform: translateX(-50%);
+  }
+
+  /* ADR-028 — Polaroid: white-framed photo card on the map */
+  .polaroid {
+    pointer-events: auto;
+    background: #fff;
+    padding: 8px 8px 18px;
+    border-radius: 2px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.18);
+    transform: rotate(-3deg);
+    transition: transform 0.15s ease;
+    cursor: grab;
+    width: 100px;
+  }
+  .polaroid:hover { transform: rotate(-3deg) scale(1.05); }
+  .polaroid img { width: 100%; height: 80px; object-fit: cover; display: block; }
+  .polaroid .pcap {
+    margin-top: 6px;
+    font-family: 'Caveat', 'Bradley Hand', cursive;
+    font-size: 11px; color: #333; text-align: center;
+  }
+  .polaroid .px {
+    position: absolute; top: -8px; right: -8px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ff3b30; color: #fff;
+    font-size: 14px; line-height: 18px; text-align: center;
+    cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  }
+
+  /* ADR-024/028 — placement mode crosshair cursor on the map */
+  #map.place-mode { cursor: crosshair; }
+
+  /* ADR-025 — auto-subtitle suggestion chips */
+  .subtitle-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .subtitle-chip {
+    padding: 5px 11px; border: none; border-radius: 999px;
+    background: var(--accent-bg-2); color: var(--accent);
+    font-family: inherit; font-size: 11.5px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .subtitle-chip:hover { background: var(--accent-bg); }
+  .subtitle-chips .chip-loading { color: var(--text-3); background: transparent; cursor: default; }
+
   /* ===== Main ===== */
   main {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -819,7 +915,7 @@
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">✨</span><span class="disclose-label"><span class="disclose-title">Custom colors</span><span class="disclose-desc">Per-element pickers and randomize</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">✨</span><span class="disclose-label"><span class="disclose-title">Custom colors</span><span class="disclose-desc">Pickers, randomize, image-to-palette</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <div class="palette-row" id="palette"></div>
           <div class="seed-row">
@@ -829,6 +925,10 @@
             <button id="randomize" title="R">✨ Randomize</button>
             <button id="reset">Reset preset</button>
           </div>
+          <label class="drop-zone" id="paletteDrop" style="margin-top:10px;">
+            <input type="file" id="paletteFile" accept="image/*">
+            <span>🖼 Drop a photo to harvest a palette</span>
+          </label>
         </div></div>
       </div>
 
@@ -864,18 +964,28 @@
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🌟</span><span class="disclose-label"><span class="disclose-title">Decorations</span><span class="disclose-desc">Compass, scale bar, date, grid</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🌟</span><span class="disclose-label"><span class="disclose-title">Decorations</span><span class="disclose-desc">Compass, scale, date, grid, outline</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <div class="toggles">
             <label class="toggle"><input type="checkbox" id="compassToggle"> Compass rose</label>
             <label class="toggle"><input type="checkbox" id="scaleToggle"> Scale bar</label>
             <label class="toggle"><input type="checkbox" id="dateStampToggle"> Date stamp</label>
             <label class="toggle"><input type="checkbox" id="gridToggle"> Coord grid</label>
+            <label class="toggle"><input type="checkbox" id="cityOutlineToggle"> City outline</label>
           </div>
           <select id="compassStyle" style="margin-top: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
             <option value="classic">Classic compass</option>
             <option value="minimal">Minimal arrow</option>
             <option value="windrose">Windrose</option>
+          </select>
+          <select id="todTint" style="margin-top: 8px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
+            <option value="none">No time-of-day tint</option>
+            <option value="auto">Auto (local solar time)</option>
+            <option value="dawn">Dawn — cool blue</option>
+            <option value="day">Day — clear</option>
+            <option value="golden">Golden hour — warm sepia</option>
+            <option value="dusk">Dusk — magenta tint</option>
+            <option value="night">Night — dark contrast</option>
           </select>
         </div></div>
       </div>
@@ -900,11 +1010,12 @@
         <div class="body"><div>
           <input type="text" id="title" placeholder="Title" maxlength="40">
           <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
+          <div class="subtitle-chips" id="subtitleChips"></div>
         </div></div>
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🅰️</span><span class="disclose-label"><span class="disclose-title">Typography</span><span class="disclose-desc">Title / subtitle / coords</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🅰️</span><span class="disclose-label"><span class="disclose-title">Typography</span><span class="disclose-desc">Title / subtitle / coords / custom font</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <div class="style-options">
             <select id="titleWeight">
@@ -929,6 +1040,36 @@
               <option value="dms">DMS coords</option>
               <option value="hidden">Hide coords</option>
             </select>
+          </div>
+          <label class="drop-zone" id="fontDrop" style="margin-top:10px;">
+            <input type="file" id="fontFile" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf">
+            <span>🅰️ Drop a .woff2 / .ttf to use as caption font</span>
+          </label>
+          <div class="drop-status" id="fontStatus"></div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">📌</span><span class="disclose-label"><span class="disclose-title">Annotations</span><span class="disclose-desc">Click on the map to drop a label</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="actions">
+            <button id="addAnnotationBtn">📌 Add annotation</button>
+            <button id="clearAnnotationsBtn">Clear all</button>
+          </div>
+          <div class="drop-status" id="annotationStatus"></div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">📷</span><span class="disclose-label"><span class="disclose-title">Polaroids</span><span class="disclose-desc">Drop a photo, click on the map to pin it</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <label class="drop-zone" id="polaroidDrop">
+            <input type="file" id="polaroidFile" accept="image/*">
+            <span>📷 Drop a photo</span>
+          </label>
+          <div class="drop-status" id="polaroidStatus"></div>
+          <div class="actions" style="margin-top:8px;">
+            <button id="clearPolaroidsBtn">Clear all polaroids</button>
           </div>
         </div></div>
       </div>
@@ -986,6 +1127,7 @@
         <option value="4k">4K</option>
       </select>
     </div>
+    <label class="toggle" style="margin-top:8px;"><input type="checkbox" id="bleedToggle"> 3 mm bleed + crop marks (PDF only)</label>
     <button id="export">Download</button>
   </div>
 
@@ -1027,6 +1169,7 @@
         <div id="caption-subtitle">The City of Light</div>
         <div id="caption-coords">48.8566° N · 2.3522° E</div>
         <div class="caption-mark">baditaflorin.github.io/osm-poster</div>
+        <div class="caption-edition" id="captionEdition"></div>
       </div>
     </div>
   </div>
@@ -1533,6 +1676,20 @@ function defaultState() {
         lodging: false, services: false,
       },
     },
+    // ADR-023 atmospheric tint: none | auto | dawn | day | golden | dusk | night
+    tod: 'none',
+    // ADR-031 city polygon outline
+    cityOutline: false,
+    cityOutlineGeo: null,   // cached GeoJSON (filled on place selection)
+    // ADR-026 print bleed in PDF export
+    exportBleed: false,
+    // ADR-024 click-placed text annotations: [{ lng, lat, text }]
+    annotations: [],
+    // ADR-028 photo polaroids: [{ lng, lat, dataUrl, caption, rot }]
+    polaroids: [],
+    // ADR-027 custom font use toggle (data lives in localStorage)
+    customFontOn: false,
+    customFontName: null,
     titleWeight: 'bold',
     titleSize: 'medium',
     subtitleStyle: 'regular',
@@ -1880,6 +2037,8 @@ function mergeState(saved) {
     },
     caption: { ...def.caption, ...(saved.caption || {}) },
     view:    { ...def.view,    ...(saved.view    || {}) },
+    annotations: Array.isArray(saved.annotations) ? saved.annotations : def.annotations,
+    polaroids:   Array.isArray(saved.polaroids)   ? saved.polaroids   : def.polaroids,
   };
 }
 const initialState = loadFromUrlOrStorage();
@@ -2168,6 +2327,7 @@ CITIES.forEach(c => {
     document.getElementById('caption-title').textContent = c.name;
     document.getElementById('title').value = c.name;
     persist();
+    onPlacePicked({ display_name: c.name, lat: c.coord[1], lon: c.coord[0], type: 'city', class: 'place' });
   });
   citiesEl.appendChild(b);
 });
@@ -2503,6 +2663,8 @@ searchEl.addEventListener('input', () => {
           document.getElementById('title').value = name;
           document.getElementById('caption-title').textContent = name;
           persist();
+          // ADR-025 / ADR-031: subtitle suggestions + city outline polygon
+          onPlacePicked(it);
         });
       });
     } catch (e) { resultsEl.innerHTML = `<div class="result">Search failed.</div>`; }
@@ -2637,6 +2799,9 @@ function syncControls() {
   document.getElementById('seed').value = state.seed || '';
   document.getElementById('compassToggle').checked = state.compass;
   document.getElementById('scaleToggle').checked = state.scale;
+  const co = document.getElementById('cityOutlineToggle'); if (co) co.checked = !!state.cityOutline;
+  const bl = document.getElementById('bleedToggle');       if (bl) bl.checked = !!state.exportBleed;
+  const td = document.getElementById('todTint');           if (td) td.value = state.tod || 'none';
   document.getElementById('title').value = state.caption.title || '';
   document.getElementById('subtitle').value = state.caption.subtitle || '';
   annivCheck.checked = state.caption.anniversary;
@@ -2669,8 +2834,13 @@ function applyState({ silent } = {}) {
   applyGrid();
   applyTypography();
   applyCaption();
+  applyTOD();
+  applyCustomFont();
   restyle();
   refreshPOIs();
+  renderAnnotations();
+  renderPolaroids();
+  ensureCityOutline();
   // refresh coords text with current format
   try {
     const c = map.getCenter();
@@ -2766,6 +2936,9 @@ document.getElementById('export').addEventListener('click', async () => {
   btn.textContent = 'Rendering…';
   btn.disabled = true;
   try {
+    // ADR-029 — bump edition counter and stamp it on the poster
+    setEditionDisplay(nextEdition());
+
     map.triggerRepaint();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const node = document.getElementById('poster');
@@ -2782,10 +2955,28 @@ document.getElementById('export').addEventListener('click', async () => {
       const jsPDF = await loadJsPdf();
       const sizeMm = (SIZE_PRESETS[sz]?.mm || {})[state.frame] || [210, 297];
       const orientation = sizeMm[0] > sizeMm[1] ? 'l' : 'p';
-      const pdf = new jsPDF({ unit: 'mm', format: [Math.min(...sizeMm), Math.max(...sizeMm)], orientation });
+      const trimW = Math.min(...sizeMm), trimH = Math.max(...sizeMm);
+      // ADR-026 — print bleed + corner crop marks
+      const bleed = state.exportBleed ? 3 : 0;
+      const pdf = new jsPDF({ unit: 'mm', format: [trimW + 2 * bleed, trimH + 2 * bleed], orientation });
       const pw = pdf.internal.pageSize.getWidth();
       const ph = pdf.internal.pageSize.getHeight();
       pdf.addImage(dataUrl, 'PNG', 0, 0, pw, ph);
+      if (bleed) {
+        pdf.setLineWidth(0.15); pdf.setDrawColor(0, 0, 0);
+        const ml = 4, mo = 1;
+        // 4 corners — each gets a horizontal + vertical crop tick at the trim line
+        const corners = [
+          { x: bleed,      y: bleed,      sx: -1, sy: -1 },
+          { x: pw - bleed, y: bleed,      sx:  1, sy: -1 },
+          { x: bleed,      y: ph - bleed, sx: -1, sy:  1 },
+          { x: pw - bleed, y: ph - bleed, sx:  1, sy:  1 },
+        ];
+        corners.forEach(({ x, y, sx, sy }) => {
+          pdf.line(x + sx * mo, y, x + sx * (mo + ml), y);
+          pdf.line(x, y + sy * mo, x, y + sy * (mo + ml));
+        });
+      }
       pdf.save(`osm-poster-${ts}.pdf`);
     } else {
       const dataUrl = await htmlToImage.toPng(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
@@ -2801,6 +2992,11 @@ document.getElementById('export').addEventListener('click', async () => {
     btn.textContent = originalText;
     btn.disabled = false;
   }
+});
+
+const bleedToggleEl = document.getElementById('bleedToggle');
+if (bleedToggleEl) bleedToggleEl.addEventListener('change', e => {
+  state.exportBleed = e.target.checked; persist();
 });
 
 function download(svgString, name) {
@@ -2829,6 +3025,387 @@ window.addEventListener('hashchange', () => {
 // =====================================================================
 // INIT
 // =====================================================================
+// =====================================================================
+// ADR-022 — Image-to-palette eyedropper
+// =====================================================================
+async function extractPaletteFromImage(file) {
+  const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = URL.createObjectURL(file); });
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, 64, 64);
+  const data = ctx.getImageData(0, 0, 64, 64).data;
+  const buckets = new Map();
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i+3] < 128) continue; // skip transparent
+    const r = data[i] >> 5 << 5, g = data[i+1] >> 5 << 5, b = data[i+2] >> 5 << 5;
+    const k = `${r},${g},${b}`;
+    buckets.set(k, (buckets.get(k) || 0) + 1);
+  }
+  const top = [...buckets.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const cols = top.map(([k]) => {
+    const [r, g, b] = k.split(',').map(Number);
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  });
+  cols.sort((a, b) => lum(a) - lum(b));
+  const pick = i => cols[Math.min(i, cols.length - 1)] || '#888888';
+  return {
+    bg:       pick(1),
+    water:    pick(3),
+    green:    pick(4),
+    urban:    pick(5),
+    building: pick(6),
+    road:     pick(cols.length - 1),  // brightest
+    rail:     pick(8),
+    label:    pick(cols.length - 1),
+    accent:   pick(cols.length - 2),
+  };
+}
+const paletteFile = document.getElementById('paletteFile');
+if (paletteFile) paletteFile.addEventListener('change', safe(async e => {
+  const f = e.target.files[0]; if (!f) return;
+  Loader.push();
+  try {
+    const pal = await extractPaletteFromImage(f);
+    pushHistory();
+    state.palette = { ...state.palette, ...pal };
+    applyState();
+  } finally { Loader.pop(); e.target.value = ''; }
+}, 'imagePalette'));
+
+// =====================================================================
+// ADR-023 — Time-of-day atmospheric tint
+// =====================================================================
+function applyTOD() {
+  const w = document.getElementById('map-wrap');
+  ['dawn','day','golden','dusk','night'].forEach(c => w.classList.remove('tod-' + c));
+  let tod = state.tod || 'none';
+  if (tod === 'auto') {
+    const lng = (state.view && state.view.center && state.view.center[0]) || 0;
+    const date = new Date();
+    const hour = ((date.getUTCHours() + (lng / 15)) % 24 + 24) % 24;
+    if      (hour >= 5  && hour < 7 ) tod = 'dawn';
+    else if (hour >= 7  && hour < 17) tod = 'day';
+    else if (hour >= 17 && hour < 19) tod = 'golden';
+    else if (hour >= 19 && hour < 21) tod = 'dusk';
+    else                              tod = 'night';
+  }
+  if (tod && tod !== 'none' && tod !== 'day') w.classList.add('tod-' + tod);
+  const sel = document.getElementById('todTint');
+  if (sel) sel.value = state.tod || 'none';
+}
+const todTintEl = document.getElementById('todTint');
+if (todTintEl) todTintEl.addEventListener('change', safe(e => {
+  pushHistory(); state.tod = e.target.value; applyTOD(); persist();
+}, 'todTint'));
+
+// =====================================================================
+// ADR-024 — Click-placed annotations
+// =====================================================================
+let placeMode = null;
+let pendingPolaroid = null;
+function setPlaceMode(m) {
+  placeMode = m;
+  const mEl = document.getElementById('map');
+  if (mEl) mEl.classList.toggle('place-mode', !!m);
+}
+
+let annotationMarkers = [];
+function clearAnnotationMarkers() {
+  annotationMarkers.forEach(m => { try { m.remove(); } catch (_) {} });
+  annotationMarkers = [];
+}
+function renderAnnotations() {
+  clearAnnotationMarkers();
+  (state.annotations || []).forEach((a, idx) => {
+    const el = document.createElement('div');
+    el.className = 'annotation-marker';
+    el.style.color = state.palette.accent || '#007aff';
+    el.textContent = a.text;
+    el.title = 'Click to remove';
+    el.addEventListener('click', () => {
+      pushHistory(); state.annotations.splice(idx, 1); renderAnnotations(); persist();
+    });
+    const mk = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([a.lng, a.lat]).addTo(map);
+    annotationMarkers.push(mk);
+  });
+  const s = document.getElementById('annotationStatus');
+  if (s) s.textContent = (state.annotations || []).length ? `${state.annotations.length} placed (click any to remove)` : '';
+}
+const addAnnBtn = document.getElementById('addAnnotationBtn');
+if (addAnnBtn) addAnnBtn.addEventListener('click', () => {
+  setPlaceMode('annotation');
+  const s = document.getElementById('annotationStatus');
+  if (s) s.textContent = 'Click on the map to place… (Esc to cancel)';
+});
+const clearAnnBtn = document.getElementById('clearAnnotationsBtn');
+if (clearAnnBtn) clearAnnBtn.addEventListener('click', () => {
+  pushHistory(); state.annotations = []; renderAnnotations(); persist();
+});
+
+// =====================================================================
+// ADR-028 — Photo polaroid pinned at lat/lng
+// =====================================================================
+let polaroidMarkers = [];
+function clearPolaroidMarkers() {
+  polaroidMarkers.forEach(m => { try { m.remove(); } catch (_) {} });
+  polaroidMarkers = [];
+}
+function renderPolaroids() {
+  clearPolaroidMarkers();
+  (state.polaroids || []).forEach((p, idx) => {
+    const el = document.createElement('div');
+    el.className = 'polaroid';
+    el.style.position = 'relative';
+    el.style.transform = `rotate(${p.rot || 0}deg)`;
+    el.innerHTML = `<img src="${p.dataUrl}" alt=""><div class="pcap">${(p.caption || '').replace(/[<>"']/g, '')}</div><div class="px" title="Remove">×</div>`;
+    el.querySelector('.px').addEventListener('click', e => {
+      e.stopPropagation();
+      pushHistory(); state.polaroids.splice(idx, 1); renderPolaroids(); persist();
+    });
+    const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([p.lng, p.lat]).addTo(map);
+    polaroidMarkers.push(mk);
+  });
+  const s = document.getElementById('polaroidStatus');
+  if (s) s.textContent = (state.polaroids || []).length ? `${state.polaroids.length} pinned` : '';
+}
+const polaroidFileEl = document.getElementById('polaroidFile');
+if (polaroidFileEl) polaroidFileEl.addEventListener('change', safe(async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingPolaroid = reader.result;
+    setPlaceMode('polaroid');
+    const s = document.getElementById('polaroidStatus');
+    if (s) s.textContent = 'Click on the map to drop the photo… (Esc to cancel)';
+  };
+  reader.readAsDataURL(f);
+  e.target.value = '';
+}, 'polaroidUpload'));
+const clearPolBtn = document.getElementById('clearPolaroidsBtn');
+if (clearPolBtn) clearPolBtn.addEventListener('click', () => {
+  pushHistory(); state.polaroids = []; renderPolaroids(); persist();
+});
+
+// Map click: dispatch on placeMode (annotation or polaroid)
+map.on('click', e => {
+  if (!placeMode) return;
+  const { lng, lat } = e.lngLat;
+  if (placeMode === 'annotation') {
+    setPlaceMode(null);
+    const text = prompt('Annotation text:');
+    if (!text) return;
+    pushHistory();
+    if (!Array.isArray(state.annotations)) state.annotations = [];
+    state.annotations.push({ lng, lat, text });
+    renderAnnotations(); persist();
+  } else if (placeMode === 'polaroid' && pendingPolaroid) {
+    const caption = prompt('Caption (optional):') || '';
+    pushHistory();
+    if (!Array.isArray(state.polaroids)) state.polaroids = [];
+    state.polaroids.push({ lng, lat, dataUrl: pendingPolaroid, caption, rot: -4 + Math.random() * 8 });
+    pendingPolaroid = null;
+    setPlaceMode(null);
+    renderPolaroids(); persist();
+  }
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && placeMode) { setPlaceMode(null); pendingPolaroid = null; }
+});
+
+// =====================================================================
+// ADR-025 — Auto-subtitle suggestions
+// =====================================================================
+function buildSubtitleChips(place) {
+  const chips = [];
+  const parts = (place.display_name || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 2) chips.push(parts[parts.length - 1]);          // country
+  if (parts.length >= 3) chips.push(parts.slice(-2).join(', '));       // region, country
+  if (place.type && place.class) chips.push(`A ${place.type.replace(/_/g, ' ')} in ${parts[parts.length - 1] || 'the world'}`);
+  const lat = parseFloat(place.lat), lon = parseFloat(place.lon);
+  if (!isNaN(lat) && !isNaN(lon)) {
+    chips.push(`${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`);
+  }
+  return chips.slice(0, 4);
+}
+function renderSubtitleChips(chips) {
+  const c = document.getElementById('subtitleChips');
+  if (!c) return;
+  c.innerHTML = '';
+  chips.forEach(text => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'subtitle-chip'; b.textContent = text;
+    b.addEventListener('click', () => {
+      pushHistory();
+      state.caption.subtitle = text;
+      const sub = document.getElementById('subtitle');
+      if (sub) sub.value = text;
+      const cs = document.getElementById('caption-subtitle');
+      if (cs) cs.textContent = text;
+      persist();
+    });
+    c.appendChild(b);
+  });
+}
+
+// =====================================================================
+// ADR-027 — Custom font upload
+// =====================================================================
+function applyCustomFont() {
+  const cap = document.getElementById('caption');
+  if (!cap) return;
+  cap.classList.toggle('custom-font', !!state.customFontOn);
+  const status = document.getElementById('fontStatus');
+  if (status) {
+    status.innerHTML = state.customFontName
+      ? `Using <b>${state.customFontName}</b> — <span class="clear" id="fontClear">remove</span>`
+      : '';
+    const clear = document.getElementById('fontClear');
+    if (clear) clear.addEventListener('click', () => {
+      pushHistory();
+      state.customFontOn = false; state.customFontName = null;
+      try { localStorage.removeItem('osm-poster:font'); } catch (_) {}
+      applyCustomFont(); persist();
+    });
+  }
+}
+async function loadCustomFont(file) {
+  const buf = await file.arrayBuffer();
+  const face = new FontFace('OSMPosterCustom', buf);
+  await face.load();
+  document.fonts.add(face);
+  state.customFontOn = true;
+  state.customFontName = file.name;
+  if (buf.byteLength <= 1024 * 1024) {
+    const arr = new Uint8Array(buf);
+    let bin = '';
+    for (let i = 0; i < arr.length; i += 8192) {
+      bin += String.fromCharCode.apply(null, arr.subarray(i, i + 8192));
+    }
+    try { localStorage.setItem('osm-poster:font', JSON.stringify({ name: file.name, data: btoa(bin) })); } catch (_) {}
+  }
+  applyCustomFont(); persist();
+}
+const fontFileEl = document.getElementById('fontFile');
+if (fontFileEl) fontFileEl.addEventListener('change', safe(async e => {
+  const f = e.target.files[0]; if (!f) return;
+  Loader.push();
+  try { await loadCustomFont(f); } finally { Loader.pop(); e.target.value = ''; }
+}, 'customFont'));
+(async function restoreCustomFont() {
+  try {
+    const s = localStorage.getItem('osm-poster:font');
+    if (!s) return;
+    const { name, data } = JSON.parse(s);
+    const bin = atob(data);
+    const buf = new ArrayBuffer(bin.length);
+    const arr = new Uint8Array(buf);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const face = new FontFace('OSMPosterCustom', buf);
+    await face.load();
+    document.fonts.add(face);
+    state.customFontName = name;
+    if (state.customFontOn) applyCustomFont();
+  } catch (_) {}
+})();
+
+// =====================================================================
+// ADR-029 — Edition serial number
+// =====================================================================
+function nextEdition() {
+  const cur = parseInt(localStorage.getItem('osm-poster:edition') || '0', 10) || 0;
+  const next = cur + 1;
+  try { localStorage.setItem('osm-poster:edition', String(next)); } catch (_) {}
+  return next;
+}
+function formatEdition(n) {
+  return '№ ' + n.toString(36).toUpperCase().padStart(3, '0') + ' · ∞';
+}
+function setEditionDisplay(n) {
+  const el = document.getElementById('captionEdition');
+  if (el) el.textContent = formatEdition(n);
+}
+// Show the current (last-issued) edition on screen so the user always
+// sees a serial; bumps fresh on each export.
+const _seenEd = parseInt(localStorage.getItem('osm-poster:edition') || '0', 10) || 1;
+setEditionDisplay(_seenEd || 1);
+
+// =====================================================================
+// ADR-031 — City outline polygon highlight
+// =====================================================================
+async function fetchCityOutline(query) {
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&limit=1&q=${encodeURIComponent(query)}`);
+  if (!r.ok) return null;
+  const items = await r.json();
+  return (items && items[0] && items[0].geojson) ? { type: 'Feature', properties: {}, geometry: items[0].geojson } : null;
+}
+function ensureCityOutline() {
+  const layerId = 'city-outline-line';
+  if (state.cityOutlineGeo) {
+    if (map.getSource('cityOutline')) map.getSource('cityOutline').setData(state.cityOutlineGeo);
+    else map.addSource('cityOutline', { type: 'geojson', data: state.cityOutlineGeo });
+    if (!map.getLayer(layerId)) {
+      map.addLayer({
+        id: layerId, type: 'line', source: 'cityOutline',
+        paint: {
+          'line-color': state.palette.accent || '#007aff',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.5, 14, 3],
+          'line-opacity': 0.65, 'line-blur': 1,
+        },
+      });
+    } else {
+      map.setPaintProperty(layerId, 'line-color', state.palette.accent || '#007aff');
+    }
+    map.setLayoutProperty(layerId, 'visibility', state.cityOutline ? 'visible' : 'none');
+  }
+}
+const cityOutlineCb = document.getElementById('cityOutlineToggle');
+if (cityOutlineCb) cityOutlineCb.addEventListener('change', safe(e => {
+  pushHistory(); state.cityOutline = e.target.checked; ensureCityOutline(); persist();
+}, 'cityOutlineToggle'));
+
+// Hook place selection: subtitle chips + city polygon. Run on every
+// search result click and every Quick city button click.
+async function onPlacePicked(item) {
+  // Subtitle chips
+  renderSubtitleChips(buildSubtitleChips(item));
+  // City outline polygon (cached for the current pick)
+  try {
+    const geo = await fetchCityOutline(item.display_name || item.name || '');
+    state.cityOutlineGeo = geo;
+    ensureCityOutline();
+  } catch (_) {}
+  persist();
+}
+
+// =====================================================================
+// ADR-030 — POI proximity declustering (simple variant)
+// Markers within 36 px of an already-placed marker on screen are skipped.
+// Implemented by hooking into refreshPOIs through a wrapper guard.
+// =====================================================================
+const _origRefreshPOIs = refreshPOIs;
+let _picksScratch = [];
+// We extend the marker-creation phase: after refreshPOIs runs, deduplicate
+// by screen distance among existing markers.
+const observeProximity = () => {
+  if (!poiMarkers.length) return;
+  const seen = [];
+  const toRemove = [];
+  poiMarkers.forEach(m => {
+    const ll = m.getLngLat();
+    const sc = map.project([ll.lng, ll.lat]);
+    if (seen.some(p => { const dx = p.x - sc.x, dy = p.y - sc.y; return dx*dx + dy*dy < 36*36; })) {
+      toRemove.push(m);
+    } else {
+      seen.push(sc);
+    }
+  });
+  toRemove.forEach(m => { try { m.remove(); } catch(_){} });
+  poiMarkers = poiMarkers.filter(m => !toRemove.includes(m));
+};
+map.on('idle', () => { try { observeProximity(); } catch (_) {} });
+
 map.on('load', () => {
   ensureGpx();
   updateGpxStatus();

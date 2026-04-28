@@ -484,6 +484,174 @@ place.
 
 ---
 
+## Templates 9-12
+
+Four new full templates added alongside the existing eight. Each carries
+the standard `TEMPLATE_FIELDS` so a click reshapes the whole poster:
+
+- **Watercolor** — soft pastel wash on cream paper, italic labels,
+  thin border + paper grain + compass on. No buildings; paths visible.
+- **Espresso** — dark coffee brown background with cream lines and
+  amber roads. Square frame, double border, paper grain.
+- **Constructivist** — Soviet-poster vibe: cream + black + bold red.
+  Buildings as solid black, no nature, weight 1.8×, bold border.
+- **Aurora** — deep navy with sky-green roads and teal accent, evoking
+  northern lights. Compass on.
+
+---
+
+## ADR-032 — Road casing
+
+**Context.** On dense maps, road lines blend into the surrounding fill
+(buildings, parks). Cartographers use a "casing": a slightly wider
+under-line in the background color so each road reads as embossed.
+
+**Decision.** When the **Road casing** toggle is on, every road class
+gets a casing layer (≈1.8× the visible width, painted in `palette.bg`)
+pushed before the colored line. Costs one extra layer per class — six
+layers total — but reuses the same source-layer query.
+
+**Consequences.** Adds visual depth at zero data cost. Disables cleanly
+when the toggle is off (no layers added).
+
+---
+
+## ADR-033 — Road glow
+
+**Context.** Cyberpunk / neon styles look anemic when roads are crisp
+hairlines. A blur halo around the line gives them luminous weight.
+
+**Decision.** When the **Road glow** toggle is on, every road layer
+gets `paint['line-blur'] = 2.5`. Pure paint property — no extra layers,
+no layout disruption.
+
+**Consequences.** Subtle glow that compounds with bold accent road
+colors (Cyberpunk, Tron). Doesn't affect line weight or hit-testing.
+
+---
+
+## ADR-034 — Map saturation slider
+
+**Context.** Sometimes a palette is *almost* right — the user wants
+the same colors but more vibrant or more muted. Editing 9 swatches by
+hand to nudge saturation is brutal.
+
+**Decision.** A saturation slider 0-200% applies `filter: saturate(X)`
+to `#map-wrap`. Composes correctly with the time-of-day tint by
+unifying both into the inline filter string when either is non-default.
+
+**Consequences.** One CSS property, instant feedback. 100% = no change.
+Combines with contrast slider in the same filter chain.
+
+---
+
+## ADR-035 — Map contrast slider
+
+**Context.** Pastel palettes can look washed-out at small print sizes;
+dark themes can lose detail. A contrast knob lets the user push or
+pull the dynamic range.
+
+**Decision.** Slider 50-150% → `filter: contrast(X)` on `#map-wrap`,
+chained with saturation and TOD filters into one inline filter.
+
+**Consequences.** Below 50% the map turns soggy; above 150% it
+crushes blacks. Range chosen to stay tasteful by default.
+
+---
+
+## ADR-036 — Vignette overlay
+
+**Context.** Every "framed travel poster" in a hotel hallway has a
+subtle radial darken at the edges. It pulls the eye to the center
+without anything explicit.
+
+**Decision.** Four vignette presets: **none / soft / heavy /
+spotlight**. Implemented as a `radial-gradient` on a positioned
+overlay div inside `#map-wrap`. Does not interact with the CSS filter
+chain; renders as a separate compositing layer.
+
+**Consequences.** Captured by `html-to-image`, exports correctly.
+Spotlight is intense — useful for poster-of-a-single-place mode.
+
+---
+
+## ADR-037 — Title ornament
+
+**Context.** Plain `PARIS` is fine. `✦ PARIS ✦` is a poster.
+
+**Decision.** A select with five values: **none, bullets (●  T  ●),
+dashes (—  T  —), brackets ([  T  ]), asterisks (✦  T  ✦)**. Wrapping
+happens in `decorateTitle()` and runs from both the title-input
+listener and `applyTitleOrnament()` so live edits stay decorated.
+
+**Consequences.** Pure text, exports cleanly. Anniversary mode bypasses
+ornaments because it has its own "A & B" composition.
+
+---
+
+## ADR-038 — Caption divider style
+
+**Context.** The single 1-px line between the map and the caption is
+clean but invisible. Vintage posters often use double rules, dotted
+rules, or wavy ornaments.
+
+**Decision.** Five values: **line (default), none, dotted, double,
+wave**. Wave uses an inline SVG repeating along `background-image`
+and bumps `padding-top` to clear it.
+
+**Consequences.** All CSS, no extra DOM. The wavy variant is busy on
+small frames; works best on portrait/A4.
+
+---
+
+## ADR-039 — Sprinkle stars overlay
+
+**Context.** Night-themed maps (Midnight, Cyberpunk, Aurora) feel flat
+without atmospheric noise. Real night skies have stars.
+
+**Decision.** Decorative overlay div pre-baked with 9 fixed-position
+`radial-gradient` stars at varying sizes and opacities. Toggle on/off.
+Shows above the map and texture overlays so it lifts off whatever's
+beneath.
+
+**Consequences.** Pure CSS, zero JS work per frame. Positions are
+fixed (not random per session) so toggling doesn't reflow.
+
+---
+
+## ADR-040 — Title spacing fine-adjust
+
+**Context.** The four `Title size` presets (small / medium / large /
+xl) each lock a fixed letter-spacing. Sometimes a user wants the
+medium size with looser tracking, or the large size with tighter.
+
+**Decision.** A single slider −4 px to +12 px applied via inline
+`letter-spacing` calc on `#caption-title`, layered over whatever the
+size preset chose.
+
+**Consequences.** Subtle, professional knob. Default 0 px = no change.
+
+---
+
+## ADR-041 — Building shape (filled / outlined / wireframe)
+
+**Context.** On dark themes, solid-filled buildings hide ground-level
+detail. On minimalist designs, building outlines are more elegant
+than fills.
+
+**Decision.** Three values for the **building shape** dial:
+- **Filled** — current opacity-ramped fill (default)
+- **Outlined** — fill at 4-22 % opacity with a stronger label-color outline
+- **Wireframe** — `fill-opacity: 0` plus accent-colored outline only
+
+Applies to flat (2D) buildings only; 3D extruded buildings stay solid
+because outlines on extrusions don't render meaningfully.
+
+**Consequences.** All three modes share the same source/feature query;
+just `paint` properties change. No extra layers.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

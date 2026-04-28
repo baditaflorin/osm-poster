@@ -572,6 +572,51 @@
   .subtitle-chip:hover { background: var(--accent-bg); }
   .subtitle-chips .chip-loading { color: var(--text-3); background: transparent; cursor: default; }
 
+  /* ADR-036 — vignette overlay (radial darken) */
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 4;
+    display: none;
+  }
+  .vignette.vignette-soft      { display: block; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.32) 100%); }
+  .vignette.vignette-heavy     { display: block; background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.62) 100%); }
+  .vignette.vignette-spotlight { display: block; background: radial-gradient(circle at center,  transparent 22%, rgba(0,0,0,0.85) 78%); }
+
+  /* ADR-039 — sprinkle of stars (decorative) */
+  .stars-overlay {
+    position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    display: none;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.85), transparent 50%),
+      radial-gradient(1.5px 1.5px at 70% 22%, rgba(255,255,255,0.7), transparent 50%),
+      radial-gradient(1px 1px at 32% 70%, rgba(255,255,255,0.85), transparent 50%),
+      radial-gradient(2px 2px at 86% 64%, rgba(255,255,255,0.55), transparent 50%),
+      radial-gradient(1px 1px at 48% 38%, rgba(255,255,255,0.7), transparent 50%),
+      radial-gradient(1.5px 1.5px at 22% 86%, rgba(255,255,255,0.6), transparent 50%),
+      radial-gradient(1px 1px at 64% 84%, rgba(255,255,255,0.85), transparent 50%),
+      radial-gradient(1px 1px at 8%  52%, rgba(255,255,255,0.55), transparent 50%),
+      radial-gradient(2px 2px at 92% 12%, rgba(255,255,255,0.7), transparent 50%);
+  }
+  .stars-overlay.on { display: block; }
+
+  /* ADR-038 — caption divider variants (override the default 1px solid border-top) */
+  #caption.div-none   { border-top: none; }
+  #caption.div-line   { border-top: 1px solid #f0ede3; }
+  #caption.div-dotted { border-top: 2px dotted #d6d2c1; }
+  #caption.div-double { border-top: 4px double #d6d2c1; }
+  #caption.div-wave   {
+    border-top: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 6'><path d='M0 3 Q10 0 20 3 T40 3' fill='none' stroke='%23c8c2af' stroke-width='1'/></svg>");
+    background-repeat: repeat-x;
+    background-position: top center;
+    background-size: 40px 6px;
+    background-color: #fff;
+    padding-top: 28px;
+  }
+
+  /* Sliders for percent dials (saturation, contrast, etc.) */
+  .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
+
   /* ===== Main ===== */
   main {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -964,6 +1009,47 @@
       </div>
 
       <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🪄</span><span class="disclose-label"><span class="disclose-title">Effects</span><span class="disclose-desc">Casing, glow, vignette, saturation…</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="effects-toggles">
+            <label class="toggle"><input type="checkbox" id="roadCasingToggle"> Road casing</label>
+            <label class="toggle"><input type="checkbox" id="roadGlowToggle"> Road glow</label>
+            <label class="toggle"><input type="checkbox" id="starsToggle"> Sprinkle stars</label>
+          </div>
+          <div class="effects-grid" style="margin-top: 10px;">
+            <select id="vignetteSel">
+              <option value="none">No vignette</option>
+              <option value="soft">Soft vignette</option>
+              <option value="heavy">Heavy vignette</option>
+              <option value="spotlight">Spotlight</option>
+            </select>
+            <select id="buildingShape">
+              <option value="filled">Filled buildings</option>
+              <option value="outlined">Outlined buildings</option>
+              <option value="wireframe">Wireframe</option>
+            </select>
+            <select id="titleOrnament">
+              <option value="none">No ornament</option>
+              <option value="bullets">● Title ●</option>
+              <option value="dashes">— Title —</option>
+              <option value="brackets">[ Title ]</option>
+              <option value="asterisks">✦ Title ✦</option>
+            </select>
+            <select id="captionDivider">
+              <option value="line">Line divider</option>
+              <option value="none">No divider</option>
+              <option value="dotted">Dotted</option>
+              <option value="double">Double</option>
+              <option value="wave">Wavy</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top: 10px;"><label>Saturation</label><input type="range" id="mapSaturation" min="0" max="200" step="5" value="100"><span class="val" id="mapSaturationVal">100%</span></div>
+          <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
+          <div class="row"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
         <button class="disclose-btn"><span class="ico">🌟</span><span class="disclose-label"><span class="disclose-title">Decorations</span><span class="disclose-desc">Compass, scale, date, grid, outline</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <div class="toggles">
@@ -1152,6 +1238,8 @@
       <div id="map-wrap">
         <div id="map"></div>
         <div class="coord-grid" id="coordGrid"></div>
+        <div class="vignette" id="vignette"></div>
+        <div class="stars-overlay" id="starsOverlay"></div>
         <div class="grain" id="grain"></div>
         <div class="date-stamp" id="dateStamp"></div>
         <svg class="compass hidden" id="compass" viewBox="0 0 100 100">
@@ -1407,6 +1495,38 @@ const PRESETS = {
     layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
     roadWeight: 1.2, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
     frame: 'portrait', border: 'thin', texture: 'none', compass: false, scale: false,
+  },
+  watercolor: {
+    name: 'Watercolor',
+    isTemplate: true,
+    palette: { bg: '#fdfaf3', water: '#a8c8d8', green: '#bcd2a8', urban: '#f0e3d0', building: '#dabd9d', road: '#7a5a48', rail: '#5e4536', label: '#3a2e25', accent: '#c97a5e' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
+    frame: 'portrait', border: 'thin', texture: 'grain', compass: true, scale: false,
+  },
+  espresso: {
+    name: 'Espresso',
+    isTemplate: true,
+    palette: { bg: '#3a2418', water: '#6b4438', green: '#4a3424', urban: '#4d2f1f', building: '#5e3a26', road: '#e8c994', rail: '#d4a373', label: '#f5dfb8', accent: '#e8c994' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
+    frame: 'square', border: 'double', texture: 'grain', compass: false, scale: false,
+  },
+  constructivist: {
+    name: 'Constructivist',
+    isTemplate: true,
+    palette: { bg: '#f4e8d8', water: '#1a1a1a', green: '#1a1a1a', urban: '#f0d8c0', building: '#1a1a1a', road: '#d62828', rail: '#1a1a1a', label: '#1a1a1a', accent: '#d62828' },
+    layers: { water: true, rivers: false, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 1.8, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'portrait', border: 'bold', texture: 'none', compass: false, scale: false,
+  },
+  aurora: {
+    name: 'Aurora',
+    isTemplate: true,
+    palette: { bg: '#0d1b2a', water: '#1b4332', green: '#2d6a4f', urban: '#1a2433', building: '#243447', road: '#95d5b2', rail: '#52b788', label: '#d8f3dc', accent: '#7dd3fc' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
+    frame: 'portrait', border: 'thin', texture: 'none', compass: true, scale: false,
   },
 };
 
@@ -1690,6 +1810,17 @@ function defaultState() {
     // ADR-027 custom font use toggle (data lives in localStorage)
     customFontOn: false,
     customFontName: null,
+    // 10 new dials (ADR-032..041)
+    roadCasing: false,        // wider light underlayer beneath each road
+    roadGlow: false,          // line-blur on roads for neon effect
+    titleOrnament: 'none',    // none | bullets | dashes | brackets | asterisks | brackets-square
+    captionDivider: 'line',   // none | line | dotted | double | wave
+    mapSaturation: 100,       // 0..200 (CSS filter percent)
+    mapContrast: 100,         // 50..150
+    vignette: 'none',          // none | soft | heavy | spotlight
+    buildingShape: 'filled',  // filled | outlined | wireframe
+    stars: false,             // sprinkle stars overlay
+    titleSpacingDelta: 0,     // -4..+8 px adjustment over preset
     titleWeight: 'bold',
     titleSize: 'medium',
     subtitleStyle: 'regular',
@@ -1871,12 +2002,21 @@ function buildStyle(s) {
           'fill-extrusion-opacity': 0.95,
         } };
     } else {
-      layers.push({ id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 12,
-        paint: {
-          'fill-color': p.building,
-          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 14, 0.85, 18, 0.95],
-          'fill-outline-color': darken(p.building, 0.15),
-        } });
+      // ADR-041 — Building shape: filled / outlined / wireframe
+      const shape = s.buildingShape || 'filled';
+      const buildingPaint = {
+        'fill-color': p.building,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 14, 0.85, 18, 0.95],
+        'fill-outline-color': darken(p.building, 0.15),
+      };
+      if (shape === 'outlined') {
+        buildingPaint['fill-opacity']     = ['interpolate', ['linear'], ['zoom'], 12, 0.04, 14, 0.18, 18, 0.22];
+        buildingPaint['fill-outline-color'] = p.label;
+      } else if (shape === 'wireframe') {
+        buildingPaint['fill-opacity']     = 0;
+        buildingPaint['fill-outline-color'] = p.accent;
+      }
+      layers.push({ id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 12, paint: buildingPaint });
     }
   }
   if (s.layers.industrial) {
@@ -1951,6 +2091,22 @@ function buildStyle(s) {
       { id: 'mot',   match: ['motorway'],          base: 3.0, minzoom: 5  },
     ];
     const dash = dashFor(s.roadStyle);
+    // ADR-032 — Road casing: wider under-layer in the bg color so each
+    // road reads as embossed / outlined.
+    if (s.roadCasing) {
+      roadClasses.forEach(rc => {
+        layers.push({
+          id: 'road-casing-' + rc.id, type: 'line', source: 'omt', 'source-layer': 'transportation',
+          filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', rc.match]]],
+          minzoom: rc.minzoom,
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': p.bg,
+            'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 5, rc.base * w * 0.35, 12, rc.base * w * 1.6, 18, rc.base * w * 6.8],
+          },
+        });
+      });
+    }
     roadClasses.forEach(rc => {
       const layer = {
         id: 'road-' + rc.id, type: 'line', source: 'omt', 'source-layer': 'transportation',
@@ -1963,6 +2119,8 @@ function buildStyle(s) {
         },
       };
       if (dash) layer.paint['line-dasharray'] = dash;
+      // ADR-033 — Road glow: line-blur turns roads into soft neon strokes.
+      if (s.roadGlow) layer.paint['line-blur'] = 2.5;
       layers.push(layer);
     });
   }
@@ -2151,6 +2309,7 @@ function restyle() {
     map.once('style.load', () => {
       map.jumpTo({ center: c, zoom: z, bearing: b, pitch: pi });
       ensureGpx();
+      try { ensureCityOutline(); } catch (_) {}
     });
   }, 80);
 }
@@ -2274,6 +2433,10 @@ const TEMPLATE_BLURBS = {
   brutalist:   'Concrete grays, hard edges',
   botanical:   'Forest greens on cream paper',
   cyberpunk:   'Neon magenta on midnight',
+  watercolor:  'Soft pastel wash on cream',
+  espresso:    'Coffee brown with cream lines',
+  constructivist: 'Soviet poster: red, black, cream',
+  aurora:      'Deep teal with sky-green roads',
 };
 
 const templatesEl = document.getElementById('templates');
@@ -2578,7 +2741,12 @@ document.querySelectorAll('.disclose-btn').forEach(btn => {
 // Caption
 const titleInput = document.getElementById('title');
 const subtitleInput = document.getElementById('subtitle');
-titleInput.addEventListener('input', () => { state.caption.title = titleInput.value; document.getElementById('caption-title').textContent = titleInput.value || 'PARIS'; persist(); });
+titleInput.addEventListener('input', () => {
+  state.caption.title = titleInput.value;
+  if (typeof applyTitleOrnament === 'function') applyTitleOrnament();
+  else document.getElementById('caption-title').textContent = titleInput.value || 'PARIS';
+  persist();
+});
 subtitleInput.addEventListener('input', () => { state.caption.subtitle = subtitleInput.value; document.getElementById('caption-subtitle').textContent = subtitleInput.value || 'The City of Light'; persist(); });
 
 const annivCheck = document.getElementById('anniversary');
@@ -2836,6 +3004,13 @@ function applyState({ silent } = {}) {
   applyCaption();
   applyTOD();
   applyCustomFont();
+  applyVignette();
+  applyStars();
+  applyCaptionDivider();
+  applyTitleOrnament();
+  applyMapFilters();
+  applyTitleSpacing();
+  syncEffectsToggles();
   restyle();
   refreshPOIs();
   renderAnnotations();
@@ -3328,8 +3503,9 @@ function setEditionDisplay(n) {
 }
 // Show the current (last-issued) edition on screen so the user always
 // sees a serial; bumps fresh on each export.
-const _seenEd = parseInt(localStorage.getItem('osm-poster:edition') || '0', 10) || 1;
-setEditionDisplay(_seenEd || 1);
+let _seenEd = 1;
+try { _seenEd = parseInt(localStorage.getItem('osm-poster:edition') || '0', 10) || 1; } catch (_) {}
+setEditionDisplay(_seenEd);
 
 // =====================================================================
 // ADR-031 — City outline polygon highlight
@@ -3405,6 +3581,154 @@ const observeProximity = () => {
   poiMarkers = poiMarkers.filter(m => !toRemove.includes(m));
 };
 map.on('idle', () => { try { observeProximity(); } catch (_) {} });
+
+// =====================================================================
+// 10 NEW DIALS — ADR-032..041
+// =====================================================================
+
+// ADR-036 — vignette overlay
+function applyVignette() {
+  const v = document.getElementById('vignette');
+  if (!v) return;
+  ['soft','heavy','spotlight'].forEach(c => v.classList.remove('vignette-' + c));
+  if (state.vignette && state.vignette !== 'none') v.classList.add('vignette-' + state.vignette);
+  const sel = document.getElementById('vignetteSel');
+  if (sel) sel.value = state.vignette || 'none';
+}
+const vignetteEl = document.getElementById('vignetteSel');
+if (vignetteEl) vignetteEl.addEventListener('change', safe(e => {
+  pushHistory(); state.vignette = e.target.value; applyVignette(); persist();
+}, 'vignette'));
+
+// ADR-039 — sprinkle stars decorative overlay
+function applyStars() {
+  const s = document.getElementById('starsOverlay');
+  if (!s) return;
+  s.classList.toggle('on', !!state.stars);
+  const cb = document.getElementById('starsToggle');
+  if (cb) cb.checked = !!state.stars;
+}
+const starsCb = document.getElementById('starsToggle');
+if (starsCb) starsCb.addEventListener('change', safe(e => {
+  state.stars = e.target.checked; applyStars(); persist();
+}, 'stars'));
+
+// ADR-038 — caption divider style
+function applyCaptionDivider() {
+  const cap = document.getElementById('caption');
+  if (!cap) return;
+  ['none','line','dotted','double','wave'].forEach(c => cap.classList.remove('div-' + c));
+  cap.classList.add('div-' + (state.captionDivider || 'line'));
+  const sel = document.getElementById('captionDivider');
+  if (sel) sel.value = state.captionDivider || 'line';
+}
+const dividerEl = document.getElementById('captionDivider');
+if (dividerEl) dividerEl.addEventListener('change', safe(e => {
+  pushHistory(); state.captionDivider = e.target.value; applyCaptionDivider(); persist();
+}, 'captionDivider'));
+
+// ADR-037 — title ornament wraps the title text
+const ORNAMENTS = {
+  none:      t => t,
+  bullets:   t => '●  ' + t + '  ●',
+  dashes:    t => '—  ' + t + '  —',
+  brackets:  t => '[  ' + t + '  ]',
+  asterisks: t => '✦  ' + t + '  ✦',
+};
+function decorateTitle(text) {
+  return (ORNAMENTS[state.titleOrnament] || ORNAMENTS.none)(text || '');
+}
+function applyTitleOrnament() {
+  const tEl = document.getElementById('caption-title');
+  if (tEl) tEl.textContent = decorateTitle(state.caption.title || 'PARIS');
+  const sel = document.getElementById('titleOrnament');
+  if (sel) sel.value = state.titleOrnament || 'none';
+}
+const ornEl = document.getElementById('titleOrnament');
+if (ornEl) ornEl.addEventListener('change', safe(e => {
+  pushHistory(); state.titleOrnament = e.target.value; applyTitleOrnament(); persist();
+}, 'titleOrnament'));
+
+// ADR-034 / 035 — saturation + contrast (CSS filter compose w/ TOD)
+function applyMapFilters() {
+  const w = document.getElementById('map-wrap');
+  if (!w) return;
+  // Compute combined filter: TOD class still adds its filter via CSS;
+  // we layer saturation/contrast as inline style.
+  const s = (typeof state.mapSaturation === 'number') ? state.mapSaturation : 100;
+  const c = (typeof state.mapContrast   === 'number') ? state.mapContrast   : 100;
+  const parts = [];
+  if (s !== 100) parts.push(`saturate(${s / 100})`);
+  if (c !== 100) parts.push(`contrast(${c / 100})`);
+  // The TOD class adds CSS-applied filter; inline filter replaces it.
+  // To compose, we compute everything inline when either knob is active.
+  if (parts.length || (state.tod && state.tod !== 'none' && state.tod !== 'day')) {
+    let todFilter = '';
+    let tod = state.tod;
+    if (tod === 'auto') {
+      const lng = (state.view && state.view.center && state.view.center[0]) || 0;
+      const hour = ((new Date().getUTCHours() + (lng / 15)) % 24 + 24) % 24;
+      tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
+    }
+    const TOD_FILTERS = {
+      dawn:   'hue-rotate(-12deg) saturate(0.85) brightness(0.96)',
+      golden: 'sepia(0.32) saturate(1.18) hue-rotate(-12deg)',
+      dusk:   'hue-rotate(15deg) saturate(0.90) brightness(0.84)',
+      night:  'brightness(0.66) saturate(0.65) contrast(1.05)',
+    };
+    if (TOD_FILTERS[tod]) parts.unshift(TOD_FILTERS[tod]);
+    w.style.filter = parts.join(' ');
+  } else {
+    w.style.filter = '';
+  }
+  const sa = document.getElementById('mapSaturation'),  saV = document.getElementById('mapSaturationVal');
+  const co = document.getElementById('mapContrast'),    coV = document.getElementById('mapContrastVal');
+  if (sa) sa.value = s; if (saV) saV.textContent = s + '%';
+  if (co) co.value = c; if (coV) coV.textContent = c + '%';
+}
+['mapSaturation','mapContrast'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', safe(() => {
+    state[id] = parseInt(el.value, 10);
+    applyMapFilters(); persist();
+  }, id));
+});
+
+// ADR-040 — title spacing fine adjustment
+function applyTitleSpacing() {
+  const t = document.getElementById('caption-title');
+  if (!t) return;
+  const delta = (typeof state.titleSpacingDelta === 'number') ? state.titleSpacingDelta : 0;
+  t.style.letterSpacing = delta ? `calc(var(--ls, 6px) + ${delta}px)` : '';
+  const el = document.getElementById('titleSpacing'), v = document.getElementById('titleSpacingVal');
+  if (el) el.value = delta; if (v) v.textContent = (delta >= 0 ? '+' : '') + delta + 'px';
+}
+const spEl = document.getElementById('titleSpacing');
+if (spEl) spEl.addEventListener('input', safe(() => {
+  state.titleSpacingDelta = parseInt(spEl.value, 10);
+  applyTitleSpacing(); persist();
+}, 'titleSpacing'));
+
+// ADR-032 / 033 / 041 — road casing, glow, building shape: these
+// touch buildStyle. We toggle and call restyle().
+function syncEffectsToggles() {
+  const a = document.getElementById('roadCasingToggle');  if (a) a.checked = !!state.roadCasing;
+  const b = document.getElementById('roadGlowToggle');    if (b) b.checked = !!state.roadGlow;
+  const c = document.getElementById('buildingShape');     if (c) c.value   = state.buildingShape || 'filled';
+}
+const casingEl = document.getElementById('roadCasingToggle');
+if (casingEl) casingEl.addEventListener('change', safe(e => {
+  pushHistory(); state.roadCasing = e.target.checked; restyle(); persist();
+}, 'roadCasing'));
+const glowEl = document.getElementById('roadGlowToggle');
+if (glowEl) glowEl.addEventListener('change', safe(e => {
+  pushHistory(); state.roadGlow = e.target.checked; restyle(); persist();
+}, 'roadGlow'));
+const bShapeEl = document.getElementById('buildingShape');
+if (bShapeEl) bShapeEl.addEventListener('change', safe(e => {
+  pushHistory(); state.buildingShape = e.target.value; restyle(); persist();
+}, 'buildingShape'));
 
 map.on('load', () => {
   ensureGpx();

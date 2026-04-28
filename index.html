@@ -2824,32 +2824,40 @@ function loadJsPdf() {
 }
 
 // Re-renders the map at `targetRatio`, waits for tile re-fetch + repaint,
-// runs `capture(node)`, then restores the original device pixel ratio.
-// Without this the export upscales the screen-DPI canvas → pixelated map.
+// runs capture(), then always restores the original pixel ratio. Wrapped
+// defensively because setPixelRatio can throw or trigger a large WebGL
+// canvas reallocation that drops the GL context — in which case we fall
+// back to capturing at the existing DPI rather than breaking the export.
 async function withMapAtPixelRatio(targetRatio, capture) {
-  const original = (typeof map.getPixelRatio === 'function')
-    ? map.getPixelRatio()
-    : (window.devicePixelRatio || 1);
-  const supported = typeof map.setPixelRatio === 'function';
-  if (supported && targetRatio !== original) {
-    map.setPixelRatio(targetRatio);
-    // Wait for the new pixel ratio to settle: an `idle` event fires once
-    // every visible tile has loaded at the new DPI.
-    await new Promise(resolve => {
-      let done = false;
-      const onIdle = () => { if (!done) { done = true; map.off('idle', onIdle); resolve(); } };
-      map.on('idle', onIdle);
-      // Safety timeout in case `idle` never fires (e.g. all tiles already cached).
-      setTimeout(onIdle, 2500);
-    });
-    map.triggerRepaint();
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  // Cap at 3× to avoid out-of-memory on the WebGL canvas at huge sizes.
+  const safeRatio = Math.min(targetRatio, 3);
+  let original = window.devicePixelRatio || 1;
+  let didSet = false;
+  try {
+    if (typeof map.getPixelRatio === 'function') original = map.getPixelRatio();
+    if (typeof map.setPixelRatio === 'function' && Math.abs(safeRatio - original) > 0.01) {
+      map.setPixelRatio(safeRatio);
+      didSet = true;
+      // Wait until visible tiles re-load at the new DPI, with a short safety timeout.
+      await new Promise(resolve => {
+        let done = false;
+        const onIdle = () => { if (done) return; done = true; try { map.off('idle', onIdle); } catch (_) {} resolve(); };
+        try { map.on('idle', onIdle); } catch (_) { resolve(); return; }
+        setTimeout(onIdle, 1200);
+      });
+      try { map.triggerRepaint(); } catch (_) {}
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+  } catch (e) {
+    // High-DPI render failed — log, but keep the export going at base DPI.
+    console.warn('[withMapAtPixelRatio] high-DPI render skipped:', e);
+    didSet = false;
   }
   try {
     return await capture();
   } finally {
-    if (supported && targetRatio !== original) {
-      map.setPixelRatio(original);
+    if (didSet) {
+      try { map.setPixelRatio(original); } catch (e) { console.warn('[withMapAtPixelRatio] restore failed:', e); }
     }
   }
 }

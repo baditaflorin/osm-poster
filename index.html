@@ -1594,7 +1594,9 @@ const LAYER_ORDER = [
   'parks', 'greenery', 'wetlands', 'peaks',
   'buildings', 'industrial', 'airports', 'military', 'parking',
   'roads', 'railways', 'paths', 'cycleways', 'aerialways',
-  'boundaries', 'places', 'streets',
+  'boundaries',
+  // Labels — split into independent toggles
+  'cities', 'neighborhoods', 'countries', 'water_names', 'park_names', 'streets',
   'pois',
 ];
 const LAYER_LABELS = {
@@ -1602,7 +1604,8 @@ const LAYER_LABELS = {
   parks: 'Parks', greenery: 'Greenery', wetlands: 'Wetlands', peaks: 'Peaks',
   buildings: 'Buildings', industrial: 'Industrial', airports: 'Airports', military: 'Military', parking: 'Parking',
   roads: 'Roads', railways: 'Rail', paths: 'Paths', cycleways: 'Cycle', aerialways: 'Cable car',
-  boundaries: 'Borders', places: 'Place names', streets: 'Streets',
+  boundaries: 'Borders',
+  cities: 'Cities', neighborhoods: 'Hoods', countries: 'Countries', water_names: 'Water names', park_names: 'Park names', streets: 'Streets',
   pois: 'POIs',
 };
 
@@ -1636,9 +1639,13 @@ const LAYER_GROUPS = [
     { key: 'aerialways',icon: '🚡' },
   ]},
   { name: 'Labels', items: [
-    { key: 'places',    icon: '🏷️' },
-    { key: 'streets',   icon: '🛤' },
-    { key: 'boundaries',icon: '🗺' },
+    { key: 'cities',        icon: '🏙' },
+    { key: 'neighborhoods', icon: '🏘' },
+    { key: 'countries',     icon: '🌍' },
+    { key: 'water_names',   icon: '💧' },
+    { key: 'park_names',    icon: '🌳' },
+    { key: 'streets',       icon: '🛤' },
+    { key: 'boundaries',    icon: '🗺' },
   ]},
 ];
 
@@ -1901,10 +1908,16 @@ const TEMPLATE_FIELDS = ['frame', 'border', 'texture', 'compass', 'scale'];
 
 function clonePreset(key) {
   const p = PRESETS[key];
+  const layers = { roads: true, boundaries: true, ...p.layers };
+  // Migrate legacy `places: true|false` → split cities + neighborhoods
+  if ('places' in layers) {
+    if (!('cities' in layers))        layers.cities = layers.places;
+    if (!('neighborhoods' in layers)) layers.neighborhoods = layers.places;
+    delete layers.places;
+  }
   const clone = {
     palette: { ...p.palette },
-    // Roads and boundaries default ON (preserve historical behavior)
-    layers: { roads: true, boundaries: true, ...p.layers },
+    layers,
     roadWeight: p.roadWeight,
     roadStyle: p.roadStyle,
     labelFont: p.labelFont,
@@ -2200,17 +2213,55 @@ function buildStyle(s) {
 
   const labelHalo = haloFor(p.label, p.bg);
   const accentHalo = haloFor(p.accent, p.bg);
-  if (s.layers.places) {
-    layers.push({ id: 'place-major', type: 'symbol', source: 'omt', 'source-layer': 'place',
+
+  // Cities + towns
+  if (s.layers.cities) {
+    layers.push({ id: 'place-city', type: 'symbol', source: 'omt', 'source-layer': 'place',
       filter: ['in', ['get', 'class'], ['literal', ['city', 'town']]],
       layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont],
         'text-size': ['interpolate', ['linear'], ['zoom'], 4, 12, 12, 18], 'text-letter-spacing': 0.1, 'text-transform': 'uppercase' },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 2.2, 'text-halo-blur': 0.5 } });
-    layers.push({ id: 'place-minor', type: 'symbol', source: 'omt', 'source-layer': 'place',
+  }
+  // Neighborhoods, villages, suburbs, hamlets
+  if (s.layers.neighborhoods) {
+    layers.push({ id: 'place-neigh', type: 'symbol', source: 'omt', 'source-layer': 'place',
       minzoom: 10,
-      filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood']]],
+      filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood', 'hamlet']]],
       layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 12 },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
+  }
+  // Countries, regions, continents — visible at far zooms
+  if (s.layers.countries) {
+    layers.push({ id: 'place-country', type: 'symbol', source: 'omt', 'source-layer': 'place',
+      filter: ['in', ['get', 'class'], ['literal', ['country', 'state', 'continent']]],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': [s.labelFont],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 0, 10, 4, 14, 8, 20],
+        'text-letter-spacing': 0.2, 'text-transform': 'uppercase',
+      },
+      paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 2.5, 'text-halo-blur': 0.5, 'text-opacity': 0.85 } });
+  }
+  // Water labels — oceans, seas, lakes from water_name source-layer
+  if (s.layers.water_names) {
+    layers.push({ id: 'water-name', type: 'symbol', source: 'omt', 'source-layer': 'water_name',
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': [s.labelFont],
+        'text-size': 12, 'text-letter-spacing': 0.15, 'text-transform': 'uppercase',
+      },
+      paint: { 'text-color': p.water, 'text-halo-color': labelHalo, 'text-halo-width': 1.5, 'text-halo-blur': 0.5, 'text-opacity': 0.85 } });
+  }
+  // Park labels — pull names from the park source-layer
+  if (s.layers.park_names) {
+    layers.push({ id: 'park-name', type: 'symbol', source: 'omt', 'source-layer': 'park',
+      minzoom: 10,
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': [s.labelFont],
+        'text-size': 11, 'text-letter-spacing': 0.1,
+      },
+      paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.4, 'text-halo-blur': 0.5, 'text-opacity': 0.8 } });
   }
   if (s.layers.streets) {
     layers.push({ id: 'street-name', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name',
@@ -2248,7 +2299,7 @@ function mergeState(saved) {
   const def = defaultState();
   if (!saved || typeof saved !== 'object') return def;
   const savedIcons = saved.icons || {};
-  return {
+  const merged = {
     ...def, ...saved,
     palette: { ...def.palette, ...(saved.palette || {}) },
     layers:  { ...def.layers,  ...(saved.layers  || {}) },
@@ -2262,6 +2313,13 @@ function mergeState(saved) {
     annotations: Array.isArray(saved.annotations) ? saved.annotations : def.annotations,
     polaroids:   Array.isArray(saved.polaroids)   ? saved.polaroids   : def.polaroids,
   };
+  // Migrate legacy 'places' → cities + neighborhoods
+  if ('places' in merged.layers) {
+    if (!('cities' in merged.layers))        merged.layers.cities = merged.layers.places;
+    if (!('neighborhoods' in merged.layers)) merged.layers.neighborhoods = merged.layers.places;
+    delete merged.layers.places;
+  }
+  return merged;
 }
 const initialState = loadFromUrlOrStorage();
 if (initialState) state = mergeState(initialState);

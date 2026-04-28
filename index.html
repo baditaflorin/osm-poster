@@ -24,7 +24,14 @@
     border-right: 1px solid #e6e4dc;
     flex-shrink: 0;
   }
+  .header-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   aside h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  .gh-link {
+    font-size: 11px; color: #888; text-decoration: none;
+    border: 1px solid #e0ddd0; border-radius: 6px; padding: 4px 8px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .gh-link:hover { color: #111; border-color: #111; background: #fafaf5; }
   aside .tag { font-size: 12px; color: #888; margin-bottom: 20px; display: block; margin-top: 2px; }
   aside h3 {
     font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
@@ -169,7 +176,10 @@
 </head>
 <body>
 <aside>
-  <h1>OSM Poster</h1>
+  <div class="header-row">
+    <h1>OSM Poster</h1>
+    <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener" class="gh-link" title="View source on GitHub">GitHub ↗</a>
+  </div>
   <span class="tag">Custom-styled maps from OpenStreetMap</span>
 
   <h3>Search a Place</h3>
@@ -377,6 +387,22 @@ function dashFor(style, baseW) {
   return null;
 }
 
+// Relative luminance (sRGB), 0..1
+function lum(hex) {
+  const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16) / 255);
+  const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * lin(m[0]) + 0.7152 * lin(m[1]) + 0.0722 * lin(m[2]);
+}
+
+// Pick a halo color that gives good contrast vs both the label and the basemap.
+// If label/bg already contrast well, return bg (clean halo around labels crossing roads/buildings).
+// If contrast is poor, return whichever of black/white best contrasts the label.
+function haloFor(labelHex, bgHex) {
+  const ll = lum(labelHex), bl = lum(bgHex);
+  if (Math.abs(ll - bl) > 0.35) return bgHex;
+  return ll > 0.5 ? '#000000' : '#ffffff';
+}
+
 function buildStyle(s) {
   const layers = [];
   const w = s.roadWeight;
@@ -565,6 +591,9 @@ function buildStyle(s) {
     },
   });
 
+  const labelHalo = haloFor(p.label, p.bg);
+  const accentHalo = haloFor(p.accent, p.bg);
+
   // ---------- Place labels ----------
   if (s.layers.places) {
     layers.push({
@@ -574,14 +603,15 @@ function buildStyle(s) {
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
         'text-font': [s.labelFont],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 12, 16],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 12, 12, 18],
         'text-letter-spacing': 0.1,
         'text-transform': 'uppercase',
       },
       paint: {
         'text-color': p.label,
-        'text-halo-color': p.bg,
-        'text-halo-width': 1.4,
+        'text-halo-color': labelHalo,
+        'text-halo-width': 2.2,
+        'text-halo-blur': 0.5,
       },
     });
     layers.push({
@@ -592,13 +622,13 @@ function buildStyle(s) {
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
         'text-font': [s.labelFont],
-        'text-size': 11,
+        'text-size': 12,
       },
       paint: {
         'text-color': p.label,
-        'text-halo-color': p.bg,
-        'text-halo-width': 1,
-        'text-opacity': 0.7,
+        'text-halo-color': labelHalo,
+        'text-halo-width': 1.8,
+        'text-halo-blur': 0.5,
       },
     });
   }
@@ -613,14 +643,14 @@ function buildStyle(s) {
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
         'text-font': [s.labelFont],
-        'text-size': 10,
+        'text-size': 11,
         'symbol-placement': 'line',
       },
       paint: {
         'text-color': p.label,
-        'text-halo-color': p.bg,
-        'text-halo-width': 1,
-        'text-opacity': 0.85,
+        'text-halo-color': labelHalo,
+        'text-halo-width': 1.8,
+        'text-halo-blur': 0.5,
       },
     });
   }
@@ -634,13 +664,13 @@ function buildStyle(s) {
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
         'text-font': [s.labelFont],
-        'text-size': 10,
+        'text-size': 11,
       },
       paint: {
         'text-color': p.accent,
-        'text-halo-color': p.bg,
-        'text-halo-width': 1,
-        'text-opacity': 0.85,
+        'text-halo-color': accentHalo,
+        'text-halo-width': 1.8,
+        'text-halo-blur': 0.5,
       },
     });
   }

@@ -115,7 +115,7 @@
   .disclose-major .disclose-title { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
   .disclose-major .disclose-desc { font-size: 12.5px; }
   .disclose-major .ico { font-size: 22px; width: 32px; }
-  .disclose-major.open .body > div { padding: 6px 14px 18px; }
+  .disclose-major.open > .body > div { padding: 6px 14px 18px; }
 
   /* Nested sub-disclosure inside Place / Style / Compose */
   .disclose-sub { border: none; background: transparent; box-shadow: none; margin: 0; }
@@ -130,7 +130,7 @@
   .disclose-sub .disclose-title { font-size: 13.5px; font-weight: 500; letter-spacing: -0.1px; }
   .disclose-sub .disclose-desc { font-size: 11.5px; }
   .disclose-sub .ico { font-size: 15px; width: 24px; }
-  .disclose-sub.open .body > div { padding: 4px 4px 14px; }
+  .disclose-sub.open > .body > div { padding: 4px 4px 14px; }
 
   /* Inner disclosure (collapsible) section — bigger, friendlier, touch-friendly */
   .disclose {
@@ -163,14 +163,17 @@
   .disclose.open .disclose-btn { background: rgba(0,122,255,0.04); }
   .disclose.open .disclose-btn .chev { transform: rotate(90deg); color: #007aff; }
   .disclose.open .disclose-title { color: #007aff; }
-  .disclose .body {
+  /* IMPORTANT: direct-child selectors only — otherwise a nested
+     .disclose inside an open .disclose-major would inherit the open
+     state and the inner accordion would refuse to collapse. */
+  .disclose > .body {
     display: grid; grid-template-rows: 0fr;
     transition: grid-template-rows 0.28s ease;
     overflow: hidden;
   }
-  .disclose .body > div { overflow: hidden; min-height: 0; padding: 0; }
-  .disclose.open .body { grid-template-rows: 1fr; }
-  .disclose.open .body > div { padding: 4px 6px 18px; }
+  .disclose > .body > div { overflow: hidden; min-height: 0; padding: 0; }
+  .disclose.open > .body { grid-template-rows: 1fr; }
+  .disclose.open > .body > div { padding: 4px 6px 18px; }
 
   /* Templates — featured cards, bigger than palette presets */
   .templates {

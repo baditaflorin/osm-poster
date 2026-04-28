@@ -423,20 +423,30 @@
     100% { left: 100%; }
   }
 
-  /* POI icon markers — circular surface lifts them off the map */
+  /* POI icon markers — Apple-Maps-style chip with subtle accent ring */
   .poi-marker {
     pointer-events: none;
     width: 30px; height: 30px;
     background: #ffffff;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid currentColor;
     box-shadow:
-      0 2px 6px rgba(0,0,0,0.22),
-      0 0 0 1px rgba(0,0,0,0.06);
-    transition: transform 0.15s ease;
+      0 1px 2px rgba(0,0,0,0.10),
+      0 4px 12px rgba(0,0,0,0.16);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
-  .poi-marker:hover { transform: scale(1.08); }
-  .poi-marker svg { fill: currentColor; width: 18px; height: 18px; }
+  .poi-marker:hover {
+    transform: scale(1.10);
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.10),
+      0 8px 18px rgba(0,0,0,0.22);
+  }
+  .poi-marker svg { fill: currentColor; }
+
+  /* Map-icons category buttons render the actual Pinhead SVG that
+     will appear on the map, so the picker matches what you'll see. */
+  .layer-icon svg { width: 20px; height: 20px; fill: currentColor; }
 
   /* ===== Main ===== */
   main {
@@ -779,30 +789,8 @@
           <option value="grain">Paper grain</option>
           <option value="halftone">Halftone dots</option>
         </select>
-        <select id="titleWeight">
-          <option value="regular">Regular title</option>
-          <option value="medium">Medium title</option>
-          <option value="bold">Bold title</option>
-          <option value="heavy">Heavy title</option>
-        </select>
-        <select id="titleSize">
-          <option value="small">Small title</option>
-          <option value="medium">Medium title</option>
-          <option value="large">Large title</option>
-          <option value="xl">Extra large</option>
-        </select>
-        <select id="subtitleStyle">
-          <option value="regular">Regular subtitle</option>
-          <option value="italic">Italic subtitle</option>
-          <option value="hidden">Hide subtitle</option>
-        </select>
-        <select id="coordsStyle">
-          <option value="decimal">Decimal coords</option>
-          <option value="dms">DMS coords</option>
-          <option value="hidden">Hide coords</option>
-        </select>
       </div>
-      <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style</button>
+      <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style (all 8)</button>
 
       <div class="sub-title" style="margin-top: 16px;">Decorations</div>
       <div class="toggles">
@@ -833,6 +821,32 @@
       <div class="sub-title">Caption</div>
       <input type="text" id="title" placeholder="Title" maxlength="40">
       <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
+
+      <div class="sub-title" style="margin-top: 14px;">Typography</div>
+      <div class="style-options">
+        <select id="titleWeight">
+          <option value="regular">Regular title</option>
+          <option value="medium">Medium title</option>
+          <option value="bold">Bold title</option>
+          <option value="heavy">Heavy title</option>
+        </select>
+        <select id="titleSize">
+          <option value="small">Small title</option>
+          <option value="medium">Medium title</option>
+          <option value="large">Large title</option>
+          <option value="xl">Extra large</option>
+        </select>
+        <select id="subtitleStyle">
+          <option value="regular">Regular subtitle</option>
+          <option value="italic">Italic subtitle</option>
+          <option value="hidden">Hide subtitle</option>
+        </select>
+        <select id="coordsStyle">
+          <option value="decimal">Decimal coords</option>
+          <option value="dms">DMS coords</option>
+          <option value="hidden">Hide coords</option>
+        </select>
+      </div>
 
       <div class="sub-title" style="margin-top: 14px;">Aspect ratio</div>
       <div class="frames" id="frames">
@@ -2136,13 +2150,16 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
   const dVal    = document.getElementById('iconDensityVal');
   if (!grid || !sizeEl || !dEl) return;
 
-  // Render one icon-button per category
+  // Render one icon-button per category. Each button shows the actual
+  // Pinhead pin that gets drawn on the map for this category, so the
+  // picker visually matches the result. Loaded lazily via the same
+  // cached fetcher used by the map markers.
   ICON_CATEGORIES.forEach(cat => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'layer-btn' + (state.icons.categories[cat.key] ? ' active' : '');
     btn.dataset.iconcat = cat.key;
-    btn.innerHTML = `<span class="layer-icon">${cat.icon}</span><span class="layer-label">${cat.label}</span>`;
+    btn.innerHTML = `<span class="layer-icon" data-pin="${cat.pin}">${cat.icon}</span><span class="layer-label">${cat.label}</span>`;
     btn.addEventListener('click', safe(() => {
       pushHistory();
       state.icons.categories[cat.key] = !state.icons.categories[cat.key];
@@ -2151,6 +2168,18 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
       persist();
     }, 'iconCategory'));
     grid.appendChild(btn);
+    // Async swap emoji for Pinhead SVG once it loads
+    loadPinhead(cat.pin).then(svg => {
+      if (!svg) return;
+      const host = btn.querySelector('.layer-icon');
+      host.innerHTML = svg;
+      const sv = host.querySelector('svg');
+      if (sv) {
+        sv.setAttribute('width', '20');
+        sv.setAttribute('height', '20');
+        sv.style.fill = 'currentColor';
+      }
+    });
   });
 
   sizeEl.value = state.icons.size;

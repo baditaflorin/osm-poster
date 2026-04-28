@@ -1436,9 +1436,13 @@
           <svg class="br" viewBox="0 0 40 40"><path d="M 2,2 L 16,2 M 2,2 L 2,16 M 2,2 Q 8,8 14,14 M 14,14 Q 18,12 20,8 M 14,14 Q 12,18 8,20"/><circle cx="14" cy="14" r="1.5"/></svg>
         </div>
         <div class="sketch-frame" id="sketchFrame">
+          <!-- Inline fill="none" + stroke="currentColor" so html-to-image
+               serializes them correctly. CSS classes with var(--…) tend
+               to drop during the SVG capture and the path back-filled
+               with black, producing the 'big black middle' export bug. -->
           <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path class="stroke" d="M 4,3 Q 25,2 50,3 T 96,4 Q 95,25 96,50 T 95,96 Q 75,95 50,96 T 4,95 Q 5,75 4,50 T 4,3 Z" />
-            <path class="stroke" d="M 6,5 Q 30,7 50,5 T 94,6 Q 95,30 93,50 T 94,94 Q 70,93 50,94 T 6,94 Q 7,70 6,50 T 6,5 Z" stroke-dasharray="2,3" stroke-width="1" opacity="0.6" />
+            <path d="M 4,3 Q 25,2 50,3 T 96,4 Q 95,25 96,50 T 95,96 Q 75,95 50,96 T 4,95 Q 5,75 4,50 T 4,3 Z" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" />
+            <path d="M 6,5 Q 30,7 50,5 T 94,6 Q 95,30 93,50 T 94,94 Q 70,93 50,94 T 6,94 Q 7,70 6,50 T 6,5 Z" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2,3" opacity="0.6" vector-effect="non-scaling-stroke" />
           </svg>
         </div>
         <svg class="compass hidden" id="compass" viewBox="0 0 100 100">
@@ -2819,6 +2823,37 @@ function loadJsPdf() {
   return jsPdfPromise;
 }
 
+// Re-renders the map at `targetRatio`, waits for tile re-fetch + repaint,
+// runs `capture(node)`, then restores the original device pixel ratio.
+// Without this the export upscales the screen-DPI canvas → pixelated map.
+async function withMapAtPixelRatio(targetRatio, capture) {
+  const original = (typeof map.getPixelRatio === 'function')
+    ? map.getPixelRatio()
+    : (window.devicePixelRatio || 1);
+  const supported = typeof map.setPixelRatio === 'function';
+  if (supported && targetRatio !== original) {
+    map.setPixelRatio(targetRatio);
+    // Wait for the new pixel ratio to settle: an `idle` event fires once
+    // every visible tile has loaded at the new DPI.
+    await new Promise(resolve => {
+      let done = false;
+      const onIdle = () => { if (!done) { done = true; map.off('idle', onIdle); resolve(); } };
+      map.on('idle', onIdle);
+      // Safety timeout in case `idle` never fires (e.g. all tiles already cached).
+      setTimeout(onIdle, 2500);
+    });
+    map.triggerRepaint();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  }
+  try {
+    return await capture();
+  } finally {
+    if (supported && targetRatio !== original) {
+      map.setPixelRatio(original);
+    }
+  }
+}
+
 document.getElementById('export').addEventListener('click', async () => {
   const btn = document.getElementById('export');
   const originalText = btn.textContent;
@@ -2836,11 +2871,20 @@ document.getElementById('export').addEventListener('click', async () => {
     const mul = SIZE_PRESETS[sz]?.mul || 4;
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
 
+    // Capture wrapped in a high-DPI map render so the embedded map
+    // canvas matches the html-to-image pixelRatio of the surrounding
+    // poster (no more pixelated map on A2/A3/A4/4K exports).
+    const capture = async () => {
+      const opts = { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg };
+      if (fmt === 'svg') return await htmlToImage.toSvg(node, opts);
+      return await htmlToImage.toPng(node, opts);
+    };
+    const result = await withMapAtPixelRatio(mul, capture);
+
     if (fmt === 'svg') {
-      const svg = await htmlToImage.toSvg(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
-      download(svg, `osm-poster-${ts}.svg`);
+      download(result, `osm-poster-${ts}.svg`);
     } else if (fmt === 'pdf') {
-      const dataUrl = await htmlToImage.toPng(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
+      const dataUrl = result;
       const jsPDF = await loadJsPdf();
       const sizeMm = (SIZE_PRESETS[sz]?.mm || {})[state.frame] || [210, 297];
       const orientation = sizeMm[0] > sizeMm[1] ? 'l' : 'p';
@@ -2854,7 +2898,6 @@ document.getElementById('export').addEventListener('click', async () => {
       if (bleed) {
         pdf.setLineWidth(0.15); pdf.setDrawColor(0, 0, 0);
         const ml = 4, mo = 1;
-        // 4 corners — each gets a horizontal + vertical crop tick at the trim line
         const corners = [
           { x: bleed,      y: bleed,      sx: -1, sy: -1 },
           { x: pw - bleed, y: bleed,      sx:  1, sy: -1 },
@@ -2868,10 +2911,9 @@ document.getElementById('export').addEventListener('click', async () => {
       }
       pdf.save(`osm-poster-${ts}.pdf`);
     } else {
-      const dataUrl = await htmlToImage.toPng(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
       const a = document.createElement('a');
       a.download = `osm-poster-${ts}.png`;
-      a.href = dataUrl;
+      a.href = result;
       a.click();
     }
   } catch (e) {
@@ -3532,12 +3574,14 @@ if (maskClearBtn) maskClearBtn.addEventListener('click', safe(() => {
   persist();
 }, 'maskClear'));
 
-// ADR-044 — Sketch frame overlay
+// ADR-044 — Sketch frame overlay. The SVG paths use stroke="currentColor"
+// inline so html-to-image picks the color up reliably during export
+// (CSS variables don't always survive the serialization).
 function applySketchFrame() {
   const f = document.getElementById('sketchFrame');
   if (!f) return;
   f.classList.toggle('on', !!state.sketchFrame);
-  // Stroke color follows the existing border-color CSS var (set by applyBorder)
+  f.style.color = (state.palette && state.palette.label) || '#111';
   const cb = document.getElementById('sketchFrameToggle');
   if (cb) cb.checked = !!state.sketchFrame;
 }

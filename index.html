@@ -1233,6 +1233,38 @@ const PRESETS = {
     roadWeight: 1.6, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
     frame: 'landscape', border: 'thin', texture: 'none', compass: false, scale: false,
   },
+  risograph: {
+    name: 'Risograph',
+    isTemplate: true,
+    palette: { bg: '#fef0f5', water: '#9ad8e5', green: '#a8d8a0', urban: '#fde4ec', building: '#f7c8d8', road: '#e91e63', rail: '#7c8fbc', label: '#1a1a2e', accent: '#00bcd4' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 1.3, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'square', border: 'thin', texture: 'grain', compass: false, scale: false,
+  },
+  brutalist: {
+    name: 'Brutalist',
+    isTemplate: true,
+    palette: { bg: '#e8e8e8', water: '#bababa', green: '#c0c0c0', urban: '#d4d4d4', building: '#888888', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#1a1a1a' },
+    layers: { water: true, rivers: false, parks: false, greenery: false, buildings: true, industrial: true, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 1.6, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'portrait', border: 'bold', texture: 'none', compass: false, scale: false,
+  },
+  botanical: {
+    name: 'Botanical',
+    isTemplate: true,
+    palette: { bg: '#f7f1de', water: '#9ec1a3', green: '#5c8b4a', urban: '#e8dab9', building: '#bba27a', road: '#5d4523', rail: '#3d2510', label: '#2c4a1d', accent: '#8b5a2b' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
+    frame: 'portrait', border: 'double', texture: 'grain', compass: true, scale: false,
+  },
+  cyberpunk: {
+    name: 'Cyberpunk',
+    isTemplate: true,
+    palette: { bg: '#0a0014', water: '#0a0a3a', green: '#0a0a14', urban: '#100020', building: '#1a0030', road: '#ff00aa', rail: '#00ffff', label: '#fff200', accent: '#00ffff' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 1.2, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'portrait', border: 'thin', texture: 'none', compass: false, scale: false,
+  },
 };
 
 const PRESET_KEYS = Object.keys(PRESETS);
@@ -2079,6 +2111,10 @@ const TEMPLATE_BLURBS = {
   editorial:   'Magazine grain & compass',
   travelGuide: 'Vintage with scale bar',
   subway:      'Transit-map landscape',
+  risograph:   '2-color riso print, pink & cyan',
+  brutalist:   'Concrete grays, hard edges',
+  botanical:   'Forest greens on cream paper',
+  cyberpunk:   'Neon magenta on midnight',
 };
 
 const templatesEl = document.getElementById('templates');

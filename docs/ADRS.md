@@ -318,6 +318,172 @@ opacity; falls back to the default pin if applied to an active marker).
 
 ---
 
+## ADR-022 — Image-to-palette eyedropper
+
+**Context.** Users want their poster to match a vibe — a photo of their living
+room, a band's album art, a sunset they took. Picking 9 hex codes by eye to
+match an image is brutal.
+
+**Decision.** Drop any image onto the sidebar. Sample its pixels in a hidden
+canvas, run a small k-means (k = 9) on the RGB space to get a coherent
+palette, then map clusters to our 9 palette slots by luminance and saturation
+heuristics (darkest → bg or building, most saturated → accent, etc.). All
+in-browser, never uploads.
+
+**Consequences.** Magical "color theft" interaction in <2 seconds. The
+mapping isn't always perfect — `Reset preset` undoes cleanly. Adds ~1.5 KB
+of code.
+
+---
+
+## ADR-023 — Time-of-day atmospheric tint
+
+**Context.** Maps look the same at every hour, but real cities don't. A
+golden-hour Paris should feel different from a midnight Paris.
+
+**Decision.** Five preset CSS-filter combinations: **Dawn** (cool blue,
+desaturated), **Day** (no filter), **Golden hour** (warm sepia + slight
+saturation), **Dusk** (deep magenta tint), **Night** (heavy darken +
+contrast). Optional **Auto** mode reads the user's local clock and picks
+based on solar time at the displayed coordinates.
+
+**Consequences.** Pure CSS filter on `#map-wrap` — no extra fetches, exports
+correctly via html-to-image. Auto mode adds a tiny SunCalc shim.
+
+---
+
+## ADR-024 — Map annotations
+
+**Context.** A poster of "where we got married" is incomplete without a
+small label and arrow at the actual chapel. Today the user has to add it in
+post-production.
+
+**Decision.** Click anywhere on the map → small inline editor appears for a
+short text. Annotation persists at lat/lng with an optional curved-arrow
+direction. Multiple annotations supported, all stored in URL hash. Renders
+as DOM overlay so html-to-image picks them up.
+
+**Consequences.** Adds a click handler on the map that doesn't conflict with
+panning (long-press or modifier-click). Each annotation costs ~50 bytes in
+the URL hash.
+
+---
+
+## ADR-025 — Auto-subtitle suggestions
+
+**Context.** "The City of Light" is fine for Paris but doesn't translate. A
+user mapping their hometown of 4,000 people in Iowa has nothing to write.
+
+**Decision.** When a place is selected, fetch from Nominatim's reverse-geocoding
++ a small open-data lookup (elevation from OpenTopoData, country from
+Nominatim, sunrise from a sun-position calc). Surface 4-5 click-to-use
+subtitle suggestions: "Population 4,127" · "423 m above sea level" · "Where
+the sun rises at 06:42" · "Iowa, USA".
+
+**Consequences.** One extra Nominatim call per place selection (debounced,
+within usage policy). Suggestions are dismissible — never auto-applied.
+
+---
+
+## ADR-026 — Print-bleed PDF export
+
+**Context.** A user takes their A3 PDF to a print shop and gets back a
+poster with white edges because the PDF has no bleed. Frustrating after
+they paid €40.
+
+**Decision.** Add a `Print bleed` toggle in PDF export. When on, the export
+adds 3 mm of bled artwork on all sides, plus 4 corner crop marks at the
+trim line. The map render is enlarged to cover the bleed area, the caption
+is positioned within the safe area only.
+
+**Consequences.** Existing PDF export grows by a fraction of a percent.
+Crop marks are simple SVG lines at ~5 mm from the corner, drawn in
+`#000000` over the bleed.
+
+---
+
+## ADR-027 — Custom font upload
+
+**Context.** Brand-conscious users want to use their own typeface for the
+caption. Limiting them to four Noto Sans weights is a creative cap.
+
+**Decision.** A drop zone in the Typography sub-section accepts `.woff2`,
+`.woff`, and `.ttf` files. The font is registered with `FontFace` API,
+applied via a CSS class on the caption, and persisted in localStorage as
+base64 (capped at 1 MB). Fonts only affect the caption — map labels stay
+on Noto (they need OpenFreeMap-served glyphs).
+
+**Consequences.** A 200 KB woff2 = ~270 KB base64 in localStorage. Cap
+prevents quota issues. The font loads instantly on next visit.
+
+---
+
+## ADR-028 — Photo polaroid overlay
+
+**Context.** Real-life moments happen at real places. A poster of "where we
+got engaged" is good; a poster with the actual selfie pinned to the map at
+that point is unforgettable.
+
+**Decision.** Drop a photo onto the map. It renders as a small, slightly-
+tilted Polaroid (white frame, soft shadow) at the click location, anchored
+to that lat/lng so panning keeps it in place. Optional handwritten caption
+underneath. Image stored locally (base64) and exported via html-to-image.
+
+**Consequences.** Image stays on the device. Multiple polaroids supported.
+Each ~30-100 KB in localStorage; URL-share strips them but localStorage
+persists across sessions.
+
+---
+
+## ADR-029 — Edition serial number
+
+**Context.** Every "framed map" sold in shops has a tiny "Edition 047/100"
+that makes it feel collectible. Our exports are infinite digital copies —
+but we can fake the artifact.
+
+**Decision.** Each export receives a deterministic short ID derived from
+(state hash + timestamp + monotonic counter from localStorage). Example:
+`№ A47B · ∞`. Printed micro-small (7 px) in the bottom corner of the
+caption, alongside the existing URL watermark.
+
+**Consequences.** Pure cosmetic. Counter persists across sessions so each
+user has their own "edition" sequence. Adds 0 network calls.
+
+---
+
+## ADR-030 — POI cluster chips
+
+**Context.** Zoom out from a dense city and 25 individual icons crowd the
+view, especially on Story / A4 sizes. The user can't read what they
+selected.
+
+**Decision.** When zoom < 13, group POIs within a screen-pixel radius into
+a single chip showing the dominant category icon plus a count badge
+(e.g., 🍽 12). Click expands the cluster (when not exporting).
+
+**Consequences.** Algorithm: bin features into ~32-px screen cells, render
+one marker per cell. Label is the count. Reuses the existing
+`maplibregl.Marker` machinery — no MapLibre source-clustering needed, so
+it works with our HTML markers.
+
+---
+
+## ADR-031 — City-shape outline highlight
+
+**Context.** A Paris map should *feel* Paris-shaped. Right now the city's
+admin boundary is rendered as a thin dashed line that no one notices.
+
+**Decision.** Optional toggle: render the displayed place's administrative
+polygon as a glowing accent-colored outline that subtly follows the city
+limit. Fetched from Nominatim's `polygon_geojson=1` parameter on place
+selection, cached in localStorage.
+
+**Consequences.** One extra Nominatim parameter, response payload grows
+by 5-50 KB depending on the polygon detail. Cached after first fetch per
+place.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

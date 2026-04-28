@@ -737,15 +737,12 @@
       <div class="sub-title" style="margin-top: 16px;">Layers</div>
       <div class="toggles" id="toggles"></div>
 
-      <div class="sub-title" style="margin-top: 16px;">Map icons</div>
-      <label class="toggle"><input type="checkbox" id="iconsOn"> Drop café / sight / park icons on the map</label>
-      <div class="row" style="margin-top: 8px;">
-        <label>Max icons</label>
-        <input type="range" id="iconDensity" min="5" max="60" step="5" value="25">
-        <span class="val" id="iconDensityVal">25</span>
-      </div>
+      <div class="sub-title" style="margin-top: 16px;">Map icons <span class="sec-hint">pick categories</span></div>
+      <div class="layer-grid" id="iconCategories"></div>
+      <div class="row" style="margin-top: 10px;"><label>Size</label><input type="range" id="iconSize" min="18" max="56" step="2" value="30"><span class="val" id="iconSizeVal">30px</span></div>
+      <div class="row"><label>Max</label><input type="range" id="iconDensity" min="5" max="80" step="5" value="25"><span class="val" id="iconDensityVal">25</span></div>
       <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
-        Pulls real OpenStreetMap places (cafés, sights, parks, transit) and draws each as a Pinhead icon. Zoom past street level to see them.
+        Real OpenStreetMap places, each drawn as a Pinhead icon. Visible past street zoom.
       </div>
 
       <div class="sub-title" style="margin-top: 16px;">Custom colors</div>
@@ -1253,39 +1250,38 @@ async function loadPinhead(name) {
 // POI OVERLAY — render OSM points-of-interest as Pinhead icon markers
 // Reads features from the already-loaded vector tiles, no extra fetch.
 // =====================================================================
-const POI_ICON_MAP = {
-  bar: 'barrel_with_bunghole', pub: 'barrel_with_bunghole', biergarten: 'barrel_with_bunghole',
-  restaurant: 'fork_and_sausage', cafe: 'fork_and_sausage', fast_food: 'fork_and_sausage',
-  food_court: 'fork_and_sausage', ice_cream: 'fork_and_sausage',
-  shop: 'bag', marketplace: 'bag', mall: 'bag',
-  attraction: 'flag', viewpoint: 'flag', historic: 'flag', monument: 'obelisk',
-  memorial: 'obelisk', archaeological_site: 'cairn', castle: 'arch', ruins: 'cairn',
-  place_of_worship: 'arch', church: 'arch', mosque: 'arch', temple: 'arch', synagogue: 'arch',
-  sports: 'barbell', leisure: 'barbell', stadium: 'american_football', pitch: 'american_football',
-  fitness_centre: 'barbell', swimming_pool: 'life_ring', golf_course: 'golf_green',
-  park: 'campfire', garden: 'campfire', playground: 'campfire', picnic_site: 'campfire',
-  music_venue: 'music_notes_eighth', nightclub: 'music_notes_eighth',
-  theatre: 'music_notes_eighth', cinema: 'film',
-  museum: 'palette', art_gallery: 'palette', arts_centre: 'palette', gallery: 'palette',
-  fountain: 'fountain', drinking_water: 'fountain',
-  library: 'newspaper', information: 'bulletin_board', tourist_information: 'bulletin_board',
-  hospital: 'lightbulb', clinic: 'lightbulb', pharmacy: 'lightbulb',
-  school: 'newspaper', college: 'newspaper', university: 'newspaper',
-  bench: 'bed', hotel: 'bed', hostel: 'bed', motel: 'bed', guest_house: 'bed',
-  bus_stop: 'flag', bus_station: 'flag', tram_stop: 'flag',
-  railway_station: 'bridge', station: 'bridge',
-  aerodrome: 'balloon', helipad: 'balloon',
-  beach: 'beach_umbrella_in_ground', beach_resort: 'beach_umbrella_in_ground',
-  cave: 'cave', cave_entrance: 'cave',
-  campsite: 'campfire', caravan_site: 'campfire',
-  fuel: 'lightbulb', charging_station: 'lightbulb',
-  parking: 'flag',
-};
+// Each entry: { key, icon (emoji for picker), label, classes (OMT poi
+// class/subclass values that fall in this group), pin (Pinhead icon
+// to render on the map for this category) }
+const ICON_CATEGORIES = [
+  { key: 'food',        icon: '🍽',  label: 'Food',     pin: 'fork_and_sausage', classes: ['restaurant','cafe','fast_food','food_court','ice_cream','bar','pub','biergarten'] },
+  { key: 'culture',     icon: '🎨',  label: 'Culture',  pin: 'palette',          classes: ['museum','art_gallery','gallery','arts_centre','theatre','cinema','library'] },
+  { key: 'shopping',    icon: '🛍',  label: 'Shop',     pin: 'bag',              classes: ['shop','marketplace','mall','supermarket'] },
+  { key: 'attractions', icon: '🏛',  label: 'Sights',   pin: 'flag',             classes: ['attraction','viewpoint','historic','monument','memorial','archaeological_site','castle','ruins'] },
+  { key: 'religious',   icon: '⛪',  label: 'Religion', pin: 'arch',             classes: ['place_of_worship','church','mosque','temple','synagogue'] },
+  { key: 'activity',    icon: '🎯',  label: 'Sport',    pin: 'barbell',          classes: ['sports','leisure','stadium','pitch','fitness_centre','swimming_pool','golf_course'] },
+  { key: 'outdoors',    icon: '🌳',  label: 'Outdoor',  pin: 'campfire',         classes: ['park','garden','playground','picnic_site','beach','cave','campsite','fountain'] },
+  { key: 'transit',     icon: '🚌',  label: 'Transit',  pin: 'bridge',           classes: ['bus_stop','bus_station','tram_stop','railway_station','station','aerodrome','helipad'] },
+  { key: 'lodging',     icon: '🛏',  label: 'Stay',     pin: 'bed',              classes: ['hotel','hostel','motel','guest_house'] },
+  { key: 'services',    icon: 'ℹ️',  label: 'Civic',    pin: 'lightbulb',        classes: ['hospital','clinic','pharmacy','information','tourist_information','fuel','charging_station'] },
+];
 
-function pinheadForPOI(props) {
+const CLASS_TO_CATEGORY = (() => {
+  const m = {};
+  ICON_CATEGORIES.forEach(c => c.classes.forEach(cl => { m[cl] = c; }));
+  return m;
+})();
+
+function categorizePOI(props) {
   const c = String(props.class || '').toLowerCase();
   const s = String(props.subclass || '').toLowerCase();
-  return POI_ICON_MAP[c] || POI_ICON_MAP[s] || 'jewel';
+  return CLASS_TO_CATEGORY[c] || CLASS_TO_CATEGORY[s] || null;
+}
+
+function hasAnyIconCategory() {
+  const cats = state.icons && state.icons.categories;
+  if (!cats) return false;
+  return Object.values(cats).some(Boolean);
 }
 
 let poiMarkers = [];
@@ -1300,16 +1296,22 @@ function refreshPOIs() {
   clearTimeout(poiTimer);
   poiTimer = setTimeout(() => safeAsync(async () => {
     clearPOIMarkers();
-    if (!state.layers.pois || map.getZoom() < 13) return;
+    if (!hasAnyIconCategory() || map.getZoom() < 13) return;
 
     let features;
     try { features = map.querySourceFeatures('omt', { sourceLayer: 'poi' }); }
     catch (e) { return; }
 
+    const cats = state.icons.categories;
+    const cap  = state.icons.density || 25;
+    const size = state.icons.size    || 30;
+    const inner = Math.round(size * 0.6);
+
     const seen = new Set();
     const picks = [];
-    const cap = (state.icons && state.icons.density) || 25;
     for (const f of features) {
+      const cat = categorizePOI(f.properties);
+      if (!cat || !cats[cat.key]) continue;
       const name = f.properties.name || f.properties['name:latin'] || '';
       if (!name) continue;
       const coord = f.geometry && f.geometry.coordinates;
@@ -1317,23 +1319,24 @@ function refreshPOIs() {
       const key = name + '|' + coord.join(',');
       if (seen.has(key)) continue;
       seen.add(key);
-      picks.push({ name, coord, props: f.properties });
+      picks.push({ name, coord, props: f.properties, cat });
       if (picks.length >= cap) break;
     }
 
     for (const f of picks) {
-      const iconName = pinheadForPOI(f.props);
-      const svg = await loadPinhead(iconName);
+      const svg = await loadPinhead(f.cat.pin);
       if (!svg) continue;
       const el = document.createElement('div');
       el.className = 'poi-marker';
+      el.style.width  = size + 'px';
+      el.style.height = size + 'px';
       el.style.color = state.palette.accent || '#007aff';
       el.title = f.name;
       el.innerHTML = svg;
       const sv = el.querySelector('svg');
       if (sv) {
-        sv.setAttribute('width', '20');
-        sv.setAttribute('height', '20');
+        sv.setAttribute('width',  inner);
+        sv.setAttribute('height', inner);
         sv.style.fill = 'currentColor';
       }
       const m = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -1363,7 +1366,15 @@ function defaultState() {
     scale: false,
     dateStamp: false,
     grid: false,
-    icons: { density: 25 },
+    icons: {
+      density: 25,
+      size: 30,
+      categories: {
+        food: true, culture: false, shopping: false, attractions: true,
+        religious: false, activity: false, outdoors: true, transit: false,
+        lodging: false, services: false,
+      },
+    },
     titleWeight: 'bold',
     titleSize: 'medium',
     subtitleStyle: 'regular',
@@ -1526,21 +1537,24 @@ function buildStyle(s) {
     layers.push({ id: 'park', type: 'fill', source: 'omt', 'source-layer': 'park',
       paint: { 'fill-color': p.green, 'fill-opacity': 0.75 } });
   }
+  // 3D extruded buildings need to draw AFTER the road lines so they
+  // physically occlude streets at ground level. We collect the layer
+  // here and push it after roads below.
+  let building3D = null;
   if (s.layers.buildings) {
     layers.push({ id: 'building-fallback', type: 'fill', source: 'omt', 'source-layer': 'landuse',
       filter: ['in', ['get', 'class'], ['literal', ['residential', 'commercial', 'suburb', 'neighbourhood']]],
       maxzoom: 13.5,
       paint: { 'fill-color': p.urban, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.4, 11, 0.75, 13.5, 0.4] } });
 
-    // ADR-006: 3D extrusion when pitched
     if (s.pitch > 8) {
-      layers.push({ id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 13,
+      building3D = { id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 13,
         paint: {
           'fill-extrusion-color': p.building,
           'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
           'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-          'fill-extrusion-opacity': 0.92,
-        } });
+          'fill-extrusion-opacity': 0.95,
+        } };
     } else {
       layers.push({ id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 12,
         paint: {
@@ -1638,6 +1652,9 @@ function buildStyle(s) {
     });
   }
 
+  // 3D buildings on top of roads (z-order: roads → buildings → boundaries)
+  if (building3D) layers.push(building3D);
+
   if (s.layers.boundaries) {
     layers.push({ id: 'boundary', type: 'line', source: 'omt', 'source-layer': 'boundary',
       filter: ['<=', ['get', 'admin_level'], 4],
@@ -1693,11 +1710,16 @@ function buildStyle(s) {
 function mergeState(saved) {
   const def = defaultState();
   if (!saved || typeof saved !== 'object') return def;
+  const savedIcons = saved.icons || {};
   return {
     ...def, ...saved,
     palette: { ...def.palette, ...(saved.palette || {}) },
     layers:  { ...def.layers,  ...(saved.layers  || {}) },
-    icons:   { ...def.icons,   ...(saved.icons   || {}) },
+    icons:   {
+      ...def.icons,
+      ...savedIcons,
+      categories: { ...def.icons.categories, ...(savedIcons.categories || {}) },
+    },
     caption: { ...def.caption, ...(saved.caption || {}) },
     view:    { ...def.view,    ...(saved.view    || {}) },
   };
@@ -2105,21 +2127,43 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
   }, 'roadMode'));
 });
 
-// Map icons disclosure: toggle + density slider, controlling state.layers.pois + state.icons.density
+// Map icons section: category buttons + size + density sliders
 (function wireMapIcons() {
-  const onEl = document.getElementById('iconsOn');
-  const dEl  = document.getElementById('iconDensity');
-  const dVal = document.getElementById('iconDensityVal');
-  if (!onEl || !dEl) return;
-  onEl.checked = !!state.layers.pois;
-  dEl.value    = state.icons.density;
-  dVal.textContent = state.icons.density;
-  onEl.addEventListener('change', safe(() => {
-    pushHistory();
-    state.layers.pois = onEl.checked;
+  const grid    = document.getElementById('iconCategories');
+  const sizeEl  = document.getElementById('iconSize');
+  const sizeVal = document.getElementById('iconSizeVal');
+  const dEl     = document.getElementById('iconDensity');
+  const dVal    = document.getElementById('iconDensityVal');
+  if (!grid || !sizeEl || !dEl) return;
+
+  // Render one icon-button per category
+  ICON_CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'layer-btn' + (state.icons.categories[cat.key] ? ' active' : '');
+    btn.dataset.iconcat = cat.key;
+    btn.innerHTML = `<span class="layer-icon">${cat.icon}</span><span class="layer-label">${cat.label}</span>`;
+    btn.addEventListener('click', safe(() => {
+      pushHistory();
+      state.icons.categories[cat.key] = !state.icons.categories[cat.key];
+      btn.classList.toggle('active', !!state.icons.categories[cat.key]);
+      refreshPOIs();
+      persist();
+    }, 'iconCategory'));
+    grid.appendChild(btn);
+  });
+
+  sizeEl.value = state.icons.size;
+  sizeVal.textContent = state.icons.size + 'px';
+  sizeEl.addEventListener('input', safe(() => {
+    state.icons.size = parseInt(sizeEl.value, 10);
+    sizeVal.textContent = state.icons.size + 'px';
     refreshPOIs();
     persist();
-  }, 'iconsToggle'));
+  }, 'iconSize'));
+
+  dEl.value = state.icons.density;
+  dVal.textContent = state.icons.density;
   dEl.addEventListener('input', safe(() => {
     state.icons.density = parseInt(dEl.value, 10);
     dVal.textContent = state.icons.density;
@@ -2408,11 +2452,16 @@ function syncControls() {
   document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.key === state.preset));
   document.querySelectorAll('.template').forEach(el => el.classList.toggle('active', el.dataset.key === state.preset));
   syncSwatches();
-  // Map icons disclosure
-  const onEl = document.getElementById('iconsOn');
+  // Map icons category buttons + sliders
+  document.querySelectorAll('button[data-iconcat]').forEach(btn => {
+    btn.classList.toggle('active', !!state.icons.categories[btn.dataset.iconcat]);
+  });
+  const sizeEl  = document.getElementById('iconSize');
+  const sizeVal = document.getElementById('iconSizeVal');
+  if (sizeEl)  sizeEl.value = state.icons.size;
+  if (sizeVal) sizeVal.textContent = state.icons.size + 'px';
   const dEl  = document.getElementById('iconDensity');
   const dVal = document.getElementById('iconDensityVal');
-  if (onEl) onEl.checked = !!state.layers.pois;
   if (dEl)  dEl.value = state.icons.density;
   if (dVal) dVal.textContent = state.icons.density;
 }

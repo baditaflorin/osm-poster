@@ -1116,6 +1116,10 @@ function mergeState(saved) {
 const initialState = loadFromUrlOrStorage();
 if (initialState) state = mergeState(initialState);
 
+// Cap concurrent image requests so a fast zoom doesn't spawn 60+
+// in-flight PBF fetches that get cancelled when the user keeps scrolling.
+if (maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS = 8;
+
 const map = new maplibregl.Map({
   container: 'map',
   style: buildStyle(state),
@@ -1125,6 +1129,31 @@ const map = new maplibregl.Map({
   pitch: state.pitch,
   attributionControl: { compact: true },
   preserveDrawingBuffer: true,
+  // Keep more tiles in memory so zoom-back doesn't re-fetch.
+  maxTileCacheSize: 256,
+  // Snappier transitions reduce the perceived "many tiles loading" effect.
+  fadeDuration: 100,
+});
+
+// Slow the scroll-wheel zoom rate so each tick is more deliberate.
+// Default fires fractional zoom changes per wheel event — this lets a
+// single zoom level settle before MapLibre starts fetching the next.
+if (map.scrollZoom && map.scrollZoom.setWheelZoomRate) {
+  map.scrollZoom.setWheelZoomRate(1/250);
+}
+
+// On zoom end, snap to the nearest 0.5 zoom step. Cuts the "fractional
+// zoom that fetched tiles for two adjacent levels" waste in half.
+let snapTimer;
+map.on('zoomend', () => {
+  clearTimeout(snapTimer);
+  snapTimer = setTimeout(() => {
+    const z = map.getZoom();
+    const snapped = Math.round(z * 2) / 2;
+    if (Math.abs(z - snapped) > 0.02) {
+      map.easeTo({ zoom: snapped, duration: 150 });
+    }
+  }, 80);
 });
 
 const scaleControl = new maplibregl.ScaleControl({ maxWidth: 100, unit: 'metric' });
@@ -1857,50 +1886,78 @@ map.on('load', () => {
 });
 
 // =====================================================================
-// Version badge — compares baked SHA against latest main commit
+// Version badge
+// Compares the SHA actually deployed by Pages (via the public API) to
+// the latest commit on main. When the workflow is enabled, the build
+// SHA is baked into data-build-sha — we prefer that. Otherwise the
+// API lookup is the source of truth.
 // =====================================================================
 (async function checkVersion() {
   const badge = document.getElementById('versionBadge');
   if (!badge) return;
-  const baked = badge.dataset.buildSha;
-  const fullSha = badge.dataset.buildFull;
-  const builtAt = badge.dataset.buildTime;
   const text = document.getElementById('versionText');
+  const baked = badge.dataset.buildSha;
+  const bakedFull = badge.dataset.buildFull;
+  const bakedTime = badge.dataset.buildTime;
+  const REPO = 'baditaflorin/osm-poster';
 
-  // Local dev / not-yet-deployed: placeholders weren't substituted
-  if (!baked || baked.startsWith('__')) {
-    badge.classList.add('dev');
-    text.textContent = 'dev';
-    badge.title = 'Local development build (no deploy SHA injected)';
+  text.textContent = '…';
+
+  let deployedSha = null, deployedAt = null, latestSha = null;
+  try {
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    const [pagesR, commitsR] = await Promise.all([
+      fetch(`https://api.github.com/repos/${REPO}/pages/builds/latest`, { headers }),
+      fetch(`https://api.github.com/repos/${REPO}/commits/main`, { headers }),
+    ]);
+    if (pagesR.ok) { const d = await pagesR.json(); deployedSha = d.commit; deployedAt = d.updated_at; }
+    if (commitsR.ok) { const d = await commitsR.json(); latestSha = d.sha; }
+  } catch (e) {}
+
+  // Prefer baked SHA if the workflow injected it; otherwise use the
+  // deployed SHA from the API. Fall back to latest main as a last resort.
+  let shownSha, shownTime;
+  if (baked && !baked.startsWith('__')) {
+    shownSha = bakedFull || baked;
+    shownTime = bakedTime;
+  } else if (deployedSha) {
+    shownSha = deployedSha;
+    shownTime = deployedAt ? new Date(deployedAt).toLocaleString() : null;
+  } else if (latestSha) {
+    shownSha = latestSha;
+  }
+
+  if (!shownSha) {
+    badge.classList.add('unknown');
+    text.textContent = '?';
+    badge.title = 'Could not determine version';
     return;
   }
 
-  text.textContent = baked;
-  badge.title = `Build ${baked} · ${builtAt}\nClick to view commit`;
+  const short = shownSha.slice(0, 7);
+  text.textContent = short;
   badge.style.cursor = 'pointer';
-  const goCommit = () => window.open(`https://github.com/baditaflorin/osm-poster/commit/${fullSha}`, '_blank');
-  badge.addEventListener('click', goCommit);
 
-  try {
-    const r = await fetch('https://api.github.com/repos/baditaflorin/osm-poster/commits/main', {
-      headers: { 'Accept': 'application/vnd.github+json' },
-    });
-    if (!r.ok) throw new Error('GitHub API ' + r.status);
-    const data = await r.json();
-    const latestShort = (data.sha || '').slice(0, 7);
-    if (data.sha === fullSha || data.sha.startsWith(baked) || baked === latestShort) {
+  // Default click: open commit. Outdated state overrides to reload.
+  const goCommit = () => window.open(`https://github.com/${REPO}/commit/${shownSha}`, '_blank');
+  let clickHandler = goCommit;
+
+  if (deployedSha && latestSha) {
+    if (deployedSha === latestSha) {
       badge.classList.add('latest');
-      badge.title = `${baked} — latest\nDeployed ${builtAt}`;
+      badge.title = `v ${short} — latest deploy${shownTime ? '\nBuilt ' + shownTime : ''}\n\nClick to view commit`;
     } else {
       badge.classList.add('outdated');
-      badge.title = `${baked} — update available (latest: ${latestShort})\nClick to reload`;
-      badge.removeEventListener('click', goCommit);
-      badge.addEventListener('click', () => location.reload());
+      const latestShort = latestSha.slice(0, 7);
+      badge.title = `v ${short} — Pages catching up\nLatest main: ${latestShort}${shownTime ? '\nLast deploy: ' + shownTime : ''}\n\nClick to refresh`;
+      clickHandler = () => location.reload();
     }
-  } catch (e) {
-    badge.classList.add('unknown');
-    badge.title = `${baked}\nCould not check for updates`;
+  } else {
+    badge.classList.add(baked && !baked.startsWith('__') ? 'latest' : 'unknown');
+    badge.title = `v ${short}${shownTime ? '\n' + shownTime : ''}\n\nClick to view commit`;
   }
+
+  badge.addEventListener('click', () => clickHandler());
 })();
 </script>
 </body>

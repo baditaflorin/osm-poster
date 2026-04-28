@@ -1514,33 +1514,39 @@
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <!-- SunCalc — production-ready sun position calculator (~3KB) -->
 <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+<!-- Internal modules: pure helpers + data constants. window.LIB / window.DATA. -->
+<script src="./js/lib.js"></script>
+<script src="./js/data.js"></script>
 <script>
 // =====================================================================
-// RESILIENCE — global error boundary + safe wrapper
-// Nothing thrown anywhere should kill the app.
+// Module destructuring — clear contracts. Pure helpers come from
+// LIB (./js/lib.js); data constants from DATA (./js/data.js).
+// Anything below treats these as imports.
 // =====================================================================
-function reportError(err, ctx) {
-  console.error('[OSM Poster]' + (ctx ? ' [' + ctx + ']' : ''), err);
-  try {
-    const t = document.getElementById('errorToast');
-    if (t) {
-      t.querySelector('.msg').textContent = (err && err.message) ? err.message : String(err);
-      t.classList.add('show');
-      clearTimeout(t._hide);
-      t._hide = setTimeout(() => t.classList.remove('show'), 4000);
-    }
-  } catch (_) {}
-}
-function safe(fn, ctx, fallback) {
-  return function(...args) {
-    try { return fn.apply(this, args); }
-    catch (e) { reportError(e, ctx); return fallback; }
-  };
-}
-async function safeAsync(fn, ctx, fallback) {
-  try { return await fn(); }
-  catch (e) { reportError(e, ctx); return fallback; }
-}
+const {
+  // Color
+  darken, lighten, lum, haloFor, hsl,
+  // Coords + format
+  dms, formatDecimalCoords,
+  // Map helpers
+  dashFor,
+  // Random
+  mulberry32, seedToInt,
+  // Resilience
+  reportError, safe, safeAsync,
+  // DOM
+  bindEl, escapeHtml,
+} = LIB;
+
+const {
+  TEMPLATE_FIELDS,
+  LAYER_ORDER, LAYER_LABELS, LAYER_GROUPS,
+  PALETTE_KEYS, PALETTE_LABELS,
+  CITIES, ICON_CATEGORIES,
+  COMPASS_VARIANTS, ORNAMENTS, ROAD_MODES, TOD_FILTERS,
+  SAMPLE_MASK_DATAURL, PINHEAD_BASE,
+} = DATA;
+
 window.addEventListener('error', e => { if (e.error) reportError(e.error, 'window'); });
 window.addEventListener('unhandledrejection', e => reportError(e.reason, 'promise'));
 
@@ -1790,80 +1796,8 @@ const PRESETS = {
 };
 
 const PRESET_KEYS = Object.keys(PRESETS);
-const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'roof', 'road', 'rail', 'label', 'accent'];
-const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Walls', roof: 'Roofs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
-const LAYER_ORDER = [
-  'water', 'rivers', 'ferries', 'piers',
-  'parks', 'greenery', 'wetlands', 'peaks',
-  'buildings', 'industrial', 'airports', 'military', 'parking',
-  'roads', 'railways', 'paths', 'cycleways', 'aerialways',
-  'boundaries',
-  // Labels — split into independent toggles
-  'cities', 'neighborhoods', 'countries', 'water_names', 'park_names', 'streets',
-  'pois',
-];
-const LAYER_LABELS = {
-  water: 'Water', rivers: 'Rivers', ferries: 'Ferries', piers: 'Piers',
-  parks: 'Parks', greenery: 'Greenery', wetlands: 'Wetlands', peaks: 'Peaks',
-  buildings: 'Buildings', industrial: 'Industrial', airports: 'Airports', military: 'Military', parking: 'Parking',
-  roads: 'Roads', railways: 'Rail', paths: 'Paths', cycleways: 'Cycle', aerialways: 'Cable car',
-  boundaries: 'Borders',
-  cities: 'Cities', neighborhoods: 'Hoods', countries: 'Countries', water_names: 'Water names', park_names: 'Park names', streets: 'Streets',
-  pois: 'POIs',
-};
-
-// Logical groups for the icon-button UI (excludes 'pois' which has its own
-// dedicated Map icons section).
-const LAYER_GROUPS = [
-  { name: 'Water', items: [
-    { key: 'water',     icon: '💧' },
-    { key: 'rivers',    icon: '🌊' },
-    { key: 'ferries',   icon: '⛴' },
-    { key: 'piers',     icon: '🪵' },
-  ]},
-  { name: 'Nature', items: [
-    { key: 'parks',     icon: '🌳' },
-    { key: 'greenery',  icon: '🌿' },
-    { key: 'wetlands',  icon: '🪷' },
-    { key: 'peaks',     icon: '⛰' },
-  ]},
-  { name: 'Built', items: [
-    { key: 'buildings', icon: '🏙' },
-    { key: 'industrial',icon: '🏭' },
-    { key: 'airports',  icon: '✈️' },
-    { key: 'military',  icon: '🪖' },
-    { key: 'parking',   icon: '🅿️' },
-  ]},
-  { name: 'Transit', items: [
-    { key: 'roads',     icon: '🛣' },
-    { key: 'railways',  icon: '🚆' },
-    { key: 'paths',     icon: '🥾' },
-    { key: 'cycleways', icon: '🚴' },
-    { key: 'aerialways',icon: '🚡' },
-  ]},
-  { name: 'Labels', items: [
-    { key: 'cities',        icon: '🏙' },
-    { key: 'neighborhoods', icon: '🏘' },
-    { key: 'countries',     icon: '🌍' },
-    { key: 'water_names',   icon: '💧' },
-    { key: 'park_names',    icon: '🌳' },
-    { key: 'streets',       icon: '🛤' },
-    { key: 'boundaries',    icon: '🗺' },
-  ]},
-];
-
-// City quick-flys — 3 iconic shortcuts, search handles everything else
-const CITIES = [
-  { name: 'PARIS',    coord: [2.3522, 48.8566],   zoom: 12 },
-  { name: 'NEW YORK', coord: [-74.0060, 40.7128], zoom: 12 },
-  { name: 'TOKYO',    coord: [139.6503, 35.6762], zoom: 11 },
-];
-
-// (Manual marker icons + Pinhead modal removed — POI overlay is the
-// only place we render Pinhead icons now, via refreshPOIs below.)
-
-// ADR-021: Pinhead icons (jsDelivr-hosted, lazy-loaded, cached)
-const PINHEAD_BASE = 'https://cdn.jsdelivr.net/gh/waysidemapping/pinhead@main/icons/';
+// PALETTE_KEYS, LAYER_*, CITIES, PINHEAD_BASE, ICON_CATEGORIES come from
+// DATA (./js/data.js). Adding a new layer/city/category = edit data.js.
 const PINHEAD_PICKS = [
   ['Symbols',  'compass',                       'Compass'],
   ['Symbols',  'compass_rose',                  'Compass rose'],
@@ -1923,21 +1857,7 @@ async function loadPinhead(name) {
 // POI OVERLAY — render OSM points-of-interest as Pinhead icon markers
 // Reads features from the already-loaded vector tiles, no extra fetch.
 // =====================================================================
-// Each entry: { key, icon (emoji for picker), label, classes (OMT poi
-// class/subclass values that fall in this group), pin (Pinhead icon
-// to render on the map for this category) }
-const ICON_CATEGORIES = [
-  { key: 'food',        icon: '🍽',  label: 'Food',     pin: 'fork_and_sausage', classes: ['restaurant','cafe','fast_food','food_court','ice_cream','bar','pub','biergarten'] },
-  { key: 'culture',     icon: '🎨',  label: 'Culture',  pin: 'palette',          classes: ['museum','art_gallery','gallery','arts_centre','theatre','cinema','library'] },
-  { key: 'shopping',    icon: '🛍',  label: 'Shop',     pin: 'bag',              classes: ['shop','marketplace','mall','supermarket'] },
-  { key: 'attractions', icon: '🏛',  label: 'Sights',   pin: 'flag',             classes: ['attraction','viewpoint','historic','monument','memorial','archaeological_site','castle','ruins'] },
-  { key: 'religious',   icon: '⛪',  label: 'Religion', pin: 'arch',             classes: ['place_of_worship','church','mosque','temple','synagogue'] },
-  { key: 'activity',    icon: '🎯',  label: 'Sport',    pin: 'barbell',          classes: ['sports','leisure','stadium','pitch','fitness_centre','swimming_pool','golf_course'] },
-  { key: 'outdoors',    icon: '🌳',  label: 'Outdoor',  pin: 'campfire',         classes: ['park','garden','playground','picnic_site','beach','cave','campsite','fountain'] },
-  { key: 'transit',     icon: '🚌',  label: 'Transit',  pin: 'bridge',           classes: ['bus_stop','bus_station','tram_stop','railway_station','station','aerodrome','helipad'] },
-  { key: 'lodging',     icon: '🛏',  label: 'Stay',     pin: 'bed',              classes: ['hotel','hostel','motel','guest_house'] },
-  { key: 'services',    icon: 'ℹ️',  label: 'Civic',    pin: 'lightbulb',        classes: ['hospital','clinic','pharmacy','information','tourist_information','fuel','charging_station'] },
-];
+// ICON_CATEGORIES lives in DATA — to add a new POI category, edit data.js.
 
 const CLASS_TO_CATEGORY = (() => {
   const m = {};
@@ -2116,22 +2036,8 @@ function defaultState() {
   };
 }
 
-// Optional template-level fields. When a preset is a "full template" it
-// can carry these and they apply on selection; palette-only presets
-// preserve the user's current frame/border/etc.
-const TEMPLATE_FIELDS = [
-  'frame', 'border', 'texture', 'compass', 'scale',
-  // Caption / typography
-  'titleWeight', 'titleSize', 'subtitleStyle', 'coordsStyle',
-  'titleOrnament', 'captionDivider',
-  // Map view & appearance
-  'pitch', 'bearing', 'buildingHeight', 'buildingShading',
-  'roofTone', 'parkOpacity', 'labelCase', 'roadCaps',
-  // Filters & decorations
-  'tod', 'mapSaturation', 'mapContrast', 'mapHue',
-  'vignette', 'stars', 'cardShadow', 'frameOrnaments',
-  'sketchFrame', 'realisticLight',
-];
+// TEMPLATE_FIELDS lives in DATA — to expose a new dial as a template-level
+// field, append the key to data.js.
 
 function clonePreset(key) {
   const p = PRESETS[key];
@@ -2228,32 +2134,8 @@ function loadFromUrlOrStorage() {
   return null;
 }
 
-// =====================================================================
-// COLOR HELPERS
-// =====================================================================
-function darken(hex, amount) {
-  const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16));
-  return '#' + m.map(c => Math.max(0, Math.min(255, Math.round(c * (1 - amount)))).toString(16).padStart(2, '0')).join('');
-}
-function lighten(hex, amount) {
-  const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16));
-  return '#' + m.map(c => Math.max(0, Math.min(255, Math.round(c + (255 - c) * amount))).toString(16).padStart(2, '0')).join('');
-}
-function lum(hex) {
-  const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16) / 255);
-  const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  return 0.2126 * lin(m[0]) + 0.7152 * lin(m[1]) + 0.0722 * lin(m[2]);
-}
-function haloFor(labelHex, bgHex) {
-  const ll = lum(labelHex), bl = lum(bgHex);
-  if (Math.abs(ll - bl) > 0.35) return bgHex;
-  return ll > 0.5 ? '#000000' : '#ffffff';
-}
-function dashFor(style) {
-  if (style === 'dashed') return [4, 1.5];
-  if (style === 'dotted') return [0.5, 2];
-  return null;
-}
+// COLOR HELPERS (darken, lighten, lum, haloFor) and dashFor live in LIB
+// (./js/lib.js) and are destructured at the top of this script.
 
 // =====================================================================
 // STYLE GENERATOR
@@ -2685,19 +2567,11 @@ map.on('move', () => {
   persist();
 });
 
+// Thin wrapper — picks DMS or decimal based on state.coordsStyle.
+// Both formatters live in LIB so this stays trivially small.
 function formatCoords(lat, lng) {
   if (state.coordsStyle === 'dms') return dms(lat, true) + ' · ' + dms(lng, false);
-  const ns = lat >= 0 ? 'N' : 'S';
-  const ew = lng >= 0 ? 'E' : 'W';
-  return `${Math.abs(lat).toFixed(4)}° ${ns} · ${Math.abs(lng).toFixed(4)}° ${ew}`;
-}
-function dms(deg, isLat) {
-  const abs = Math.abs(deg);
-  const d = Math.floor(abs);
-  const m = Math.floor((abs - d) * 60);
-  const s = Math.round((abs - d - m / 60) * 3600);
-  const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
-  return `${d}° ${m}' ${s}" ${dir}`;
+  return formatDecimalCoords(lat, lng);
 }
 
 function applyTypography() {
@@ -2783,39 +2657,7 @@ try {
 
 // (Center-marker code removed; POI icon overlay covers all marker needs.)
 
-// =====================================================================
-// ADR-019: Seedable PRNG
-// =====================================================================
-function mulberry32(seed) {
-  let a = seed | 0;
-  return function() {
-    a = (a + 0x6D2B79F5) | 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function seedToInt(s) {
-  if (!s) return Math.floor(Math.random() * 2147483647);
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return Math.abs(h | 0);
-}
-
-function hsl(h, s, l) {
-  s /= 100; l /= 100;
-  const k = n => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = n => {
-    const c = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-    return Math.round(255 * c).toString(16).padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
-}
+// ADR-019 PRNG (mulberry32, seedToInt) and hsl() live in LIB.
 
 function randomizePalette() {
   const rng = mulberry32(seedToInt(state.seed));
@@ -3273,7 +3115,7 @@ searchEl.addEventListener('input', () => {
     } catch (e) { resultsEl.innerHTML = `<div class="result">Search failed.</div>`; }
   }, 400);
 });
-function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// escapeHtml lives in LIB.
 
 // =====================================================================
 // APPLY HELPERS
@@ -3299,35 +3141,7 @@ function applyTexture() {
   else if (state.texture === 'halftone') g.classList.add('halftone-on');
   document.getElementById('texture').value = state.texture;
 }
-// Compass SVG variants — three distinct looks. Inner content only;
-// the outer <svg> element provides viewBox + sizing.
-const COMPASS_VARIANTS = {
-  classic: `
-    <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.7"/>
-    <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
-    <polygon points="50,8 54,50 50,52 46,50" fill="currentColor"/>
-    <polygon points="50,92 54,52 50,50 46,52" fill="currentColor" opacity="0.45"/>
-    <polygon points="8,50 50,46 52,50 50,54" fill="currentColor" opacity="0.6"/>
-    <polygon points="92,50 52,50 50,46 50,54" fill="currentColor" opacity="0.6"/>
-    <text x="50" y="6" text-anchor="middle" font-size="8" fill="currentColor" font-family="ui-serif, Georgia">N</text>`,
-  minimal: `
-    <polygon points="50,12 56,52 50,48 44,52" fill="currentColor"/>
-    <line x1="50" y1="48" x2="50" y2="86" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
-    <text x="50" y="9" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">N</text>`,
-  windrose: `
-    <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.5"/>
-    <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.3"/>
-    <polygon points="50,4 55,50 50,52 45,50" fill="currentColor"/>
-    <polygon points="50,96 55,52 50,50 45,52" fill="currentColor" opacity="0.4"/>
-    <polygon points="4,50 50,45 52,50 50,55" fill="currentColor" opacity="0.55"/>
-    <polygon points="96,50 52,50 50,45 50,55" fill="currentColor" opacity="0.55"/>
-    <polygon points="22,22 49,49 51,51 23,23" fill="currentColor" opacity="0.32"/>
-    <polygon points="78,22 51,49 49,51 77,23" fill="currentColor" opacity="0.32"/>
-    <polygon points="22,78 49,51 51,49 23,77" fill="currentColor" opacity="0.32"/>
-    <polygon points="78,78 51,51 49,49 77,77" fill="currentColor" opacity="0.32"/>
-    <circle cx="50" cy="50" r="2" fill="currentColor"/>
-    <text x="50" y="3" text-anchor="middle" font-size="7" fill="currentColor" font-family="ui-serif, Georgia">N</text>`,
-};
+// COMPASS_VARIANTS lives in DATA — to add a new compass look, edit data.js.
 
 function applyCompass() {
   const c = document.getElementById('compass');
@@ -3363,13 +3177,7 @@ function applyGrid() {
 }
 
 // Road-mode preset (Off / Simple / Detailed) — batches multiple layer
-// toggles in one click. Only touches road-family keys; everything else
-// (water, buildings, etc.) stays as the user left it.
-const ROAD_MODES = {
-  off:      { roads: false, paths: false, streets: false, cycleways: false, ferries: false },
-  simple:   { roads: true,  paths: false, streets: false, cycleways: false },
-  detailed: { roads: true,  paths: true,  streets: true,  cycleways: true,  boundaries: true },
-};
+// toggles in one click. ROAD_MODES lives in DATA.
 function applyRoadMode(mode) {
   if (!ROAD_MODES[mode]) return;
   Object.assign(state.layers, ROAD_MODES[mode]);
@@ -4085,14 +3893,7 @@ if (dividerEl) dividerEl.addEventListener('change', safe(e => {
   pushHistory(); state.captionDivider = e.target.value; applyCaptionDivider(); persist();
 }, 'captionDivider'));
 
-// ADR-037 — title ornament wraps the title text
-const ORNAMENTS = {
-  none:      t => t,
-  bullets:   t => '●  ' + t + '  ●',
-  dashes:    t => '—  ' + t + '  —',
-  brackets:  t => '[  ' + t + '  ]',
-  asterisks: t => '✦  ' + t + '  ✦',
-};
+// ADR-037 — title ornament wraps the title text. ORNAMENTS lives in DATA.
 function decorateTitle(text) {
   return (ORNAMENTS[state.titleOrnament] || ORNAMENTS.none)(text || '');
 }
@@ -4121,19 +3922,12 @@ function applyMapFilters() {
   // The TOD class adds CSS-applied filter; inline filter replaces it.
   // To compose, we compute everything inline when either knob is active.
   if (parts.length || (state.tod && state.tod !== 'none' && state.tod !== 'day')) {
-    let todFilter = '';
     let tod = state.tod;
     if (tod === 'auto') {
       const lng = (state.view && state.view.center && state.view.center[0]) || 0;
       const hour = ((new Date().getUTCHours() + (lng / 15)) % 24 + 24) % 24;
       tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
     }
-    const TOD_FILTERS = {
-      dawn:   'hue-rotate(-12deg) saturate(0.85) brightness(0.96)',
-      golden: 'sepia(0.32) saturate(1.18) hue-rotate(-12deg)',
-      dusk:   'hue-rotate(15deg) saturate(0.90) brightness(0.84)',
-      night:  'brightness(0.66) saturate(0.65) contrast(1.05)',
-    };
     if (TOD_FILTERS[tod]) parts.unshift(TOD_FILTERS[tod]);
     w.style.filter = parts.join(' ');
   } else {
@@ -4211,12 +4005,6 @@ applyMapFilters = function() {
     const hour = ((new Date().getUTCHours() + (lng / 15)) % 24 + 24) % 24;
     tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
   }
-  const TOD_FILTERS = {
-    dawn:   'hue-rotate(-12deg) saturate(0.85) brightness(0.96)',
-    golden: 'sepia(0.32) saturate(1.18) hue-rotate(-12deg)',
-    dusk:   'hue-rotate(15deg) saturate(0.90) brightness(0.84)',
-    night:  'brightness(0.66) saturate(0.65) contrast(1.05)',
-  };
   if (TOD_FILTERS[tod]) parts.unshift(TOD_FILTERS[tod]);
   w.style.filter = parts.length ? parts.join(' ') : '';
   const sa = document.getElementById('mapSaturation'),  saV = document.getElementById('mapSaturationVal');
@@ -4232,12 +4020,8 @@ if (hueEl) hueEl.addEventListener('input', safe(() => {
   applyMapFilters(); persist();
 }, 'mapHue'));
 
-// ADR-043 + ADR-047 — Map mask shapes & custom PNG/SVG mask
-const SAMPLE_MASK_DATAURL = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-    <path fill="black" d="M 3,4 Q 18,2 32,4 Q 50,1 68,3 Q 84,2 96,5 Q 98,20 96,38 Q 99,55 97,72 Q 96,88 95,97 Q 78,95 60,97 Q 42,99 24,96 Q 10,98 3,95 Q 5,80 3,62 Q 1,45 4,28 Q 2,14 3,4 Z"/>
-  </svg>`
-);
+// ADR-043 + ADR-047 — Map mask shapes & custom PNG/SVG mask.
+// SAMPLE_MASK_DATAURL lives in DATA.
 function readMaskCache() {
   try { return localStorage.getItem('osm-poster:mask') || null; } catch (_) { return null; }
 }

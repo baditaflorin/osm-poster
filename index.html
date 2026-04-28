@@ -330,6 +330,13 @@
     font-size: 11px; color: #999; margin-top: 11px;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
   }
+  .caption-mark {
+    position: absolute; bottom: 6px; right: 12px;
+    font-size: 8px; color: #c8c8c8; opacity: 0.85;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    letter-spacing: 0.5px; pointer-events: none;
+    user-select: none;
+  }
   #caption.anniversary #caption-title::before,
   #caption.anniversary #caption-title::after { content: ''; }
 
@@ -620,6 +627,7 @@
         <div id="caption-title">PARIS</div>
         <div id="caption-subtitle">The City of Light</div>
         <div id="caption-coords">48.8566° N · 2.3522° E</div>
+        <div class="caption-mark">baditaflorin.github.io/osm-poster</div>
       </div>
     </div>
   </div>
@@ -1025,9 +1033,8 @@ function refreshPOIs() {
     }
   }, 'refreshPOIs'), 200);
 }
-
-map.on('moveend', refreshPOIs);
-map.on('idle', refreshPOIs);
+// Note: map.on(...) registrations live near the map init below to
+// avoid the temporal-dead-zone trap.
 
 // =====================================================================
 // STATE
@@ -1357,6 +1364,10 @@ const map = new maplibregl.Map({
 map.on('dataloading', () => Loader.push());
 map.on('data',        e => { if (e.dataType === 'source' && e.isSourceLoaded) Loader.pop(); });
 map.on('idle',        () => Loader.reset());
+
+// POI overlay refresh on view changes (now that `map` exists)
+map.on('moveend', refreshPOIs);
+map.on('idle', refreshPOIs);
 
 // Slow the scroll-wheel zoom rate so each tick is more deliberate.
 // Default fires fractional zoom changes per wheel event — this lets a

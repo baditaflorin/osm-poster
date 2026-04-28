@@ -647,6 +647,47 @@
   .sketch-frame svg { width: 100%; height: 100%; }
   .sketch-frame .stroke { stroke: var(--border-color, #111); fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
 
+  /* ADR-055 — sun direction arrow (small SVG in top-left of map) */
+  .sun-arrow {
+    position: absolute; top: 14px; left: 14px;
+    width: 44px; height: 44px; pointer-events: none; z-index: 5;
+    display: none;
+  }
+  .sun-arrow.on { display: block; }
+  .sun-arrow svg { width: 100%; height: 100%; overflow: visible; }
+  .sun-arrow .sun-disc { fill: currentColor; opacity: 0.9; }
+  .sun-arrow .sun-ray { stroke: currentColor; stroke-width: 1.5; opacity: 0.6; }
+  .sun-arrow .sun-text {
+    fill: currentColor; font-family: var(--mono); font-size: 7px;
+    letter-spacing: 1px; text-anchor: middle;
+  }
+
+  /* ADR-056 — zoom level indicator */
+  .zoom-display {
+    position: absolute; top: 14px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--text); padding: 3px 9px; border-radius: 999px;
+    background: rgba(255,255,255,0.65); backdrop-filter: blur(6px);
+    pointer-events: none; z-index: 5; letter-spacing: 1.5px;
+    display: none;
+  }
+  .zoom-display.on { display: block; }
+
+  /* ADR-057 — corner ornaments (vintage flourishes) */
+  .frame-ornaments {
+    position: absolute; inset: 0; pointer-events: none; z-index: 6;
+    display: none;
+  }
+  .frame-ornaments.on { display: block; }
+  .frame-ornaments svg { position: absolute; width: 38px; height: 38px; color: var(--border-color, #111); opacity: 0.7; }
+  .frame-ornaments svg.tl { top: 6px; left: 6px; }
+  .frame-ornaments svg.tr { top: 6px; right: 6px; transform: scaleX(-1); }
+  .frame-ornaments svg.bl { bottom: 6px; left: 6px; transform: scaleY(-1); }
+  .frame-ornaments svg.br { bottom: 6px; right: 6px; transform: scale(-1, -1); }
+  .frame-ornaments svg path { fill: none; stroke: currentColor; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+  .frame-ornaments svg circle { fill: currentColor; }
+
   /* ADR-046 — confetti particle */
   .confetti-particle {
     position: absolute; left: 50%; top: 50%;
@@ -1037,14 +1078,25 @@
 
           <div class="sub-title" style="margin: 12px 0 6px;">🏢 Buildings</div>
           <div class="style-options">
-            <select id="roofTone">
-              <option value="match">Roof = walls</option>
-              <option value="lighter">Lighter roofs</option>
-              <option value="darker">Darker roofs</option>
-              <option value="accent">Accent roofs</option>
-              <option value="custom">Use Roofs swatch</option>
+            <select id="buildingShape">
+              <option value="filled">▣ Filled (solid)</option>
+              <option value="outlined">▢ Outlined (faint fill)</option>
+              <option value="wireframe">⬚ Wireframe (no fill)</option>
+              <option value="ghost">⬛ Ghost (very faint)</option>
+              <option value="bold">█ Bold (heavy outline)</option>
+              <option value="invert">◐ Inverted (bg color, accent edge)</option>
+              <option value="halftone">⠿ Stippled (50% pattern)</option>
+              <option value="accent">★ Accent fill</option>
+              <option value="hairline">┄ Hairline outline only</option>
             </select>
-            <label class="toggle"><input type="checkbox" id="buildingShading" checked> Side shading</label>
+            <select id="roofTone">
+              <option value="match">Roof = walls (3D)</option>
+              <option value="lighter">Lighter roofs (3D)</option>
+              <option value="darker">Darker roofs (3D)</option>
+              <option value="accent">Accent roofs (3D)</option>
+              <option value="custom">Use Roofs swatch (3D)</option>
+            </select>
+            <label class="toggle" style="grid-column: span 2;"><input type="checkbox" id="buildingShading" checked> Side shading (3D)</label>
           </div>
 
           <div class="sub-title" style="margin: 12px 0 6px;">🅰 Labels</div>
@@ -1162,29 +1214,38 @@
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🌟</span><span class="disclose-label"><span class="disclose-title">Decorations</span><span class="disclose-desc">Compass, scale, date, grid, outline</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🌟</span><span class="disclose-label"><span class="disclose-title">Decorations</span><span class="disclose-desc">Compass, scale, sun, ornaments…</span></span><span class="chev">›</span></button>
         <div class="body"><div>
-          <div class="toggles">
-            <label class="toggle"><input type="checkbox" id="compassToggle"> Compass rose</label>
-            <label class="toggle"><input type="checkbox" id="scaleToggle"> Scale bar</label>
-            <label class="toggle"><input type="checkbox" id="dateStampToggle"> Date stamp</label>
-            <label class="toggle"><input type="checkbox" id="gridToggle"> Coord grid</label>
-            <label class="toggle"><input type="checkbox" id="cityOutlineToggle"> City outline</label>
+          <div class="layer-grid" id="decorationGrid">
+            <button type="button" class="layer-btn" data-deco="compass"><span class="layer-icon">🧭</span><span class="layer-label">Compass</span></button>
+            <button type="button" class="layer-btn" data-deco="scale"><span class="layer-icon">📏</span><span class="layer-label">Scale</span></button>
+            <button type="button" class="layer-btn" data-deco="dateStamp"><span class="layer-icon">📅</span><span class="layer-label">Date</span></button>
+            <button type="button" class="layer-btn" data-deco="grid"><span class="layer-icon">⊞</span><span class="layer-label">Grid</span></button>
+            <button type="button" class="layer-btn" data-deco="cityOutline"><span class="layer-icon">🏙</span><span class="layer-label">Outline</span></button>
+            <button type="button" class="layer-btn" data-deco="realisticLight"><span class="layer-icon">☀</span><span class="layer-label">Sun light</span></button>
+            <button type="button" class="layer-btn" data-deco="sunArrow"><span class="layer-icon">↗</span><span class="layer-label">Sun arrow</span></button>
+            <button type="button" class="layer-btn" data-deco="zoomDisplay"><span class="layer-icon">🔍</span><span class="layer-label">Zoom</span></button>
+            <button type="button" class="layer-btn" data-deco="frameOrnaments"><span class="layer-icon">❉</span><span class="layer-label">Ornaments</span></button>
           </div>
-          <select id="compassStyle" style="margin-top: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
-            <option value="classic">Classic compass</option>
-            <option value="minimal">Minimal arrow</option>
-            <option value="windrose">Windrose</option>
+          <div class="sub-title" style="margin: 14px 0 6px;">Compass style</div>
+          <select id="compassStyle">
+            <option value="classic">🧭 Classic compass</option>
+            <option value="minimal">↑ Minimal arrow</option>
+            <option value="windrose">✦ Windrose</option>
           </select>
-          <select id="todTint" style="margin-top: 8px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
-            <option value="none">No time-of-day tint</option>
-            <option value="auto">Auto (local solar time)</option>
-            <option value="dawn">Dawn — cool blue</option>
-            <option value="day">Day — clear</option>
-            <option value="golden">Golden hour — warm sepia</option>
-            <option value="dusk">Dusk — magenta tint</option>
-            <option value="night">Night — dark contrast</option>
+          <div class="sub-title" style="margin: 12px 0 6px;">Time of day</div>
+          <select id="todTint">
+            <option value="none">— No tint</option>
+            <option value="auto">🕐 Auto from local solar time</option>
+            <option value="dawn">🌅 Dawn — cool blue</option>
+            <option value="day">☀ Day — clear</option>
+            <option value="golden">🌇 Golden hour — warm sepia</option>
+            <option value="dusk">🌆 Dusk — magenta tint</option>
+            <option value="night">🌃 Night — dark contrast</option>
           </select>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 8px; line-height: 1.45;">
+            ☀ <b>Sun light</b> uses SunCalc + MapLibre's setLight to light 3D buildings from the real sun direction at the displayed coords + your local time. Works best with Tilt &gt; 0.
+          </div>
         </div></div>
       </div>
 
@@ -1354,6 +1415,29 @@
         <div class="stars-overlay" id="starsOverlay"></div>
         <div class="grain" id="grain"></div>
         <div class="date-stamp" id="dateStamp"></div>
+        <div class="sun-arrow" id="sunArrow">
+          <svg viewBox="-22 -22 44 44">
+            <g id="sunArrowGroup">
+              <circle class="sun-disc" cx="0" cy="0" r="5"/>
+              <line class="sun-ray" x1="0" y1="-9" x2="0" y2="-15"/>
+              <line class="sun-ray" x1="0" y1="9"  x2="0" y2="15"/>
+              <line class="sun-ray" x1="-9" y1="0" x2="-15" y2="0"/>
+              <line class="sun-ray" x1="9"  y1="0" x2="15"  y2="0"/>
+              <line class="sun-ray" x1="-6.4" y1="-6.4" x2="-10.6" y2="-10.6"/>
+              <line class="sun-ray" x1="6.4"  y1="-6.4" x2="10.6"  y2="-10.6"/>
+              <line class="sun-ray" x1="-6.4" y1="6.4"  x2="-10.6" y2="10.6"/>
+              <line class="sun-ray" x1="6.4"  y1="6.4"  x2="10.6"  y2="10.6"/>
+              <text class="sun-text" id="sunArrowLabel" x="0" y="20">06:42</text>
+            </g>
+          </svg>
+        </div>
+        <div class="zoom-display" id="zoomDisplay">z 12.0</div>
+        <div class="frame-ornaments" id="frameOrnaments">
+          <svg class="tl" viewBox="0 0 40 40"><path d="M 2,2 L 16,2 M 2,2 L 2,16 M 2,2 Q 8,8 14,14 M 14,14 Q 18,12 20,8 M 14,14 Q 12,18 8,20"/><circle cx="14" cy="14" r="1.5"/></svg>
+          <svg class="tr" viewBox="0 0 40 40"><path d="M 2,2 L 16,2 M 2,2 L 2,16 M 2,2 Q 8,8 14,14 M 14,14 Q 18,12 20,8 M 14,14 Q 12,18 8,20"/><circle cx="14" cy="14" r="1.5"/></svg>
+          <svg class="bl" viewBox="0 0 40 40"><path d="M 2,2 L 16,2 M 2,2 L 2,16 M 2,2 Q 8,8 14,14 M 14,14 Q 18,12 20,8 M 14,14 Q 12,18 8,20"/><circle cx="14" cy="14" r="1.5"/></svg>
+          <svg class="br" viewBox="0 0 40 40"><path d="M 2,2 L 16,2 M 2,2 L 2,16 M 2,2 Q 8,8 14,14 M 14,14 Q 18,12 20,8 M 14,14 Q 12,18 8,20"/><circle cx="14" cy="14" r="1.5"/></svg>
+        </div>
         <div class="sketch-frame" id="sketchFrame">
           <svg viewBox="0 0 100 100" preserveAspectRatio="none">
             <path class="stroke" d="M 4,3 Q 25,2 50,3 T 96,4 Q 95,25 96,50 T 95,96 Q 75,95 50,96 T 4,95 Q 5,75 4,50 T 4,3 Z" />
@@ -1428,6 +1512,8 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
+<!-- SunCalc — production-ready sun position calculator (~3KB) -->
+<script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
 <script>
 // =====================================================================
 // RESILIENCE — global error boundary + safe wrapper
@@ -1625,10 +1711,12 @@ const PRESETS = {
   espresso: {
     name: 'Espresso',
     isTemplate: true,
-    palette: { bg: '#3a2418', water: '#6b4438', green: '#4a3424', urban: '#4d2f1f', building: '#5e3a26', road: '#e8c994', rail: '#d4a373', label: '#f5dfb8', accent: '#e8c994' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    palette: { bg: '#3a2418', water: '#6b4438', green: '#4a3424', urban: '#4d2f1f', building: '#5e3a26', roof: '#a07654', road: '#e8c994', rail: '#d4a373', label: '#f5dfb8', accent: '#e8c994' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
     roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
     frame: 'square', border: 'double', texture: 'grain', compass: false, scale: false,
+    cardShadow: 'soft', roofTone: 'lighter', labelCase: 'uppercase',
+    titleWeight: 'bold', titleSize: 'medium', captionDivider: 'double',
   },
   constructivist: {
     name: 'Constructivist',
@@ -1641,10 +1729,63 @@ const PRESETS = {
   aurora: {
     name: 'Aurora',
     isTemplate: true,
-    palette: { bg: '#0d1b2a', water: '#1b4332', green: '#2d6a4f', urban: '#1a2433', building: '#243447', road: '#95d5b2', rail: '#52b788', label: '#d8f3dc', accent: '#7dd3fc' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    palette: { bg: '#0d1b2a', water: '#1b4332', green: '#2d6a4f', urban: '#1a2433', building: '#243447', roof: '#3d5a7a', road: '#95d5b2', rail: '#52b788', label: '#d8f3dc', accent: '#7dd3fc' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
     roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
     frame: 'portrait', border: 'thin', texture: 'none', compass: true, scale: false,
+    stars: true, cardShadow: 'float', tod: 'night', roofTone: 'lighter',
+    titleSize: 'large', titleWeight: 'bold', subtitleStyle: 'italic',
+  },
+
+  // === 4 NEW TEMPLATES ===
+
+  manhattan: {
+    name: 'Manhattan',
+    isTemplate: true,
+    palette: { bg: '#1a1f2e', water: '#0c4a6e', green: '#143524', urban: '#1f2a40', building: '#3b4a6b', roof: '#7a92b8', road: '#fcd34d', rail: '#94a3b8', label: '#f1f5f9', accent: '#fcd34d' },
+    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: true, countries: false, water_names: false, park_names: false, streets: true, pois: false },
+    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'portrait', border: 'thin', texture: 'none', compass: false, scale: false,
+    pitch: 50, buildingHeight: 4.5, buildingShading: true,
+    realisticLight: true, roofTone: 'lighter', cardShadow: 'float',
+    titleSize: 'large', titleWeight: 'heavy', labelCase: 'uppercase',
+  },
+
+  sketchbook: {
+    name: 'Sketchbook',
+    isTemplate: true,
+    palette: { bg: '#f4ecd8', water: '#8c7853', green: '#a8956a', urban: '#e8dab9', building: '#cdb892', roof: '#cdb892', road: '#3a2418', rail: '#3a2418', label: '#1f1408', accent: '#a04020' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: true, park_names: false, streets: false, pois: false },
+    roadWeight: 1.1, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
+    frame: 'portrait', border: 'none', texture: 'grain', compass: false, scale: false,
+    sketchFrame: true, frameOrnaments: true, cardShadow: 'soft',
+    roadCaps: 'round', labelCase: 'asis', captionDivider: 'wave',
+    titleSize: 'medium', titleWeight: 'regular', subtitleStyle: 'italic',
+    titleOrnament: 'bullets',
+  },
+
+  risoPop: {
+    name: 'Riso Pop',
+    isTemplate: true,
+    palette: { bg: '#fff5e0', water: '#22d3ee', green: '#fde68a', urban: '#fef3c7', building: '#fbcfe8', roof: '#f0abfc', road: '#ec4899', rail: '#a855f7', label: '#0f172a', accent: '#22d3ee' },
+    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+    roadWeight: 1.5, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'square', border: 'bold', texture: 'halftone', compass: false, scale: false,
+    cardShadow: 'hard', roofTone: 'accent', labelCase: 'uppercase',
+    titleSize: 'large', titleWeight: 'heavy', captionDivider: 'double',
+    mapSaturation: 130,
+  },
+
+  twilight: {
+    name: 'Twilight',
+    isTemplate: true,
+    palette: { bg: '#1e1b4b', water: '#312e81', green: '#1e1b4b', urban: '#2e1065', building: '#3b0764', roof: '#7c3aed', road: '#fbbf24', rail: '#f472b6', label: '#fef3c7', accent: '#f472b6' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+    roadWeight: 0.8, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
+    frame: 'portrait', border: 'thin', texture: 'none', compass: true, scale: false,
+    pitch: 25, buildingHeight: 2, stars: true, vignette: 'soft',
+    tod: 'dusk', cardShadow: 'float', roofTone: 'darker',
+    titleSize: 'large', subtitleStyle: 'italic',
   },
 };
 
@@ -1955,6 +2096,11 @@ function defaultState() {
     cardShadow: 'soft',       // none | soft | hard | float
     buildingShading: true,    // fill-extrusion-vertical-gradient
     roadCaps: 'round',        // round | butt | square
+    // 4 more Decoration dials (ADR-054..057)
+    realisticLight: false,    // sun-position lighting on 3D extrusions via SunCalc + setLight
+    sunArrow: false,          // small SVG arrow showing current sun direction at view center
+    zoomDisplay: false,       // small "z 12.4" label in the corner
+    frameOrnaments: false,    // vintage corner flourishes on the poster
     mapHue: 0,                // 0..360° global hue rotation
     mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
     sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
@@ -1973,7 +2119,19 @@ function defaultState() {
 // Optional template-level fields. When a preset is a "full template" it
 // can carry these and they apply on selection; palette-only presets
 // preserve the user's current frame/border/etc.
-const TEMPLATE_FIELDS = ['frame', 'border', 'texture', 'compass', 'scale'];
+const TEMPLATE_FIELDS = [
+  'frame', 'border', 'texture', 'compass', 'scale',
+  // Caption / typography
+  'titleWeight', 'titleSize', 'subtitleStyle', 'coordsStyle',
+  'titleOrnament', 'captionDivider',
+  // Map view & appearance
+  'pitch', 'bearing', 'buildingHeight', 'buildingShading',
+  'roofTone', 'parkOpacity', 'labelCase', 'roadCaps',
+  // Filters & decorations
+  'tod', 'mapSaturation', 'mapContrast', 'mapHue',
+  'vignette', 'stars', 'cardShadow', 'frameOrnaments',
+  'sketchFrame', 'realisticLight',
+];
 
 function clonePreset(key) {
   const p = PRESETS[key];
@@ -2186,21 +2344,41 @@ function buildStyle(s) {
           'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0, 13.2, 0.95],
         } };
     } else {
-      // ADR-041 — Building shape: filled / outlined / wireframe
+      // ADR-041 — Building shape: 9 visibly distinct flat-fill modes
       const shape = s.buildingShape || 'filled';
-      const buildingPaint = {
-        'fill-color': p.building,
-        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 14, 0.85, 18, 0.95],
-        'fill-outline-color': darken(p.building, 0.15),
+      const SHAPE_RECIPES = {
+        // Default solid fill, slightly darker outline for contour reading
+        filled:    { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.20, 14, 0.85, 18, 0.95], outline: darken(p.building, 0.15) },
+        // Faint fill with strong outline — architectural plan look
+        outlined:  { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.04, 14, 0.18, 18, 0.22], outline: p.label },
+        // No fill at all, accent-color outline only — wireframe model
+        wireframe: { color: p.building, op: 0, outline: p.accent },
+        // Very faint fill, no outline — barely-there silhouettes
+        ghost:     { color: p.building, op: 0.10, outline: p.building },
+        // Full fill + dark thick outline
+        bold:      { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.5, 14, 0.95, 18, 1.0], outline: p.label },
+        // Buildings carved into background, edged in accent
+        invert:    { color: p.bg, op: ['interpolate', ['linear'], ['zoom'], 12, 0.3, 14, 0.85, 18, 0.95], outline: p.accent },
+        // Half-opacity = "stippled" feel without a sprite
+        halftone:  { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.10, 14, 0.45, 18, 0.55], outline: darken(p.building, 0.20) },
+        // Buildings in accent color
+        accent:    { color: p.accent, op: ['interpolate', ['linear'], ['zoom'], 12, 0.20, 14, 0.85, 18, 0.92], outline: darken(p.accent, 0.15) },
+        // Hairline outline only — minimalist line drawing
+        hairline:  { color: p.building, op: 0, outline: p.label },
       };
-      if (shape === 'outlined') {
-        buildingPaint['fill-opacity']     = ['interpolate', ['linear'], ['zoom'], 12, 0.04, 14, 0.18, 18, 0.22];
-        buildingPaint['fill-outline-color'] = p.label;
-      } else if (shape === 'wireframe') {
-        buildingPaint['fill-opacity']     = 0;
-        buildingPaint['fill-outline-color'] = p.accent;
-      }
-      layers.push({ id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 12, paint: buildingPaint });
+      const recipe = SHAPE_RECIPES[shape] || SHAPE_RECIPES.filled;
+      layers.push({
+        id: 'building',
+        type: 'fill',
+        source: 'omt',
+        'source-layer': 'building',
+        minzoom: 12,
+        paint: {
+          'fill-color': recipe.color,
+          'fill-opacity': recipe.op,
+          'fill-outline-color': recipe.outline,
+        },
+      });
     }
   }
   if (s.layers.industrial) {
@@ -2677,6 +2855,10 @@ const TEMPLATE_BLURBS = {
   espresso:    'Coffee brown with cream lines',
   constructivist: 'Soviet poster: red, black, cream',
   aurora:      'Deep teal with sky-green roads',
+  manhattan:   '3D skyline · sun-lit at 50° tilt',
+  sketchbook:  'Wobbly hand-drawn travel journal',
+  risoPop:     'Pink/cyan riso with hard shadow',
+  twilight:    'Dusk + stars + atmospheric',
 };
 
 const templatesEl = document.getElementById('templates');
@@ -2847,6 +3029,7 @@ const STYLE_OPTIONS = {
   roofTone:      ['match', 'lighter', 'darker', 'accent'],
   parkOpacity:   ['subtle', 'normal', 'bold'],
   cardShadow:    ['none', 'soft', 'hard', 'float'],
+  buildingShape: ['filled', 'outlined', 'wireframe', 'ghost', 'bold', 'invert', 'halftone', 'accent', 'hairline'],
 };
 document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() => {
   pushHistory();
@@ -3275,6 +3458,11 @@ function applyState({ silent } = {}) {
   applyWatermark();
   applyCardShadow();
   syncStyleDials();
+  applySunLight();
+  applySunArrow();
+  applyZoomDisplay();
+  applyFrameOrnaments();
+  syncDecorationGrid();
   restyle();
   refreshPOIs();
   renderAnnotations();
@@ -4189,6 +4377,132 @@ function syncStyleDials() {
   const bs = document.getElementById('buildingShading');
   if (bs) bs.checked = state.buildingShading !== false;
 }
+
+// =====================================================================
+// ADR-054..057 — sun lighting, sun arrow, zoom display, ornaments
+// =====================================================================
+
+// ADR-054 — Realistic sun lighting via MapLibre setLight + SunCalc
+function sunColorFromAlt(alt) {
+  if (alt <= 0)        return '#3a4a6a';   // night
+  if (alt < 8)         return '#ff7a4a';   // sunrise / sunset
+  if (alt < 25)        return '#ffd9a3';   // golden
+  if (alt < 50)        return '#fff4d8';   // warm morning
+  return '#ffffff';                         // bright noon
+}
+function applySunLight() {
+  if (!map || !map.setLight) return;
+  if (!state.realisticLight || !window.SunCalc) {
+    // Reset to MapLibre default
+    try {
+      map.setLight({ anchor: 'viewport', position: [1.15, 210, 30], color: '#ffffff', intensity: 0.5 });
+    } catch (_) {}
+    return;
+  }
+  try {
+    const c = state.view && state.view.center;
+    if (!c) return;
+    const date = new Date();
+    const pos = SunCalc.getPosition(date, c[1], c[0]);
+    const azimuthDeg = ((pos.azimuth * 180 / Math.PI) + 180 + 360) % 360;
+    const altitudeDeg = pos.altitude * 180 / Math.PI;
+    const polar = Math.max(0, Math.min(180, 90 - altitudeDeg));
+    const intensity = altitudeDeg <= 0 ? 0.18 : Math.min(0.85, 0.25 + (altitudeDeg / 90) * 0.6);
+    map.setLight({
+      anchor: 'map',
+      position: [1.5, azimuthDeg, polar],
+      color: sunColorFromAlt(altitudeDeg),
+      intensity,
+    });
+  } catch (e) { reportError(e, 'applySunLight'); }
+}
+
+// ADR-055 — Sun direction arrow overlay
+function applySunArrow() {
+  const el = document.getElementById('sunArrow');
+  if (!el) return;
+  el.classList.toggle('on', !!state.sunArrow);
+  if (!state.sunArrow || !window.SunCalc) return;
+  try {
+    const c = state.view && state.view.center;
+    if (!c) return;
+    const date = new Date();
+    const pos = SunCalc.getPosition(date, c[1], c[0]);
+    const azimuthDeg = ((pos.azimuth * 180 / Math.PI) + 180 + 360) % 360;
+    const grp = document.getElementById('sunArrowGroup');
+    if (grp) grp.setAttribute('transform', `rotate(${azimuthDeg})`);
+    const txt = document.getElementById('sunArrowLabel');
+    if (txt) {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      txt.textContent = `${hh}:${mm}`;
+      // text rotates back so it stays upright
+      txt.setAttribute('transform', `rotate(${-azimuthDeg})`);
+    }
+    el.style.color = state.palette.label || '#111';
+  } catch (e) { reportError(e, 'applySunArrow'); }
+}
+
+// ADR-056 — Zoom level indicator
+function applyZoomDisplay() {
+  const el = document.getElementById('zoomDisplay');
+  if (!el) return;
+  el.classList.toggle('on', !!state.zoomDisplay);
+  if (state.zoomDisplay && map) {
+    try { el.textContent = 'z ' + map.getZoom().toFixed(1); } catch (_) {}
+  }
+}
+
+// ADR-057 — Vintage corner ornaments
+function applyFrameOrnaments() {
+  const el = document.getElementById('frameOrnaments');
+  if (!el) return;
+  el.classList.toggle('on', !!state.frameOrnaments);
+}
+
+// Unified decoration-button dispatch — single source of truth for the
+// 9 toggle buttons, mapped to existing apply* functions.
+const DECO_HANDLERS = {
+  compass:        () => applyCompass(),
+  scale:          () => {
+    if (state.scale) { try { map.removeControl(scaleControl); } catch (_) {} map.addControl(scaleControl, 'bottom-left'); }
+    else { try { map.removeControl(scaleControl); } catch (_) {} }
+  },
+  dateStamp:      () => applyDateStamp(),
+  grid:           () => applyGrid(),
+  cityOutline:    () => ensureCityOutline(),
+  realisticLight: () => applySunLight(),
+  sunArrow:       () => applySunArrow(),
+  zoomDisplay:    () => applyZoomDisplay(),
+  frameOrnaments: () => applyFrameOrnaments(),
+};
+document.querySelectorAll('button[data-deco]').forEach(btn => {
+  btn.addEventListener('click', safe(() => {
+    const k = btn.dataset.deco;
+    pushHistory();
+    state[k] = !state[k];
+    btn.classList.toggle('active', !!state[k]);
+    if (DECO_HANDLERS[k]) DECO_HANDLERS[k]();
+    persist();
+  }, 'decoBtn:' + btn.dataset.deco));
+});
+function syncDecorationGrid() {
+  document.querySelectorAll('button[data-deco]').forEach(btn => {
+    btn.classList.toggle('active', !!state[btn.dataset.deco]);
+  });
+}
+
+// Live-track sun light + sun arrow + zoom display on map move
+let _sunMoveTimer;
+map.on('move', () => {
+  if (!state.realisticLight && !state.sunArrow && !state.zoomDisplay) return;
+  clearTimeout(_sunMoveTimer);
+  _sunMoveTimer = setTimeout(() => {
+    if (state.realisticLight) applySunLight();
+    if (state.sunArrow)       applySunArrow();
+    if (state.zoomDisplay)    applyZoomDisplay();
+  }, 80);
+});
 
 // ADR-046 — Confetti micro-celebration
 function fireConfetti(origin) {

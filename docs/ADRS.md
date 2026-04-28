@@ -818,6 +818,100 @@ because `roof = building` by default and shading is on by default.
 
 ---
 
+## ADR-054 — Realistic sun lighting (production library)
+
+**Context.** The `Time of day` tint was a CSS filter approximation —
+the whole map turned warm or cool, but 3D buildings didn't get
+directional shading from a believable sun position. Users wanted
+real "lit by the sun" 3D buildings.
+
+**Decision.** Two production-ready pieces, no custom math:
+- **[SunCalc 1.9](https://github.com/mourner/suncalc)** (~3 KB, MIT) loaded from
+  unpkg — battle-tested sun-position calculator used by the BBC,
+  Strava, etc. `SunCalc.getPosition(date, lat, lng)` returns
+  `{ azimuth, altitude }` in radians.
+- **MapLibre's built-in `map.setLight()`** API. It already exists in
+  4.x and feeds `fill-extrusion-color` shading on every 3D extrusion
+  layer. We just feed it the right values.
+
+`applySunLight()` converts SunCalc's south-anchored azimuth to
+MapLibre's north-anchored degrees, maps altitude to polar angle, and
+picks a color via a luminance ramp (sunrise/sunset = warm orange,
+golden = warm cream, noon = white, dusk/dawn = cool blue, night =
+deep navy at low intensity 0.18).
+
+Triggered by the `Sun light` toggle in Decorations, recomputed on
+map move (debounced 80 ms) and on view restore.
+
+**Consequences.** Real cast shadows aren't supported in MapLibre 4
+yet (5.x has experimental shadows). Combined with
+`fill-extrusion-vertical-gradient: true`, the directional light
+gives a convincing "lit from the south at 4pm" feel without the cost
+of a separate shadow renderer. Bundle adds 3 KB.
+
+---
+
+## ADR-055 — Sun direction arrow
+
+**Context.** When realistic lighting is on, users want to see *where*
+the sun is coming from. A small visual indicator answers that.
+
+**Decision.** A 44-px SVG sun (disc + 8 rays) in the top-left of
+the map area. The whole group rotates to match the SunCalc azimuth
+at the displayed coordinates. A tiny `HH:MM` label sits below,
+rotated back so it stays upright. Color tracks `palette.label`.
+
+**Consequences.** Always shows the user's local time at the displayed
+location's longitude — which is what feels right for a poster.
+
+---
+
+## ADR-056 — Zoom level indicator
+
+**Context.** Designers exporting at A2 / A3 want to know exactly
+what zoom the export was at, so the next print is consistent.
+
+**Decision.** Tiny `z 12.4` chip pinned to top-center of the map
+area. Pill-shaped, semi-transparent backdrop-blur background,
+monospace 9.5 px. Updates on map move.
+
+**Consequences.** Hidden by default. Captured in exports if left on
+— users can use it for archive metadata, then turn it off.
+
+---
+
+## ADR-057 — Vintage corner ornaments
+
+**Context.** "Sketch frame" gives wobbly hand-drawn vibes. For
+classic Travel-Guide / Espresso / Botanical templates, vintage map
+corner flourishes are a different aesthetic.
+
+**Decision.** Four 38-px SVG ornaments, one per corner. Each is a
+simple curl-and-dot motif with `vector-effect: non-scaling-stroke`
+so the line weight stays uniform at any export resolution. Colors
+inherit from `--border-color` so they track theme changes.
+
+**Consequences.** Pure SVG, lightweight. Toggleable as one button —
+all four corners go on/off together; that's intentional, mixed
+corners look chaotic.
+
+---
+
+## Decorations cuter pass (UX)
+
+The Decorations sub-section was 5 checkboxes plus 2 small selects.
+Reorganized to match the visual language of the Layers grid:
+
+- 9 icon-button toggles in the same `.layer-grid` component
+  (🧭 Compass · 📏 Scale · 📅 Date · ⊞ Grid · 🏙 Outline ·
+   ☀ Sun light · ↗ Sun arrow · 🔍 Zoom · ❉ Ornaments)
+- Active state = accent fill + accent border + accent text
+- Selects below pick up emoji prefixes per option for quicker scanning
+- One unified click dispatcher (`DECO_HANDLERS`) instead of 5
+  separate event handlers — half the code, easier to extend
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

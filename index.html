@@ -16,69 +16,105 @@
     overflow: hidden;
   }
 
-  /* Sidebar */
   aside {
-    width: 340px;
+    width: 360px;
     background: #fff;
-    padding: 28px 24px;
+    padding: 24px 22px;
     overflow-y: auto;
     border-right: 1px solid #e6e4dc;
     flex-shrink: 0;
   }
   aside h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  aside .tag { font-size: 12px; color: #888; margin-bottom: 28px; display: block; margin-top: 2px; }
+  aside .tag { font-size: 12px; color: #888; margin-bottom: 22px; display: block; margin-top: 2px; }
   aside h3 {
     font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: #999; margin: 22px 0 10px; font-weight: 600;
+    color: #999; margin: 18px 0 8px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
   }
+  aside h3 .small { font-size: 10px; text-transform: none; letter-spacing: 0; color: #bbb; font-weight: 500; }
   aside input[type="text"] {
     width: 100%; padding: 10px 12px; border: 1px solid #ddd;
     border-radius: 8px; font-size: 14px; font-family: inherit;
     background: #fafafa;
   }
   aside input[type="text"]:focus { outline: none; border-color: #111; background: #fff; }
-  aside input[type="text"] + input[type="text"] { margin-top: 8px; }
+  aside input[type="text"] + input[type="text"] { margin-top: 6px; }
 
-  #results { margin-top: 6px; max-height: 220px; overflow-y: auto; }
+  #results { margin-top: 6px; max-height: 200px; overflow-y: auto; }
   #results .result {
-    padding: 8px 10px; cursor: pointer; font-size: 13px; border-radius: 6px;
+    padding: 7px 10px; cursor: pointer; font-size: 13px; border-radius: 6px;
     color: #444; line-height: 1.3;
   }
   #results .result:hover { background: #f0eee6; color: #111; }
 
-  .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .styles button {
-    padding: 10px 8px; border: 1px solid #ddd; background: #fff;
-    border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit;
-    transition: all 0.15s;
+  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .preset {
+    cursor: pointer; border: 2px solid transparent;
+    border-radius: 8px; overflow: hidden; transition: all 0.15s;
+    background: #f5f4ee;
   }
-  .styles button:hover { border-color: #111; }
-  .styles button.active { background: #111; color: #fff; border-color: #111; }
+  .preset:hover { transform: translateY(-1px); }
+  .preset.active { border-color: #111; }
+  .preset .swatch {
+    height: 44px; display: grid; grid-template-columns: 1fr 1fr 1fr;
+  }
+  .preset .swatch span { display: block; }
+  .preset .label {
+    font-size: 11px; padding: 4px 6px; text-align: center; background: #fff;
+    color: #333; font-weight: 500;
+  }
 
   .frames { display: flex; gap: 6px; }
   .frames button {
-    flex: 1; padding: 10px 8px; border: 1px solid #ddd; background: #fff;
-    border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit;
+    flex: 1; padding: 9px 6px; border: 1px solid #ddd; background: #fff;
+    border-radius: 8px; cursor: pointer; font-size: 12px; font-family: inherit;
   }
   .frames button:hover { border-color: #111; }
   .frames button.active { background: #111; color: #fff; border-color: #111; }
 
+  .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
+  .row label { font-size: 13px; color: #444; flex: 1; }
+  .row input[type="range"] { flex: 1; accent-color: #111; }
+  .row .val { font-size: 12px; color: #888; min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #444; cursor: pointer; padding: 4px 0; user-select: none; }
+  .toggle input { accent-color: #111; cursor: pointer; }
+
+  .palette-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px; }
+  .palette-row label {
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; color: #888;
+  }
+  .palette-row .swatch-btn {
+    width: 100%; height: 32px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+  .palette-row input[type="color"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; border: none;
+  }
+
+  .actions { display: flex; gap: 6px; margin-top: 10px; }
+  .actions button {
+    flex: 1; padding: 8px; border: 1px solid #ddd; background: #fff;
+    border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit;
+  }
+  .actions button:hover { border-color: #111; background: #fafaf5; }
+
   #export {
-    width: 100%; padding: 14px; background: #111; color: #fff;
+    width: 100%; padding: 13px; background: #111; color: #fff;
     border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-    cursor: pointer; margin-top: 28px; font-family: inherit;
-    transition: background 0.15s;
+    cursor: pointer; margin-top: 22px; font-family: inherit;
   }
   #export:hover:not(:disabled) { background: #333; }
   #export:disabled { opacity: 0.6; cursor: wait; }
 
   .footer-note {
-    font-size: 11px; color: #aaa; margin-top: 18px; line-height: 1.5;
+    font-size: 11px; color: #aaa; margin-top: 16px; line-height: 1.5;
     text-align: center;
   }
   .footer-note a { color: #888; }
 
-  /* Main canvas area */
   main {
     flex: 1; display: flex; align-items: center; justify-content: center;
     padding: 32px; min-width: 0;
@@ -93,32 +129,24 @@
   .poster-wrap.frame-square { width: min(640px, 90%); aspect-ratio: 1 / 1; }
   .poster-wrap.frame-landscape { width: min(800px, 95%); aspect-ratio: 3 / 2; }
 
-  #poster {
-    width: 100%; height: 100%;
-    display: flex; flex-direction: column;
-    overflow: hidden;
-    background: #fff;
-  }
+  #poster { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
   #map-wrap { flex: 1; position: relative; min-height: 0; }
   #map { position: absolute; inset: 0; }
 
   #caption {
-    padding: 26px 32px 30px;
+    padding: 24px 32px 28px;
     text-align: center;
     background: #fff;
     border-top: 1px solid #f0ede3;
   }
   #caption-title {
-    font-size: 32px; font-weight: 700; letter-spacing: 6px;
+    font-size: 30px; font-weight: 700; letter-spacing: 6px;
     text-transform: uppercase; line-height: 1;
   }
-  #caption-subtitle {
-    font-size: 13px; color: #666; margin-top: 8px; letter-spacing: 1px;
-  }
+  #caption-subtitle { font-size: 13px; color: #666; margin-top: 8px; letter-spacing: 1px; }
   #caption-coords {
-    font-size: 11px; color: #999; margin-top: 12px;
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    letter-spacing: 1.5px;
+    font-size: 11px; color: #999; margin-top: 11px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
   }
 
   .maplibregl-ctrl-attrib { font-size: 9px; opacity: 0.7; }
@@ -134,18 +162,30 @@
 <body>
 <aside>
   <h1>OSM Poster</h1>
-  <span class="tag">Beautiful maps from OpenStreetMap</span>
+  <span class="tag">Custom-styled maps from OpenStreetMap</span>
 
   <h3>Search a Place</h3>
   <input type="text" id="search" placeholder="City, address, landmark..." autocomplete="off">
   <div id="results"></div>
 
-  <h3>Style</h3>
-  <div class="styles" id="styles">
-    <button data-style="positron" class="active">Minimal</button>
-    <button data-style="bright">Bright</button>
-    <button data-style="liberty">Liberty</button>
-    <button data-style="dark">Dark</button>
+  <h3>Style Preset</h3>
+  <div class="presets" id="presets"></div>
+
+  <h3>Layers <span class="small">click to toggle</span></h3>
+  <div class="toggles" id="toggles"></div>
+
+  <h3>Road Weight</h3>
+  <div class="row">
+    <input type="range" id="roadWeight" min="0.3" max="2.5" step="0.1" value="1">
+    <span class="val" id="roadWeightVal">1.0×</span>
+  </div>
+
+  <h3>Palette <span class="small">click any swatch</span></h3>
+  <div class="palette-row" id="palette"></div>
+
+  <div class="actions">
+    <button id="randomize">Randomize</button>
+    <button id="reset">Reset preset</button>
   </div>
 
   <h3>Frame</h3>
@@ -163,7 +203,8 @@
 
   <div class="footer-note">
     Map data © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>
-    Tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>
+    Vector tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a><br>
+    Style designs generated in your browser
   </div>
 </aside>
 
@@ -183,16 +224,240 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <script>
-const STYLES = {
-  positron: 'https://tiles.openfreemap.org/styles/positron',
-  bright:   'https://tiles.openfreemap.org/styles/bright',
-  liberty:  'https://tiles.openfreemap.org/styles/liberty',
-  dark:     'https://tiles.openfreemap.org/styles/dark',
+// ---------- PRESETS ----------
+// Each preset is a fully self-contained design: palette, road weights, layer choices.
+// We generate the MapLibre style JSON from these — we never load a 3rd-party style.
+const PRESETS = {
+  blueprint: {
+    name: 'Blueprint',
+    palette: { bg: '#0a2540', water: '#1a3a5f', park: '#0f2c4d', road: '#ffffff', building: '#1a3a5f', label: '#ffffff' },
+    layers: { water: true, parks: false, buildings: false, labels: false, pois: false },
+    roadWeight: 0.7,
+  },
+  mono: {
+    name: 'Mono Line',
+    palette: { bg: '#ffffff', water: '#ffffff', park: '#ffffff', road: '#111111', building: '#ffffff', label: '#111111' },
+    layers: { water: false, parks: false, buildings: false, labels: false, pois: false },
+    roadWeight: 0.6,
+  },
+  midnight: {
+    name: 'Midnight',
+    palette: { bg: '#0d0d14', water: '#161624', park: '#13131c', road: '#d4af37', building: '#1d1d2c', label: '#e8c870' },
+    layers: { water: true, parks: true, buildings: true, labels: true, pois: false },
+    roadWeight: 0.9,
+  },
+  vintage: {
+    name: 'Vintage',
+    palette: { bg: '#f4ecd8', water: '#bda280', park: '#dcc89b', road: '#6e3f24', building: '#d6c19e', label: '#3d2914' },
+    layers: { water: true, parks: true, buildings: true, labels: true, pois: false },
+    roadWeight: 1.0,
+  },
+  pastel: {
+    name: 'Pastel',
+    palette: { bg: '#fef3f2', water: '#a8d8e8', park: '#c8e4c5', road: '#e88aa3', building: '#f7d8c9', label: '#5b4f6e' },
+    layers: { water: true, parks: true, buildings: true, labels: false, pois: false },
+    roadWeight: 1.2,
+  },
+  neon: {
+    name: 'Neon',
+    palette: { bg: '#000000', water: '#021a14', park: '#01170a', road: '#00ff9d', building: '#080808', label: '#ff2bd6' },
+    layers: { water: true, parks: true, buildings: true, labels: false, pois: false },
+    roadWeight: 0.8,
+  },
 };
 
+const PALETTE_KEYS = ['bg', 'water', 'park', 'road', 'building', 'label'];
+const PALETTE_LABELS = { bg: 'Bg', water: 'Water', park: 'Parks', road: 'Roads', building: 'Bldgs', label: 'Labels' };
+const LAYER_KEYS = ['water', 'parks', 'buildings', 'labels', 'pois'];
+const LAYER_LABELS = { water: 'Water', parks: 'Parks', buildings: 'Buildings', labels: 'Labels', pois: 'POIs' };
+
+// Mutable state
+let activePreset = 'blueprint';
+let state = clonePreset('blueprint');
+
+function clonePreset(key) {
+  const p = PRESETS[key];
+  return {
+    palette: { ...p.palette },
+    layers: { ...p.layers },
+    roadWeight: p.roadWeight,
+  };
+}
+
+// ---------- STYLE GENERATOR ----------
+// Builds a complete MapLibre style JSON from `state`.
+// Source = OpenFreeMap planet vector tiles (OpenMapTiles schema).
+function buildStyle(s) {
+  const layers = [];
+  const w = s.roadWeight;
+
+  // background
+  layers.push({ id: 'bg', type: 'background', paint: { 'background-color': s.palette.bg } });
+
+  // water
+  if (s.layers.water) {
+    layers.push({
+      id: 'water', type: 'fill',
+      source: 'omt', 'source-layer': 'water',
+      paint: { 'fill-color': s.palette.water, 'fill-antialias': true },
+    });
+    layers.push({
+      id: 'waterway', type: 'line',
+      source: 'omt', 'source-layer': 'waterway',
+      paint: {
+        'line-color': s.palette.water,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 16, 2],
+      },
+    });
+  }
+
+  // landuse / parks
+  if (s.layers.parks) {
+    layers.push({
+      id: 'park', type: 'fill',
+      source: 'omt', 'source-layer': 'park',
+      paint: { 'fill-color': s.palette.park, 'fill-opacity': 0.7 },
+    });
+    layers.push({
+      id: 'landcover', type: 'fill',
+      source: 'omt', 'source-layer': 'landcover',
+      filter: ['in', ['get', 'class'], ['literal', ['wood', 'grass', 'farmland']]],
+      paint: { 'fill-color': s.palette.park, 'fill-opacity': 0.45 },
+    });
+  }
+
+  // buildings
+  if (s.layers.buildings) {
+    layers.push({
+      id: 'building', type: 'fill',
+      source: 'omt', 'source-layer': 'building',
+      minzoom: 13,
+      paint: {
+        'fill-color': s.palette.building,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 14, 0.8],
+        'fill-outline-color': s.palette.building,
+      },
+    });
+  }
+
+  // road casing (subtle outline beneath the line) for darker themes
+  const roadClasses = [
+    { id: 'minor', match: ['minor', 'service', 'track'],     w: 0.6, minzoom: 12 },
+    { id: 'tert',  match: ['tertiary'],                       w: 1.0, minzoom: 10 },
+    { id: 'sec',   match: ['secondary'],                      w: 1.4, minzoom: 9  },
+    { id: 'pri',   match: ['primary'],                        w: 1.8, minzoom: 7  },
+    { id: 'trunk', match: ['trunk'],                          w: 2.4, minzoom: 6  },
+    { id: 'mot',   match: ['motorway'],                       w: 3.0, minzoom: 5  },
+  ];
+  roadClasses.forEach(rc => {
+    layers.push({
+      id: 'road-' + rc.id,
+      type: 'line',
+      source: 'omt',
+      'source-layer': 'transportation',
+      filter: ['all',
+        ['==', ['geometry-type'], 'LineString'],
+        ['in', ['get', 'class'], ['literal', rc.match]],
+      ],
+      minzoom: rc.minzoom,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': s.palette.road,
+        'line-width': [
+          'interpolate', ['exponential', 1.4], ['zoom'],
+          5,  rc.w * w * 0.15,
+          12, rc.w * w * 0.9,
+          18, rc.w * w * 4.5,
+        ],
+      },
+    });
+  });
+
+  // boundaries (subtle, only on dark themes look nice — always include)
+  layers.push({
+    id: 'boundary', type: 'line',
+    source: 'omt', 'source-layer': 'boundary',
+    filter: ['<=', ['get', 'admin_level'], 4],
+    paint: {
+      'line-color': s.palette.label,
+      'line-opacity': 0.15,
+      'line-width': 0.5,
+      'line-dasharray': [3, 2],
+    },
+  });
+
+  // labels
+  if (s.layers.labels) {
+    layers.push({
+      id: 'place-major', type: 'symbol',
+      source: 'omt', 'source-layer': 'place',
+      filter: ['in', ['get', 'class'], ['literal', ['city', 'town']]],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Bold'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 12, 16],
+        'text-letter-spacing': 0.1,
+        'text-transform': 'uppercase',
+      },
+      paint: {
+        'text-color': s.palette.label,
+        'text-halo-color': s.palette.bg,
+        'text-halo-width': 1.2,
+      },
+    });
+    layers.push({
+      id: 'place-minor', type: 'symbol',
+      source: 'omt', 'source-layer': 'place',
+      minzoom: 11,
+      filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood']]],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 11,
+      },
+      paint: {
+        'text-color': s.palette.label,
+        'text-halo-color': s.palette.bg,
+        'text-halo-width': 1,
+        'text-opacity': 0.7,
+      },
+    });
+  }
+
+  // POIs
+  if (s.layers.pois) {
+    layers.push({
+      id: 'poi', type: 'symbol',
+      source: 'omt', 'source-layer': 'poi',
+      minzoom: 14,
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 10,
+      },
+      paint: {
+        'text-color': s.palette.label,
+        'text-halo-color': s.palette.bg,
+        'text-halo-width': 1,
+        'text-opacity': 0.8,
+      },
+    });
+  }
+
+  return {
+    version: 8,
+    glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+    sources: {
+      omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' },
+    },
+    layers,
+  };
+}
+
+// ---------- MAP ----------
 const map = new maplibregl.Map({
   container: 'map',
-  style: STYLES.positron,
+  style: buildStyle(state),
   center: [2.3522, 48.8566],
   zoom: 12,
   attributionControl: { compact: true },
@@ -210,23 +475,146 @@ function formatCoords(lat, lng) {
   return `${Math.abs(lat).toFixed(4)}° ${ns} · ${Math.abs(lng).toFixed(4)}° ${ew}`;
 }
 
-// Style picker
-document.querySelectorAll('#styles button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#styles button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const c = map.getCenter();
-    const z = map.getZoom();
-    const b = map.getBearing();
-    const p = map.getPitch();
-    map.setStyle(STYLES[btn.dataset.style]);
-    map.once('style.load', () => {
-      map.jumpTo({ center: c, zoom: z, bearing: b, pitch: p });
-    });
+let restyleTimer;
+function restyle() {
+  // Debounce — color picker fires fast.
+  clearTimeout(restyleTimer);
+  restyleTimer = setTimeout(() => {
+    const c = map.getCenter(), z = map.getZoom(), b = map.getBearing(), p = map.getPitch();
+    map.setStyle(buildStyle(state));
+    map.once('style.load', () => map.jumpTo({ center: c, zoom: z, bearing: b, pitch: p }));
+  }, 80);
+}
+
+// ---------- UI: PRESETS ----------
+const presetsEl = document.getElementById('presets');
+Object.entries(PRESETS).forEach(([key, p]) => {
+  const div = document.createElement('div');
+  div.className = 'preset' + (key === activePreset ? ' active' : '');
+  div.dataset.key = key;
+  div.innerHTML = `
+    <div class="swatch">
+      <span style="background:${p.palette.bg}"></span>
+      <span style="background:${p.palette.water}"></span>
+      <span style="background:${p.palette.road}"></span>
+    </div>
+    <div class="label">${p.name}</div>
+  `;
+  div.addEventListener('click', () => {
+    activePreset = key;
+    state = clonePreset(key);
+    syncControls();
+    document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.key === key));
+    restyle();
+  });
+  presetsEl.appendChild(div);
+});
+
+// ---------- UI: TOGGLES ----------
+const togglesEl = document.getElementById('toggles');
+LAYER_KEYS.forEach(k => {
+  const lbl = document.createElement('label');
+  lbl.className = 'toggle';
+  lbl.innerHTML = `<input type="checkbox" data-layer="${k}"> ${LAYER_LABELS[k]}`;
+  togglesEl.appendChild(lbl);
+  lbl.querySelector('input').addEventListener('change', e => {
+    state.layers[k] = e.target.checked;
+    restyle();
   });
 });
 
-// Frame picker
+// ---------- UI: ROAD WEIGHT ----------
+const rw = document.getElementById('roadWeight');
+const rwVal = document.getElementById('roadWeightVal');
+rw.addEventListener('input', () => {
+  state.roadWeight = parseFloat(rw.value);
+  rwVal.textContent = state.roadWeight.toFixed(1) + '×';
+  restyle();
+});
+
+// ---------- UI: PALETTE ----------
+const paletteEl = document.getElementById('palette');
+PALETTE_KEYS.forEach(k => {
+  const lbl = document.createElement('label');
+  lbl.innerHTML = `
+    <div class="swatch-btn" data-key="${k}">
+      <input type="color" data-key="${k}">
+    </div>
+    <span>${PALETTE_LABELS[k]}</span>
+  `;
+  paletteEl.appendChild(lbl);
+  const input = lbl.querySelector('input');
+  input.addEventListener('input', e => {
+    state.palette[k] = e.target.value;
+    syncSwatches();
+    restyle();
+  });
+});
+
+// ---------- UI: ACTIONS ----------
+document.getElementById('reset').addEventListener('click', () => {
+  state = clonePreset(activePreset);
+  syncControls();
+  restyle();
+});
+
+document.getElementById('randomize').addEventListener('click', () => {
+  // Pick a base hue, then derive a coherent palette from it.
+  const baseHue = Math.floor(Math.random() * 360);
+  const dark = Math.random() > 0.5;
+  const sat = 30 + Math.random() * 50;
+  state.palette = {
+    bg:       dark ? hsl(baseHue,            sat * 0.6, 8 + Math.random() * 6)
+                   : hsl(baseHue,            sat * 0.3, 92 + Math.random() * 4),
+    water:    dark ? hsl((baseHue + 200) % 360, sat * 0.7, 15 + Math.random() * 8)
+                   : hsl((baseHue + 200) % 360, sat * 0.6, 75 + Math.random() * 8),
+    park:     dark ? hsl((baseHue + 100) % 360, sat * 0.5, 12 + Math.random() * 6)
+                   : hsl((baseHue + 100) % 360, sat * 0.5, 82 + Math.random() * 6),
+    road:     dark ? hsl((baseHue + 30)  % 360, sat,        65 + Math.random() * 25)
+                   : hsl((baseHue + 30)  % 360, sat,        25 + Math.random() * 20),
+    building: dark ? hsl(baseHue,            sat * 0.4, 16 + Math.random() * 6)
+                   : hsl(baseHue,            sat * 0.3, 86 + Math.random() * 6),
+    label:    dark ? hsl((baseHue + 60)  % 360, sat * 0.6, 80)
+                   : hsl((baseHue + 60)  % 360, sat * 0.7, 22),
+  };
+  syncControls();
+  restyle();
+});
+
+function hsl(h, s, l) {
+  // Convert to hex via a tiny canvas-free routine.
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => {
+    const c = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function syncSwatches() {
+  PALETTE_KEYS.forEach(k => {
+    const sw = paletteEl.querySelector(`.swatch-btn[data-key="${k}"]`);
+    sw.style.background = state.palette[k];
+    paletteEl.querySelector(`input[data-key="${k}"]`).value = state.palette[k];
+  });
+}
+
+function syncControls() {
+  // Sync toggles
+  LAYER_KEYS.forEach(k => {
+    togglesEl.querySelector(`input[data-layer="${k}"]`).checked = state.layers[k];
+  });
+  // Sync road weight
+  rw.value = state.roadWeight;
+  rwVal.textContent = state.roadWeight.toFixed(1) + '×';
+  // Sync palette
+  syncSwatches();
+}
+syncControls();
+
+// ---------- UI: FRAMES ----------
 document.querySelectorAll('#frames button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#frames button').forEach(b => b.classList.remove('active'));
@@ -238,7 +626,7 @@ document.querySelectorAll('#frames button').forEach(btn => {
   });
 });
 
-// Search via Nominatim
+// ---------- UI: SEARCH ----------
 const search = document.getElementById('search');
 const results = document.getElementById('results');
 let searchTimer;
@@ -259,13 +647,11 @@ search.addEventListener('input', () => {
       results.querySelectorAll('.result').forEach(el => {
         el.addEventListener('click', () => {
           const it = items[+el.dataset.i];
-          const lat = +it.lat, lon = +it.lon;
-          let zoom = 13;
           if (it.boundingbox) {
             const [s, n, w, e] = it.boundingbox.map(Number);
-            map.fitBounds([[w, s], [e, n]], { padding: 20, animate: true });
+            map.fitBounds([[w, s], [e, n]], { padding: 30, animate: true });
           } else {
-            map.flyTo({ center: [lon, lat], zoom });
+            map.flyTo({ center: [+it.lon, +it.lat], zoom: 13 });
           }
           results.innerHTML = '';
           search.value = '';
@@ -284,7 +670,7 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// Caption inputs
+// ---------- UI: CAPTION ----------
 const titleInput = document.getElementById('title');
 const subtitleInput = document.getElementById('subtitle');
 titleInput.addEventListener('input', () => {
@@ -294,7 +680,7 @@ subtitleInput.addEventListener('input', () => {
   document.getElementById('caption-subtitle').textContent = subtitleInput.value || 'The City of Light';
 });
 
-// Export
+// ---------- EXPORT ----------
 document.getElementById('export').addEventListener('click', async () => {
   const btn = document.getElementById('export');
   const original = btn.textContent;
@@ -307,7 +693,7 @@ document.getElementById('export').addEventListener('click', async () => {
     const dataUrl = await htmlToImage.toPng(node, {
       pixelRatio: 4,
       cacheBust: true,
-      backgroundColor: '#ffffff',
+      backgroundColor: state.palette.bg,
     });
     const a = document.createElement('a');
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');

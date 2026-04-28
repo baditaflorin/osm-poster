@@ -291,6 +291,33 @@ network cost.
 
 ---
 
+---
+
+## ADR-021 — Pinhead icon library for markers
+
+**Context.** The four built-in marker icons (pin / heart / star / dot) are
+fine but generic. For "café where we met", "the lighthouse", "the chess
+park", "the bridge over the Seine" — users want category-specific icons.
+Bundling 1,000+ SVGs ourselves is wasteful and an open-ended maintenance
+job; building a sprite-sheet pipeline is overkill for a single-file site.
+
+**Decision.** Lazy-load icons from
+[Pinhead](https://github.com/waysidemapping/pinhead) (CC0 / public domain,
+1,000+ map-pin-optimized SVGs) via the jsDelivr CDN at request time. Ship a
+**curated 36-icon picker** across six categories (Symbols, Travel, Activity,
+Outdoor, Culture, Built) so users see something useful immediately, with a
+search box to filter. Cache fetched SVGs in a `Map<string, string>` so the
+same icon costs zero requests on subsequent uses.
+
+**Consequences.** Zero kilobytes added to the bundle; a Pinhead icon costs
+one ~1-2 KB fetch the first time and 0 thereafter. Marker `state.marker.type`
+gets a new `pinhead:<name>` shape that survives URL-hash sharing and undo.
+Icons render in the active palette's `accent` color via `fill: currentColor`
+on the loaded SVG. Failed fetches degrade gracefully (cell dims to 35%
+opacity; falls back to the default pin if applied to an active marker).
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

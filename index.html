@@ -270,6 +270,48 @@
   .toast.show { display: flex; }
   .toast button { background: rgba(255,255,255,0.18); color: #fff; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit; }
 
+  /* Marker SVG fill via currentColor */
+  .center-marker svg, .pinhead-cell svg, .marker-row button svg { fill: currentColor; }
+  .center-marker svg path { fill: currentColor; }
+
+  /* Pinhead picker */
+  .pinhead-btn {
+    width: 100%; margin-top: 6px; padding: 9px;
+    border: 1px solid #ddd; background: #fff;
+    border-radius: 7px; cursor: pointer; font-size: 12px; font-family: inherit;
+    color: #555; transition: all 0.15s;
+  }
+  .pinhead-btn:hover { border-color: #111; color: #111; background: #fafaf5; }
+  .pinhead-modal { width: min(680px, 92vw); }
+  .pinhead-search {
+    width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+    font-family: inherit; font-size: 13px; margin: 12px 0 14px; background: #fafafa;
+  }
+  .pinhead-search:focus { outline: none; border-color: #111; background: #fff; }
+  .pinhead-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+    gap: 6px; max-height: 50vh; overflow-y: auto; padding: 2px;
+  }
+  .pinhead-cell {
+    cursor: pointer; border: 1px solid #ececec; border-radius: 8px;
+    padding: 10px 4px 6px; text-align: center; transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: #fff;
+  }
+  .pinhead-cell:hover { border-color: #111; background: #fafaf5; transform: translateY(-1px); }
+  .pinhead-cell .ph-icon {
+    width: 32px; height: 32px; color: #333;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pinhead-cell .ph-icon svg { width: 28px; height: 28px; }
+  .pinhead-cell .ph-label { font-size: 9.5px; color: #777; line-height: 1.1; max-width: 76px; }
+  .pinhead-cat {
+    grid-column: 1 / -1; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: #aaa; margin: 8px 4px 2px; font-weight: 600;
+  }
+  .pinhead-credit { font-size: 11px; color: #999; margin-top: 14px; text-align: center; line-height: 1.5; }
+  .pinhead-credit a { color: #888; }
+
   @media (max-width: 800px) {
     body { flex-direction: column; overflow: auto; }
     aside { width: 100%; border-right: none; border-bottom: 1px solid #e6e4dc; }
@@ -334,6 +376,7 @@
 
   <h3>Center Marker <span class="small">M to toggle</span></h3>
   <div class="marker-row" id="markerRow"></div>
+  <button class="pinhead-btn" id="pinheadOpenBtn">📍 More icons from Pinhead (1,000+ public-domain)</button>
 
   <h3>Decorations</h3>
   <div class="toggles" style="grid-template-columns: 1fr 1fr;">
@@ -459,6 +502,23 @@
   </div>
 </div>
 
+<!-- Pinhead Modal -->
+<div class="modal-overlay" id="pinheadModal">
+  <div class="modal-wrap">
+    <div class="modal pinhead-modal">
+      <button class="close" id="closePinhead">&times;</button>
+      <h2>Pinhead Icons</h2>
+      <div class="modal-subtitle">Curated picks from Pinhead — 1,000+ public-domain map icons. Click to use as your marker.</div>
+      <input type="text" id="pinheadSearch" class="pinhead-search" placeholder="Search by name (e.g. fountain, bridge, anchor)…" autocomplete="off">
+      <div class="pinhead-grid" id="pinheadGrid"></div>
+      <div class="pinhead-credit">
+        Icons from the <a href="https://github.com/waysidemapping/pinhead" target="_blank" rel="noopener">Pinhead</a> project
+        by Wayside Mapping (CC0 / public domain).
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- First-visit toast -->
 <div class="toast" id="onboardToast">
   <span>👋 New here? Press <kbd style="background:#444; padding:1px 6px; border-radius:3px; font-family:ui-monospace, monospace;">R</kbd> to randomize, or <kbd style="background:#444; padding:1px 6px; border-radius:3px; font-family:ui-monospace, monospace;">?</kbd> for shortcuts.</span>
@@ -569,6 +629,61 @@ const MARKER_ICONS = {
   dot:   '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="8" fill="currentColor"/><circle cx="12" cy="12" r="3" fill="white"/></svg>',
 };
 const MARKER_TYPES = ['pin', 'heart', 'star', 'dot'];
+
+// ADR-021: Pinhead icons (jsDelivr-hosted, lazy-loaded, cached)
+const PINHEAD_BASE = 'https://cdn.jsdelivr.net/gh/waysidemapping/pinhead@main/icons/';
+const PINHEAD_PICKS = [
+  ['Symbols',  'compass',                       'Compass'],
+  ['Symbols',  'compass_rose',                  'Compass rose'],
+  ['Symbols',  'flag',                          'Flag'],
+  ['Symbols',  'flag_checkered',                'Flag checkered'],
+  ['Symbols',  'crosshair',                     'Crosshair'],
+  ['Symbols',  'jewel',                         'Jewel'],
+  ['Travel',   'anchor',                        'Anchor'],
+  ['Travel',   'bed',                           'Bed'],
+  ['Travel',   'balloon',                       'Balloon'],
+  ['Travel',   'parachute',                     'Parachute'],
+  ['Travel',   'life_ring',                     'Life ring'],
+  ['Travel',   'bridge',                        'Bridge'],
+  ['Activity', 'american_football',             'Football'],
+  ['Activity', 'bowling_pin_and_bowling_ball',  'Bowling'],
+  ['Activity', 'climbing_wall',                 'Climbing'],
+  ['Activity', 'golf_green',                    'Golf'],
+  ['Activity', 'basketball_in_basketball_net',  'Basketball'],
+  ['Activity', 'barbell',                       'Gym'],
+  ['Outdoor',  'campfire',                      'Campfire'],
+  ['Outdoor',  'cave',                          'Cave'],
+  ['Outdoor',  'dam',                           'Dam'],
+  ['Outdoor',  'horseshoe',                     'Horseshoe'],
+  ['Outdoor',  'cairn',                         'Cairn'],
+  ['Outdoor',  'beach_umbrella_in_ground',      'Beach'],
+  ['Culture',  'camera',                        'Camera'],
+  ['Culture',  'film',                          'Film'],
+  ['Culture',  'music_notes_eighth',            'Music'],
+  ['Culture',  'palette',                       'Palette'],
+  ['Culture',  'newspaper',                     'Newspaper'],
+  ['Culture',  'globe',                         'Globe'],
+  ['Built',    'arch',                          'Arch'],
+  ['Built',    'obelisk',                       'Obelisk'],
+  ['Built',    'fountain',                      'Fountain'],
+  ['Built',    'lantern',                       'Lantern'],
+  ['Built',    'lightbulb',                     'Lightbulb'],
+  ['Built',    'envelope',                      'Envelope'],
+];
+const pinheadCache = new Map();
+async function loadPinhead(name) {
+  if (pinheadCache.has(name)) return pinheadCache.get(name);
+  try {
+    const r = await fetch(PINHEAD_BASE + name + '.svg');
+    if (!r.ok) throw new Error(name);
+    const svg = await r.text();
+    pinheadCache.set(name, svg);
+    return svg;
+  } catch (e) {
+    pinheadCache.set(name, null);
+    return null;
+  }
+}
 
 // =====================================================================
 // STATE
@@ -947,16 +1062,31 @@ try {
 // ADR-008: Center marker
 // =====================================================================
 let markerInstance = null;
-function updateMarker() {
+async function updateMarker() {
   if (markerInstance) { markerInstance.remove(); markerInstance = null; }
   if (!state.marker.enabled) return;
+  const type = state.marker.type;
+  let svgString;
+  if (type && type.startsWith('pinhead:')) {
+    svgString = await loadPinhead(type.slice(8));
+    if (!svgString) svgString = MARKER_ICONS.pin;
+  } else {
+    svgString = MARKER_ICONS[type] || MARKER_ICONS.pin;
+  }
   const el = document.createElement('div');
+  el.className = 'center-marker';
   el.style.color = state.palette.accent;
   el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))';
   el.style.pointerEvents = 'none';
-  el.innerHTML = MARKER_ICONS[state.marker.type] || MARKER_ICONS.pin;
-  markerInstance = new maplibregl.Marker({ element: el, anchor: state.marker.type === 'pin' ? 'bottom' : 'center' })
-    .setLngLat([state.marker.lng, state.marker.lat]).addTo(map);
+  el.innerHTML = svgString;
+  const sv = el.querySelector('svg');
+  if (sv) {
+    sv.setAttribute('width', '38');
+    sv.setAttribute('height', '38');
+    sv.style.fill = 'currentColor';
+  }
+  const anchor = type === 'pin' ? 'bottom' : 'center';
+  markerInstance = new maplibregl.Marker({ element: el, anchor }).setLngLat([state.marker.lng, state.marker.lat]).addTo(map);
 }
 
 // =====================================================================
@@ -1356,7 +1486,7 @@ function inInput(e) {
 }
 window.addEventListener('keydown', e => {
   if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openHelp(); return; }
-  if (e.key === 'Escape') { closeHelp(); return; }
+  if (e.key === 'Escape') { closeHelp(); closePinhead(); return; }
   if (inInput(e)) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
@@ -1384,6 +1514,70 @@ function closeHelp() { document.getElementById('helpModal').classList.remove('op
 document.getElementById('helpBtn').addEventListener('click', openHelp);
 document.getElementById('closeHelp').addEventListener('click', closeHelp);
 document.getElementById('helpModal').addEventListener('click', e => { if (e.target.id === 'helpModal') closeHelp(); });
+
+// =====================================================================
+// ADR-021: Pinhead icon picker
+// =====================================================================
+function openPinhead() {
+  document.getElementById('pinheadModal').classList.add('open');
+  if (!document.getElementById('pinheadGrid').dataset.rendered) {
+    renderPinheadGrid('');
+    document.getElementById('pinheadGrid').dataset.rendered = '1';
+  }
+}
+function closePinhead() { document.getElementById('pinheadModal').classList.remove('open'); }
+
+function renderPinheadGrid(filter) {
+  const grid = document.getElementById('pinheadGrid');
+  grid.innerHTML = '';
+  const f = (filter || '').toLowerCase();
+  const filtered = PINHEAD_PICKS.filter(p => !f || p[1].includes(f) || p[2].toLowerCase().includes(f) || p[0].toLowerCase().includes(f));
+  let lastCat = '';
+  filtered.forEach(([cat, name, label]) => {
+    if (cat !== lastCat && !f) {
+      const head = document.createElement('div');
+      head.className = 'pinhead-cat';
+      head.textContent = cat;
+      grid.appendChild(head);
+      lastCat = cat;
+    }
+    const cell = document.createElement('div');
+    cell.className = 'pinhead-cell';
+    cell.title = name.replace(/_/g, ' ');
+    cell.innerHTML = `<div class="ph-icon"></div><div class="ph-label">${label}</div>`;
+    grid.appendChild(cell);
+    cell.addEventListener('click', () => {
+      pushHistory();
+      state.marker.enabled = true;
+      state.marker.type = 'pinhead:' + name;
+      const c = map.getCenter();
+      state.marker.lng = c.lng; state.marker.lat = c.lat;
+      syncMarkerUI();
+      updateMarker();
+      persist();
+      closePinhead();
+    });
+    loadPinhead(name).then(svg => {
+      if (svg) {
+        const iconHost = cell.querySelector('.ph-icon');
+        iconHost.innerHTML = svg;
+        const sv = iconHost.querySelector('svg');
+        if (sv) sv.style.fill = 'currentColor';
+      } else {
+        cell.style.opacity = 0.35;
+        cell.title += ' (failed to load)';
+      }
+    });
+  });
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:#999; font-size:13px;">No icons match "${escapeHtml(f)}"</div>`;
+  }
+}
+
+document.getElementById('pinheadOpenBtn').addEventListener('click', openPinhead);
+document.getElementById('closePinhead').addEventListener('click', closePinhead);
+document.getElementById('pinheadModal').addEventListener('click', e => { if (e.target.id === 'pinheadModal') closePinhead(); });
+document.getElementById('pinheadSearch').addEventListener('input', e => renderPinheadGrid(e.target.value));
 
 // =====================================================================
 // ADR-020: Onboarding hint

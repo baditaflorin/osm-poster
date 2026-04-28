@@ -626,6 +626,17 @@
   #map-wrap.mask-hexagon  { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
   #map-wrap.mask-star     { clip-path: polygon(50% 2%, 61% 35%, 95% 35%, 68% 56%, 79% 91%, 50% 70%, 21% 91%, 32% 56%, 5% 35%, 39% 35%); }
   #map-wrap.mask-heart    { clip-path: path('M 50,90 C 20,60 0,45 0,25 C 0,10 12,0 25,0 C 35,0 45,7 50,18 C 55,7 65,0 75,0 C 88,0 100,10 100,25 C 100,45 80,60 50,90 Z'); }
+  /* ADR-047 — custom PNG/SVG mask via mask-image */
+  #map-wrap.mask-custom {
+    -webkit-mask-image: var(--mask-img);
+            mask-image: var(--mask-img);
+    -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+            mask-position: center;
+  }
 
   /* ADR-044 — sketch hand-drawn frame overlay */
   .sketch-frame {
@@ -907,43 +918,30 @@
     <div class="body"><div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🔎</span><span class="disclose-label"><span class="disclose-title">Search</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🔎</span><span class="disclose-label"><span class="disclose-title">Search</span><span class="disclose-desc">Type or pick a quick city</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <input type="text" id="search" placeholder="City, address, landmark…" autocomplete="off">
           <div id="results"></div>
+          <div class="cities" id="cities" style="margin-top: 8px;"></div>
         </div></div>
       </div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🏙</span><span class="disclose-label"><span class="disclose-title">Quick cities</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">🧭</span><span class="disclose-label"><span class="disclose-title">Map view</span><span class="disclose-desc">Roads, rotation, tilt, weights</span></span><span class="chev">›</span></button>
         <div class="body"><div>
-          <div class="cities" id="cities"></div>
-        </div></div>
-      </div>
-
-      <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🛣</span><span class="disclose-label"><span class="disclose-title">Roads</span></span><span class="chev">›</span></button>
-        <div class="body"><div>
+          <div class="sub-title" style="margin: 4px 0 6px;">Road preset</div>
           <div class="frames" style="grid-template-columns: 1fr 1fr 1fr;">
             <button data-roads="off">Off</button>
             <button data-roads="simple" class="active">Simple</button>
             <button data-roads="detailed">Detailed</button>
           </div>
-          <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
-            Simple = main roads only. Detailed adds paths, streets, and cycleways.
-          </div>
-        </div></div>
-      </div>
-
-      <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🧭</span><span class="disclose-label"><span class="disclose-title">Map view</span></span><span class="chev">›</span></button>
-        <div class="body"><div>
+          <div class="sub-title" style="margin: 12px 0 4px;">Sliders</div>
           <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>
           <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
           <div class="row"><label>Weight</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
           <div class="row"><label>Heights</label><input type="range" id="buildingHeight" min="0.5" max="8" step="0.5" value="1"><span class="val" id="buildingHeightVal">1.0×</span></div>
           <div style="font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.4;">
-            Multiplies 3D building heights — only visible when Tilt &gt; 0.
+            Heights multiplies 3D buildings — only visible when Tilt &gt; 0.
           </div>
         </div></div>
       </div>
@@ -1092,9 +1090,19 @@
               <option value="hexagon">Hexagon</option>
               <option value="star">Star</option>
               <option value="heart">Heart</option>
+              <option value="custom">Custom (PNG/SVG)</option>
             </select>
             <label class="toggle"><input type="checkbox" id="sketchFrameToggle"> Sketch frame</label>
           </div>
+          <label class="drop-zone" id="maskDrop" style="margin-top:8px;">
+            <input type="file" id="maskFile" accept="image/png,image/svg+xml,image/webp">
+            <span>🎭 Drop PNG/SVG mask (alpha = visible)</span>
+          </label>
+          <div class="actions" style="margin-top:6px;">
+            <button id="maskSampleBtn">Use sample (torn paper)</button>
+            <button id="maskClearBtn">Clear mask</button>
+          </div>
+          <div class="drop-status" id="maskStatus"></div>
         </div></div>
       </div>
 
@@ -1141,18 +1149,15 @@
     <div class="body"><div>
 
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">📝</span><span class="disclose-label"><span class="disclose-title">Caption</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">📝</span><span class="disclose-label"><span class="disclose-title">Caption</span><span class="disclose-desc">Text, typography, watermark</span></span><span class="chev">›</span></button>
         <div class="body"><div>
+          <div class="sub-title" style="margin: 4px 0 6px;">Text</div>
           <input type="text" id="title" placeholder="Title" maxlength="40">
           <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
           <input type="text" id="watermark" placeholder="Custom watermark (optional, replaces URL)" maxlength="60">
           <div class="subtitle-chips" id="subtitleChips"></div>
-        </div></div>
-      </div>
 
-      <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">🅰️</span><span class="disclose-label"><span class="disclose-title">Typography</span><span class="disclose-desc">Title / subtitle / coords / custom font</span></span><span class="chev">›</span></button>
-        <div class="body"><div>
+          <div class="sub-title" style="margin: 12px 0 6px;">Typography</div>
           <div class="style-options">
             <select id="titleWeight">
               <option value="regular">Regular title</option>
@@ -1177,9 +1182,11 @@
               <option value="hidden">Hide coords</option>
             </select>
           </div>
-          <label class="drop-zone" id="fontDrop" style="margin-top:10px;">
+
+          <div class="sub-title" style="margin: 12px 0 6px;">Custom font</div>
+          <label class="drop-zone" id="fontDrop">
             <input type="file" id="fontFile" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf">
-            <span>🅰️ Drop a .woff2 / .ttf to use as caption font</span>
+            <span>🅰️ Drop a .woff2 / .ttf for the caption</span>
           </label>
           <div class="drop-status" id="fontStatus"></div>
         </div></div>
@@ -3921,20 +3928,83 @@ if (hueEl) hueEl.addEventListener('input', safe(() => {
   applyMapFilters(); persist();
 }, 'mapHue'));
 
-// ADR-043 — Map mask shape (clip-path on #map-wrap)
+// ADR-043 + ADR-047 — Map mask shapes & custom PNG/SVG mask
+const SAMPLE_MASK_DATAURL = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <path fill="black" d="M 3,4 Q 18,2 32,4 Q 50,1 68,3 Q 84,2 96,5 Q 98,20 96,38 Q 99,55 97,72 Q 96,88 95,97 Q 78,95 60,97 Q 42,99 24,96 Q 10,98 3,95 Q 5,80 3,62 Q 1,45 4,28 Q 2,14 3,4 Z"/>
+  </svg>`
+);
+function readMaskCache() {
+  try { return localStorage.getItem('osm-poster:mask') || null; } catch (_) { return null; }
+}
+function writeMaskCache(d) {
+  try { d ? localStorage.setItem('osm-poster:mask', d) : localStorage.removeItem('osm-poster:mask'); } catch (_) {}
+}
 function applyMapMask() {
   const w = document.getElementById('map-wrap');
   if (!w) return;
-  ['circle','rounded','hexagon','star','heart'].forEach(n => w.classList.remove('mask-' + n));
+  ['circle','rounded','hexagon','star','heart','custom'].forEach(n => w.classList.remove('mask-' + n));
+  w.style.removeProperty('--mask-img');
   const m = state.mapMask || 'none';
-  if (m && m !== 'none') w.classList.add('mask-' + m);
+  if (m === 'custom') {
+    const data = readMaskCache();
+    if (data) {
+      w.classList.add('mask-custom');
+      w.style.setProperty('--mask-img', `url("${data}")`);
+    }
+  } else if (m && m !== 'none') {
+    w.classList.add('mask-' + m);
+  }
   const sel = document.getElementById('mapMask');
   if (sel) sel.value = m;
+  const status = document.getElementById('maskStatus');
+  if (status) {
+    const has = !!readMaskCache();
+    status.textContent = m === 'custom'
+      ? (has ? 'Using saved mask image' : 'Drop a PNG/SVG above or click Use sample')
+      : (has ? 'Mask saved (select Custom to use it)' : '');
+  }
 }
 const maskEl = document.getElementById('mapMask');
 if (maskEl) maskEl.addEventListener('change', safe(e => {
   pushHistory(); state.mapMask = e.target.value; applyMapMask(); persist();
 }, 'mapMask'));
+
+// File upload — read image file as data URL, cache, switch select to Custom
+const maskFileEl = document.getElementById('maskFile');
+if (maskFileEl) maskFileEl.addEventListener('change', safe(e => {
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    writeMaskCache(reader.result);
+    pushHistory();
+    state.mapMask = 'custom';
+    applyMapMask();
+    persist();
+  };
+  reader.readAsDataURL(f);
+  e.target.value = '';
+}, 'maskUpload'));
+
+// Use built-in sample
+const maskSampleBtn = document.getElementById('maskSampleBtn');
+if (maskSampleBtn) maskSampleBtn.addEventListener('click', safe(() => {
+  writeMaskCache(SAMPLE_MASK_DATAURL);
+  pushHistory();
+  state.mapMask = 'custom';
+  applyMapMask();
+  persist();
+}, 'maskSample'));
+
+// Clear cached mask + revert select to none
+const maskClearBtn = document.getElementById('maskClearBtn');
+if (maskClearBtn) maskClearBtn.addEventListener('click', safe(() => {
+  writeMaskCache(null);
+  pushHistory();
+  state.mapMask = 'none';
+  applyMapMask();
+  persist();
+}, 'maskClear'));
 
 // ADR-044 — Sketch frame overlay
 function applySketchFrame() {

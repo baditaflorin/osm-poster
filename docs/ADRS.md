@@ -735,6 +735,49 @@ exported file never has confetti baked in).
 
 ---
 
+## ADR-047 — Custom PNG/SVG mask
+
+**Context.** The five clip-path mask shapes (circle / rounded /
+hexagon / star / heart) cover the geometric cases. Real personalization
+needs organic shapes — a torn-paper edge, a coffee mug silhouette, a
+constellation outline.
+
+**Decision.** A new `Custom` option in the Map mask select that uses
+CSS `mask-image` (instead of `clip-path`) on `#map-wrap`. Drop a PNG,
+SVG, or WebP — alpha channel becomes the visible area. Image data is
+read as a data URL and cached separately in localStorage under
+`osm-poster:mask` (data URLs would be too large for the URL hash).
+Ships with a built-in **Use sample (torn paper)** button that uses
+an inline SVG silhouette, so the feature is discoverable in two
+seconds.
+
+**Consequences.** mask-image uses the alpha channel, so any PNG with
+transparency works (a black-and-white PNG also works — the dark areas
+become visible). Full vendor-prefix support for older WebKit. Mask
+state survives undo/redo and reload, but not URL-hash sharing — a
+shared link drops back to the chosen named shape.
+
+---
+
+## UI consolidation pass (no ADR — UX work)
+
+Merged related sub-disclosures to reduce sidebar surface area:
+
+- **Place → Search** absorbed Quick cities (chips now sit below the
+  results dropdown). One disclosure instead of two.
+- **Place → Map view** absorbed the Roads quick-preset (Off / Simple /
+  Detailed) — the buttons live above the rotation/tilt/weight/heights
+  sliders, separated by a "Road preset" sub-title. One disclosure
+  instead of two.
+- **Compose → Caption** absorbed Typography. All caption-related
+  controls (text, typography selects, custom font upload) now live in
+  one section, organized by inline sub-titles. One disclosure instead
+  of two.
+
+Net: 3 fewer disclosures with no functionality lost.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

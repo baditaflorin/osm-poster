@@ -2078,12 +2078,33 @@ function buildStyle(s) {
 
     if (s.pitch > 8) {
       const hMul = (typeof s.buildingHeight === 'number' && s.buildingHeight > 0) ? s.buildingHeight : 1;
-      building3D = { id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 13,
+      // Low-zoom 3D fallback: real building footprints aren't in OMT
+      // tiles below zoom 13. Extrude the urban-landuse polygons as
+      // chunky "city blocks" so the heights multiplier keeps working
+      // when the user zooms out past street level.
+      layers.push({
+        id: 'building-3d-fallback',
+        type: 'fill-extrusion',
+        source: 'omt',
+        'source-layer': 'landuse',
+        filter: ['in', ['get', 'class'], ['literal', ['residential', 'commercial', 'suburb', 'neighbourhood', 'industrial']]],
+        minzoom: 8,
+        maxzoom: 13.2,
+        paint: {
+          'fill-extrusion-color': p.building,
+          'fill-extrusion-height': 60 * hMul,
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.55, 12, 0.85, 13.2, 0],
+        },
+      });
+      // Real buildings — start one zoom level earlier than before
+      // so the handoff with the fallback is seamless.
+      building3D = { id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 12,
         paint: {
           'fill-extrusion-color': p.building,
           'fill-extrusion-height': ['*', ['coalesce', ['get', 'render_height'], 8], hMul],
           'fill-extrusion-base':   ['*', ['coalesce', ['get', 'render_min_height'], 0], hMul],
-          'fill-extrusion-opacity': 0.95,
+          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0, 13.2, 0.95],
         } };
     } else {
       // ADR-041 — Building shape: filled / outlined / wireframe

@@ -238,6 +238,32 @@
   .version-badge.unknown  { color: #6e6e73; }
   .version-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
+  /* Discrete loading line — pinned at the top of the viewport */
+  #loading-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px;
+    pointer-events: none; z-index: 9999;
+    opacity: 0; transition: opacity 0.25s ease;
+    overflow: hidden;
+  }
+  #loading-bar.active { opacity: 1; }
+  #loading-bar::before {
+    content: ''; position: absolute; top: 0; height: 100%;
+    width: 30%; background: linear-gradient(90deg, transparent, #007aff, transparent);
+    animation: loading-sweep 1.4s linear infinite;
+  }
+  @keyframes loading-sweep {
+    0%   { left: -30%; }
+    100% { left: 100%; }
+  }
+
+  /* POI icon markers (Pinhead-based) */
+  .poi-marker {
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    transition: opacity 0.2s ease;
+  }
+  .poi-marker svg { fill: currentColor; }
+
   /* ===== Main ===== */
   main {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -398,6 +424,7 @@
 </style>
 </head>
 <body>
+<div id="loading-bar"></div>
 <aside>
   <div class="header-row">
     <h1>OSM Poster</h1>
@@ -649,6 +676,12 @@
   </div>
 </div>
 
+<!-- Error toast -->
+<div class="toast" id="errorToast" style="background:#c93400;">
+  <span class="msg"></span>
+  <button onclick="document.getElementById('errorToast').classList.remove('show')">Dismiss</button>
+</div>
+
 <!-- First-visit toast -->
 <div class="toast" id="onboardToast">
   <span>👋 New here? Press <kbd style="background:#444; padding:1px 6px; border-radius:3px; font-family:ui-monospace, monospace;">R</kbd> to randomize, or <kbd style="background:#444; padding:1px 6px; border-radius:3px; font-family:ui-monospace, monospace;">?</kbd> for shortcuts.</span>
@@ -659,7 +692,53 @@
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <script>
 // =====================================================================
-// PRESETS
+// RESILIENCE — global error boundary + safe wrapper
+// Nothing thrown anywhere should kill the app.
+// =====================================================================
+function reportError(err, ctx) {
+  console.error('[OSM Poster]' + (ctx ? ' [' + ctx + ']' : ''), err);
+  try {
+    const t = document.getElementById('errorToast');
+    if (t) {
+      t.querySelector('.msg').textContent = (err && err.message) ? err.message : String(err);
+      t.classList.add('show');
+      clearTimeout(t._hide);
+      t._hide = setTimeout(() => t.classList.remove('show'), 4000);
+    }
+  } catch (_) {}
+}
+function safe(fn, ctx, fallback) {
+  return function(...args) {
+    try { return fn.apply(this, args); }
+    catch (e) { reportError(e, ctx); return fallback; }
+  };
+}
+async function safeAsync(fn, ctx, fallback) {
+  try { return await fn(); }
+  catch (e) { reportError(e, ctx); return fallback; }
+}
+window.addEventListener('error', e => { if (e.error) reportError(e.error, 'window'); });
+window.addEventListener('unhandledrejection', e => reportError(e.reason, 'promise'));
+
+// =====================================================================
+// LOADING BAR — discrete top-of-viewport line, no text
+// Reference-counted so multiple concurrent loads keep it lit.
+// =====================================================================
+const Loader = (function() {
+  let n = 0;
+  const el = () => document.getElementById('loading-bar');
+  return {
+    push() { n++; const e = el(); if (e) e.classList.add('active'); },
+    pop()  { n = Math.max(0, n - 1); if (n === 0) { const e = el(); if (e) e.classList.remove('active'); } },
+    reset() { n = 0; const e = el(); if (e) e.classList.remove('active'); },
+    track(promise) { this.push(); return Promise.resolve(promise).finally(() => this.pop()); },
+  };
+})();
+
+// =====================================================================
+// PRESETS / TEMPLATES
+// Templates are presets that may also dictate frame, border, texture,
+// compass, scale — i.e. they reshape the whole poster, not just colors.
 // =====================================================================
 const PRESETS = {
   blueprint: {
@@ -727,6 +806,43 @@ const PRESETS = {
     palette: { bg: '#f5d9a3', water: '#7eb6c4', green: '#c8a86a', urban: '#e8c280', building: '#c69155', road: '#8b3a1a', rail: '#5a2a10', label: '#4a2810', accent: '#c44d2e' },
     layers: { water: true, rivers: true, parks: false, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: true, streets: false, pois: false },
     roadWeight: 1.1, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
+  },
+
+  // ============= FULL TEMPLATES =================================
+  // These also dictate frame/border/texture/compass/scale — clicking
+  // one reshapes the whole poster, not just the palette.
+
+  appleMin: {
+    name: 'Apple Min',
+    isTemplate: true,
+    palette: { bg: '#fafafa', water: '#e8ecef', green: '#f0f3f0', urban: '#f5f5f5', building: '#ececec', road: '#1d1d1f', rail: '#86868b', label: '#1d1d1f', accent: '#007aff' },
+    layers: { water: true, rivers: false, parks: false, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 0.5, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
+    frame: 'square', border: 'none', texture: 'none', compass: false, scale: false,
+  },
+  editorial: {
+    name: 'Editorial',
+    isTemplate: true,
+    palette: { bg: '#f8f6ee', water: '#cdc9bd', green: '#dcdacf', urban: '#ebe7d8', building: '#bcb8a8', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#c44d2e' },
+    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: true, places: true, streets: false, pois: false },
+    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'portrait', border: 'thin', texture: 'grain', compass: true, scale: false,
+  },
+  travelGuide: {
+    name: 'Travel Guide',
+    isTemplate: true,
+    palette: { bg: '#f1e4c2', water: '#a89169', green: '#cbb583', urban: '#dac9a0', building: '#c8b48a', road: '#5d3a1a', rail: '#3a2410', label: '#3d2510', accent: '#c44d2e' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: true, places: true, streets: false, pois: true },
+    roadWeight: 1.3, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
+    frame: 'portrait', border: 'double', texture: 'grain', compass: true, scale: true,
+  },
+  subway: {
+    name: 'Subway',
+    isTemplate: true,
+    palette: { bg: '#ffffff', water: '#bee5f0', green: '#d4e8d4', urban: '#fafafa', building: '#f0f0f0', road: '#dd4444', rail: '#1a1a1a', label: '#1a1a1a', accent: '#007aff' },
+    layers: { water: true, rivers: false, parks: true, greenery: false, buildings: false, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
+    roadWeight: 1.6, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+    frame: 'landscape', border: 'thin', texture: 'none', compass: false, scale: false,
   },
 };
 
@@ -803,17 +919,115 @@ const PINHEAD_PICKS = [
 const pinheadCache = new Map();
 async function loadPinhead(name) {
   if (pinheadCache.has(name)) return pinheadCache.get(name);
-  try {
-    const r = await fetch(PINHEAD_BASE + name + '.svg');
-    if (!r.ok) throw new Error(name);
-    const svg = await r.text();
-    pinheadCache.set(name, svg);
-    return svg;
-  } catch (e) {
-    pinheadCache.set(name, null);
-    return null;
-  }
+  return Loader.track((async () => {
+    try {
+      const r = await fetch(PINHEAD_BASE + name + '.svg');
+      if (!r.ok) throw new Error(name);
+      const svg = await r.text();
+      pinheadCache.set(name, svg);
+      return svg;
+    } catch (e) {
+      pinheadCache.set(name, null);
+      return null;
+    }
+  })());
 }
+
+// =====================================================================
+// POI OVERLAY — render OSM points-of-interest as Pinhead icon markers
+// Reads features from the already-loaded vector tiles, no extra fetch.
+// =====================================================================
+const POI_ICON_MAP = {
+  bar: 'barrel_with_bunghole', pub: 'barrel_with_bunghole', biergarten: 'barrel_with_bunghole',
+  restaurant: 'fork_and_sausage', cafe: 'fork_and_sausage', fast_food: 'fork_and_sausage',
+  food_court: 'fork_and_sausage', ice_cream: 'fork_and_sausage',
+  shop: 'bag', marketplace: 'bag', mall: 'bag',
+  attraction: 'flag', viewpoint: 'flag', historic: 'flag', monument: 'obelisk',
+  memorial: 'obelisk', archaeological_site: 'cairn', castle: 'arch', ruins: 'cairn',
+  place_of_worship: 'arch', church: 'arch', mosque: 'arch', temple: 'arch', synagogue: 'arch',
+  sports: 'barbell', leisure: 'barbell', stadium: 'american_football', pitch: 'american_football',
+  fitness_centre: 'barbell', swimming_pool: 'life_ring', golf_course: 'golf_green',
+  park: 'campfire', garden: 'campfire', playground: 'campfire', picnic_site: 'campfire',
+  music_venue: 'music_notes_eighth', nightclub: 'music_notes_eighth',
+  theatre: 'music_notes_eighth', cinema: 'film',
+  museum: 'palette', art_gallery: 'palette', arts_centre: 'palette', gallery: 'palette',
+  fountain: 'fountain', drinking_water: 'fountain',
+  library: 'newspaper', information: 'bulletin_board', tourist_information: 'bulletin_board',
+  hospital: 'lightbulb', clinic: 'lightbulb', pharmacy: 'lightbulb',
+  school: 'newspaper', college: 'newspaper', university: 'newspaper',
+  bench: 'bed', hotel: 'bed', hostel: 'bed', motel: 'bed', guest_house: 'bed',
+  bus_stop: 'flag', bus_station: 'flag', tram_stop: 'flag',
+  railway_station: 'bridge', station: 'bridge',
+  aerodrome: 'balloon', helipad: 'balloon',
+  beach: 'beach_umbrella_in_ground', beach_resort: 'beach_umbrella_in_ground',
+  cave: 'cave', cave_entrance: 'cave',
+  campsite: 'campfire', caravan_site: 'campfire',
+  fuel: 'lightbulb', charging_station: 'lightbulb',
+  parking: 'flag',
+};
+
+function pinheadForPOI(props) {
+  const c = String(props.class || '').toLowerCase();
+  const s = String(props.subclass || '').toLowerCase();
+  return POI_ICON_MAP[c] || POI_ICON_MAP[s] || 'jewel';
+}
+
+let poiMarkers = [];
+let poiTimer = null;
+
+function clearPOIMarkers() {
+  poiMarkers.forEach(m => { try { m.remove(); } catch (e) {} });
+  poiMarkers = [];
+}
+
+function refreshPOIs() {
+  clearTimeout(poiTimer);
+  poiTimer = setTimeout(() => safeAsync(async () => {
+    clearPOIMarkers();
+    if (!state.layers.pois || map.getZoom() < 13) return;
+
+    let features;
+    try { features = map.querySourceFeatures('omt', { sourceLayer: 'poi' }); }
+    catch (e) { return; }
+
+    const seen = new Set();
+    const picks = [];
+    for (const f of features) {
+      const name = f.properties.name || f.properties['name:latin'] || '';
+      if (!name) continue;
+      const coord = f.geometry && f.geometry.coordinates;
+      if (!coord || !Array.isArray(coord)) continue;
+      const key = name + '|' + coord.join(',');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      picks.push({ name, coord, props: f.properties });
+      if (picks.length >= 40) break;
+    }
+
+    for (const f of picks) {
+      const iconName = pinheadForPOI(f.props);
+      const svg = await loadPinhead(iconName);
+      if (!svg) continue;
+      const el = document.createElement('div');
+      el.className = 'poi-marker';
+      el.style.color = state.palette.accent || '#007aff';
+      el.title = f.name;
+      el.innerHTML = svg;
+      const sv = el.querySelector('svg');
+      if (sv) {
+        sv.setAttribute('width', '20');
+        sv.setAttribute('height', '20');
+        sv.style.fill = 'currentColor';
+      }
+      const m = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat(f.coord).addTo(map);
+      poiMarkers.push(m);
+    }
+  }, 'refreshPOIs'), 200);
+}
+
+map.on('moveend', refreshPOIs);
+map.on('idle', refreshPOIs);
 
 // =====================================================================
 // STATE
@@ -837,9 +1051,14 @@ function defaultState() {
   };
 }
 
+// Optional template-level fields. When a preset is a "full template" it
+// can carry these and they apply on selection; palette-only presets
+// preserve the user's current frame/border/etc.
+const TEMPLATE_FIELDS = ['frame', 'border', 'texture', 'compass', 'scale'];
+
 function clonePreset(key) {
   const p = PRESETS[key];
-  return {
+  const clone = {
     palette: { ...p.palette },
     // Roads and boundaries default ON (preserve historical behavior)
     layers: { roads: true, boundaries: true, ...p.layers },
@@ -847,6 +1066,8 @@ function clonePreset(key) {
     roadStyle: p.roadStyle,
     labelFont: p.labelFont,
   };
+  TEMPLATE_FIELDS.forEach(k => { if (k in p) clone[k] = p[k]; });
+  return clone;
 }
 
 let state = defaultState();
@@ -1084,11 +1305,8 @@ function buildStyle(s) {
       layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 11, 'symbol-placement': 'line' },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
   }
-  if (s.layers.pois) {
-    layers.push({ id: 'poi', type: 'symbol', source: 'omt', 'source-layer': 'poi', minzoom: 14,
-      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 11 },
-      paint: { 'text-color': p.accent, 'text-halo-color': accentHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
-  }
+  // POIs are rendered as Pinhead icon HTML markers (see refreshPOIs).
+  // We don't add a symbol layer here so icons fully replace text.
 
   return {
     version: 8,
@@ -1134,6 +1352,11 @@ const map = new maplibregl.Map({
   // Snappier transitions reduce the perceived "many tiles loading" effect.
   fadeDuration: 100,
 });
+
+// Loader hooks — show the line while tiles are in flight.
+map.on('dataloading', () => Loader.push());
+map.on('data',        e => { if (e.dataType === 'source' && e.isSourceLoaded) Loader.pop(); });
+map.on('idle',        () => Loader.reset());
 
 // Slow the scroll-wheel zoom rate so each tick is more deliberate.
 // Default fires fractional zoom changes per wheel event — this lets a
@@ -1370,11 +1593,13 @@ LAYER_ORDER.forEach(k => {
   lbl.className = 'toggle';
   lbl.innerHTML = `<input type="checkbox" data-layer="${k}"> ${LAYER_LABELS[k]}`;
   togglesEl.appendChild(lbl);
-  lbl.querySelector('input').addEventListener('change', e => {
+  lbl.querySelector('input').addEventListener('change', safe(e => {
     pushHistory();
     state.layers[k] = e.target.checked;
-    restyle(); persist();
-  });
+    restyle();
+    if (k === 'pois') refreshPOIs();
+    persist();
+  }, 'layerToggle'));
 });
 
 const bearingInput = document.getElementById('bearing');
@@ -1456,13 +1681,17 @@ PALETTE_KEYS.forEach(k => {
   lbl.innerHTML = `<div class="swatch-btn" data-key="${k}"><input type="color" data-key="${k}"></div><span>${PALETTE_LABELS[k]}</span>`;
   paletteEl.appendChild(lbl);
   const input = lbl.querySelector('input');
-  input.addEventListener('input', e => {
+  input.addEventListener('input', safe(e => {
     state.palette[k] = e.target.value;
     syncSwatches();
     restyle();
     if (markerInstance) updateMarker();
+    if (k === 'accent') {
+      // Recolor existing POI markers without rebuilding the list.
+      poiMarkers.forEach(m => { try { m.getElement().style.color = e.target.value; } catch (_) {} });
+    }
     persist();
-  });
+  }, 'palettePicker'));
   input.addEventListener('change', () => pushHistory());
 });
 

@@ -531,19 +531,21 @@
     transform: translateX(-50%);
   }
 
-  /* ADR-028 — Polaroid: white-framed photo card on the map */
-  .polaroid {
-    pointer-events: auto;
+  /* ADR-028 — Polaroid: white-framed photo card on the map.
+     Outer .polaroid is positioned by MapLibre (transform: translate);
+     .polaroid-inner carries the rotation so it doesn't get clobbered. */
+  .polaroid { pointer-events: auto; cursor: grab; }
+  .polaroid-inner {
+    position: relative;
     background: #fff;
     padding: 8px 8px 18px;
     border-radius: 2px;
     box-shadow: 0 6px 16px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.18);
-    transform: rotate(-3deg);
-    transition: transform 0.15s ease;
-    cursor: grab;
     width: 100px;
+    transition: transform 0.18s ease;
+    transform-origin: 50% 100%;
   }
-  .polaroid:hover { transform: rotate(-3deg) scale(1.05); }
+  .polaroid-inner:hover { transform: rotate(var(--rot, 0deg)) scale(1.06); }
   .polaroid img { width: 100%; height: 80px; object-fit: cover; display: block; }
   .polaroid .pcap {
     margin-top: 6px;
@@ -556,6 +558,7 @@
     background: #ff3b30; color: #fff;
     font-size: 14px; line-height: 18px; text-align: center;
     cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    z-index: 2;
   }
 
   /* ADR-024/028 — placement mode crosshair cursor on the map */
@@ -616,6 +619,36 @@
   /* Sliders for percent dials (saturation, contrast, etc.) */
   .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
+
+  /* ADR-043 — map mask shapes (clip-path on #map-wrap) */
+  #map-wrap.mask-circle   { clip-path: circle(50% at 50% 50%); }
+  #map-wrap.mask-rounded  { clip-path: inset(0 round 24px); }
+  #map-wrap.mask-hexagon  { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+  #map-wrap.mask-star     { clip-path: polygon(50% 2%, 61% 35%, 95% 35%, 68% 56%, 79% 91%, 50% 70%, 21% 91%, 32% 56%, 5% 35%, 39% 35%); }
+  #map-wrap.mask-heart    { clip-path: path('M 50,90 C 20,60 0,45 0,25 C 0,10 12,0 25,0 C 35,0 45,7 50,18 C 55,7 65,0 75,0 C 88,0 100,10 100,25 C 100,45 80,60 50,90 Z'); }
+
+  /* ADR-044 — sketch hand-drawn frame overlay */
+  .sketch-frame {
+    position: absolute; inset: 0; pointer-events: none; z-index: 6;
+    display: none;
+  }
+  .sketch-frame.on { display: block; }
+  .sketch-frame svg { width: 100%; height: 100%; }
+  .sketch-frame .stroke { stroke: var(--border-color, #111); fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
+
+  /* ADR-046 — confetti particle */
+  .confetti-particle {
+    position: absolute; left: 50%; top: 50%;
+    width: 8px; height: 12px;
+    pointer-events: none; z-index: 1000;
+    border-radius: 2px;
+    transform: translate(-50%, -50%);
+    animation: confetti-fly 1500ms cubic-bezier(0.15, 0.7, 0.4, 1) forwards;
+  }
+  @keyframes confetti-fly {
+    0%   { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot, 360deg)); opacity: 0; }
+  }
 
   /* ===== Main ===== */
   main {
@@ -1045,7 +1078,19 @@
           </div>
           <div class="row" style="margin-top: 10px;"><label>Saturation</label><input type="range" id="mapSaturation" min="0" max="200" step="5" value="100"><span class="val" id="mapSaturationVal">100%</span></div>
           <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
+          <div class="row"><label>Hue</label><input type="range" id="mapHue" min="0" max="360" step="5" value="0"><span class="val" id="mapHueVal">0°</span></div>
           <div class="row"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
+          <div class="effects-grid" style="margin-top: 10px;">
+            <select id="mapMask">
+              <option value="none">No mask</option>
+              <option value="circle">Circle</option>
+              <option value="rounded">Rounded corners</option>
+              <option value="hexagon">Hexagon</option>
+              <option value="star">Star</option>
+              <option value="heart">Heart</option>
+            </select>
+            <label class="toggle"><input type="checkbox" id="sketchFrameToggle"> Sketch frame</label>
+          </div>
         </div></div>
       </div>
 
@@ -1096,6 +1141,7 @@
         <div class="body"><div>
           <input type="text" id="title" placeholder="Title" maxlength="40">
           <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
+          <input type="text" id="watermark" placeholder="Custom watermark (optional, replaces URL)" maxlength="60">
           <div class="subtitle-chips" id="subtitleChips"></div>
         </div></div>
       </div>
@@ -1242,6 +1288,12 @@
         <div class="stars-overlay" id="starsOverlay"></div>
         <div class="grain" id="grain"></div>
         <div class="date-stamp" id="dateStamp"></div>
+        <div class="sketch-frame" id="sketchFrame">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path class="stroke" d="M 4,3 Q 25,2 50,3 T 96,4 Q 95,25 96,50 T 95,96 Q 75,95 50,96 T 4,95 Q 5,75 4,50 T 4,3 Z" />
+            <path class="stroke" d="M 6,5 Q 30,7 50,5 T 94,6 Q 95,30 93,50 T 94,94 Q 70,93 50,94 T 6,94 Q 7,70 6,50 T 6,5 Z" stroke-dasharray="2,3" stroke-width="1" opacity="0.6" />
+          </svg>
+        </div>
         <svg class="compass hidden" id="compass" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.7"/>
           <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
@@ -1821,6 +1873,12 @@ function defaultState() {
     buildingShape: 'filled',  // filled | outlined | wireframe
     stars: false,             // sprinkle stars overlay
     titleSpacingDelta: 0,     // -4..+8 px adjustment over preset
+    // 5 more creative dials (ADR-042..046)
+    mapHue: 0,                // 0..360° global hue rotation
+    mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
+    sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
+    watermark: '',            // user-typed line shown in caption corner
+    // (confetti has no state — fires once per randomize/export)
     titleWeight: 'bold',
     titleSize: 'medium',
     subtitleStyle: 'regular',
@@ -3011,6 +3069,9 @@ function applyState({ silent } = {}) {
   applyMapFilters();
   applyTitleSpacing();
   syncEffectsToggles();
+  applyMapMask();
+  applySketchFrame();
+  applyWatermark();
   restyle();
   refreshPOIs();
   renderAnnotations();
@@ -3330,16 +3391,24 @@ function clearPolaroidMarkers() {
 function renderPolaroids() {
   clearPolaroidMarkers();
   (state.polaroids || []).forEach((p, idx) => {
-    const el = document.createElement('div');
-    el.className = 'polaroid';
-    el.style.position = 'relative';
-    el.style.transform = `rotate(${p.rot || 0}deg)`;
-    el.innerHTML = `<img src="${p.dataUrl}" alt=""><div class="pcap">${(p.caption || '').replace(/[<>"']/g, '')}</div><div class="px" title="Remove">×</div>`;
-    el.querySelector('.px').addEventListener('click', e => {
+    // Backfill a random rotation for older polaroids that pre-date the
+    // rot field (or had it set to 0 by accident).
+    if (typeof p.rot !== 'number' || p.rot === 0) p.rot = -8 + Math.random() * 16;
+    const outer = document.createElement('div');
+    outer.className = 'polaroid';
+    const safeCap = (p.caption || '').replace(/[<>"']/g, '');
+    outer.innerHTML = `
+      <div class="polaroid-inner" style="transform: rotate(${p.rot}deg); --rot: ${p.rot}deg;">
+        <img src="${p.dataUrl}" alt="">
+        <div class="pcap">${safeCap}</div>
+        <div class="px" title="Remove">×</div>
+      </div>
+    `;
+    outer.querySelector('.px').addEventListener('click', e => {
       e.stopPropagation();
       pushHistory(); state.polaroids.splice(idx, 1); renderPolaroids(); persist();
     });
-    const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([p.lng, p.lat]).addTo(map);
+    const mk = new maplibregl.Marker({ element: outer, anchor: 'center' }).setLngLat([p.lng, p.lat]).addTo(map);
     polaroidMarkers.push(mk);
   });
   const s = document.getElementById('polaroidStatus');
@@ -3729,6 +3798,126 @@ const bShapeEl = document.getElementById('buildingShape');
 if (bShapeEl) bShapeEl.addEventListener('change', safe(e => {
   pushHistory(); state.buildingShape = e.target.value; restyle(); persist();
 }, 'buildingShape'));
+
+// =====================================================================
+// 5 MORE CREATIVE DIALS — ADR-042..046
+// =====================================================================
+
+// ADR-042 — Global hue rotation. Composes into the same filter chain
+// as saturation/contrast/TOD by reusing applyMapFilters.
+const _origApplyMapFilters = applyMapFilters;
+applyMapFilters = function() {
+  const w = document.getElementById('map-wrap');
+  if (!w) return;
+  const s = (typeof state.mapSaturation === 'number') ? state.mapSaturation : 100;
+  const c = (typeof state.mapContrast   === 'number') ? state.mapContrast   : 100;
+  const h = (typeof state.mapHue        === 'number') ? state.mapHue        : 0;
+  const parts = [];
+  if (s !== 100) parts.push(`saturate(${s / 100})`);
+  if (c !== 100) parts.push(`contrast(${c / 100})`);
+  if (h !== 0)   parts.push(`hue-rotate(${h}deg)`);
+  let tod = state.tod;
+  if (tod === 'auto') {
+    const lng = (state.view && state.view.center && state.view.center[0]) || 0;
+    const hour = ((new Date().getUTCHours() + (lng / 15)) % 24 + 24) % 24;
+    tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
+  }
+  const TOD_FILTERS = {
+    dawn:   'hue-rotate(-12deg) saturate(0.85) brightness(0.96)',
+    golden: 'sepia(0.32) saturate(1.18) hue-rotate(-12deg)',
+    dusk:   'hue-rotate(15deg) saturate(0.90) brightness(0.84)',
+    night:  'brightness(0.66) saturate(0.65) contrast(1.05)',
+  };
+  if (TOD_FILTERS[tod]) parts.unshift(TOD_FILTERS[tod]);
+  w.style.filter = parts.length ? parts.join(' ') : '';
+  const sa = document.getElementById('mapSaturation'),  saV = document.getElementById('mapSaturationVal');
+  const co = document.getElementById('mapContrast'),    coV = document.getElementById('mapContrastVal');
+  const hu = document.getElementById('mapHue'),         huV = document.getElementById('mapHueVal');
+  if (sa) sa.value = s; if (saV) saV.textContent = s + '%';
+  if (co) co.value = c; if (coV) coV.textContent = c + '%';
+  if (hu) hu.value = h; if (huV) huV.textContent = h + '°';
+};
+const hueEl = document.getElementById('mapHue');
+if (hueEl) hueEl.addEventListener('input', safe(() => {
+  state.mapHue = parseInt(hueEl.value, 10);
+  applyMapFilters(); persist();
+}, 'mapHue'));
+
+// ADR-043 — Map mask shape (clip-path on #map-wrap)
+function applyMapMask() {
+  const w = document.getElementById('map-wrap');
+  if (!w) return;
+  ['circle','rounded','hexagon','star','heart'].forEach(n => w.classList.remove('mask-' + n));
+  const m = state.mapMask || 'none';
+  if (m && m !== 'none') w.classList.add('mask-' + m);
+  const sel = document.getElementById('mapMask');
+  if (sel) sel.value = m;
+}
+const maskEl = document.getElementById('mapMask');
+if (maskEl) maskEl.addEventListener('change', safe(e => {
+  pushHistory(); state.mapMask = e.target.value; applyMapMask(); persist();
+}, 'mapMask'));
+
+// ADR-044 — Sketch frame overlay
+function applySketchFrame() {
+  const f = document.getElementById('sketchFrame');
+  if (!f) return;
+  f.classList.toggle('on', !!state.sketchFrame);
+  // Stroke color follows the existing border-color CSS var (set by applyBorder)
+  const cb = document.getElementById('sketchFrameToggle');
+  if (cb) cb.checked = !!state.sketchFrame;
+}
+const sketchCb = document.getElementById('sketchFrameToggle');
+if (sketchCb) sketchCb.addEventListener('change', safe(e => {
+  state.sketchFrame = e.target.checked; applySketchFrame(); persist();
+}, 'sketchFrame'));
+
+// ADR-045 — Custom watermark text replaces the default URL
+function applyWatermark() {
+  const el = document.querySelector('.caption-mark');
+  if (!el) return;
+  const w = (state.watermark || '').trim();
+  el.textContent = w || 'baditaflorin.github.io/osm-poster';
+  const inp = document.getElementById('watermark');
+  if (inp && inp.value !== (state.watermark || '')) inp.value = state.watermark || '';
+}
+const wmEl = document.getElementById('watermark');
+if (wmEl) wmEl.addEventListener('input', safe(() => {
+  state.watermark = wmEl.value; applyWatermark(); persist();
+}, 'watermark'));
+
+// ADR-046 — Confetti micro-celebration
+function fireConfetti(origin) {
+  const main = document.querySelector('main');
+  if (!main) return;
+  // Use absolute positioning so left/top % work; main has position:relative? Check
+  const stage = document.createElement('div');
+  stage.style.cssText = 'position:absolute; left:0; top:0; right:0; bottom:0; pointer-events:none; z-index:1000;';
+  main.style.position = main.style.position || 'relative';
+  main.appendChild(stage);
+  const colors = ['#FF61D2','#FE9090','#FFD972','#90F1B5','#9D90FF','#7DD3FC','#F472B6'];
+  const count = 36;
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-particle';
+    c.style.background = colors[i % colors.length];
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+    const dist = 120 + Math.random() * 200;
+    c.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    c.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+    stage.appendChild(c);
+  }
+  setTimeout(() => stage.remove(), 1700);
+}
+
+// Hook randomize buttons + export to fire confetti
+const _randBtn = document.getElementById('randomize');
+if (_randBtn) _randBtn.addEventListener('click', () => fireConfetti());
+const _randStyleBtn = document.getElementById('randomizeStyleBtn');
+if (_randStyleBtn) _randStyleBtn.addEventListener('click', () => fireConfetti());
+const _exportBtnConfetti = document.getElementById('export');
+if (_exportBtnConfetti) _exportBtnConfetti.addEventListener('click', () => setTimeout(fireConfetti, 50));
 
 map.on('load', () => {
   ensureGpx();

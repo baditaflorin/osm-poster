@@ -652,6 +652,89 @@ just `paint` properties change. No extra layers.
 
 ---
 
+## ADR-042 — Global hue rotation
+
+**Context.** Saturation and contrast tweak intensity but can't shift
+the overall mood. A single hue knob unlocks "what if Paris were
+purple?" without rebuilding the palette.
+
+**Decision.** Slider 0-360°. Composes into the same `filter` chain as
+saturation, contrast, and TOD by extending `applyMapFilters`. 0° = no
+change.
+
+**Consequences.** Costs zero render frames — purely a CSS filter.
+Plays well with hand-picked palettes; large rotations lose preset
+intent, which is fine because that's the point.
+
+---
+
+## ADR-043 — Map mask shapes
+
+**Context.** A square / portrait poster of "where we got engaged" is
+fine. The same map cropped to a heart is unforgettable for the right
+occasion.
+
+**Decision.** A select with five shapes plus none: **circle, rounded
+corners, hexagon, star, heart**. Each maps to a CSS `clip-path` on
+`#map-wrap`. The caption stays rectangular below — only the map area
+is shaped.
+
+**Consequences.** clip-path works in every modern browser. The shape
+clips ALL overlays (vignette, grain, compass), which is the correct
+behavior. Exports correctly via html-to-image.
+
+---
+
+## ADR-044 — Sketch frame overlay
+
+**Context.** The four border styles (none / thin / double / bold) are
+all geometric. Travel-journal posters want a hand-drawn feel.
+
+**Decision.** A **Sketch frame** toggle adds an SVG overlay containing
+two intentionally-jiggly Bezier rectangles — one solid, one dashed at
+60% opacity — that follow the poster bounds. Stroke color is bound to
+the existing `--border-color` CSS variable so it tracks themes.
+
+**Consequences.** Pure SVG with `vector-effect: non-scaling-stroke`,
+so the line weight stays consistent at any export resolution. Layers
+above the map but below the caption (z-index: 6).
+
+---
+
+## ADR-045 — Custom watermark text
+
+**Context.** The default URL watermark is fine for sharing the
+project, but personal posters want a quote, a date, a name, or
+nothing branded at all.
+
+**Decision.** A text input under the caption fields. When non-empty,
+its value replaces the default URL string in `.caption-mark`. Empty =
+default URL falls back. Lives in `state.watermark` and persists via
+the standard URL hash + localStorage path.
+
+**Consequences.** One element, three lines of code. Capped at 60 chars
+to keep typography clean.
+
+---
+
+## ADR-046 — Confetti micro-celebration
+
+**Context.** Pressing **Randomize** returning a beautiful palette
+should *feel* like a small win. Same for **Export** — the moment of
+"the poster is done."
+
+**Decision.** A 36-particle CSS-animated burst from the center of the
+poster area on Randomize / Randomize-style / Export. Particles are
+positioned with `--dx` / `--dy` custom properties, rotated, and faded
+over 1.5s via a single keyframe.
+
+**Consequences.** Pure CSS animation, runs on the GPU, doesn't block
+the export pipeline. Disabled inside the export render itself
+(timeout fires after html-to-image finishes its capture, so the
+exported file never has confetti baked in).
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

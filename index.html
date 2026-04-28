@@ -640,6 +640,22 @@
   .chip:active { transform: scale(0.96); }
   .chip.active { background: var(--accent); color: #fff; }
   .chip-group.chip-half .chip { flex: 0 1 calc(50% - 3px); }
+
+  /* Inside disclose-sub bodies — give sub-sections clear breathing room */
+  .disclose-sub .sub-title {
+    font-size: 11.5px; color: var(--text-3); font-weight: 600;
+    letter-spacing: 0.4px; margin: 18px 0 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .disclose-sub .sub-title:first-child { margin-top: 4px; }
+  .disclose-sub .sub-title .sec-hint {
+    margin-left: auto; font-size: 10px; color: var(--text-4);
+    text-transform: none; letter-spacing: 0; font-weight: 500;
+  }
+  /* Sliders inside disclose-sub bodies — bigger label, more comfortable */
+  .disclose-sub .body .row { padding: 4px 0; }
+  .disclose-sub .body .row label { font-size: 12.5px; font-weight: 500; color: var(--text); min-width: 70px; }
+  .disclose-sub .body .row .val { font-size: 12px; font-weight: 500; color: var(--accent); min-width: 44px; }
   @media (max-width: 800px) {
     .chip { padding: 12px 14px; font-size: 13.5px; min-height: 44px; }
     .chip-group { gap: 6px; }
@@ -1154,36 +1170,18 @@
           </div>
 
           <div class="sub-title" style="margin: 14px 0 6px;">🎬 Filters</div>
-          <div class="effects-grid">
-            <select id="vignetteSel">
-              <option value="none">No vignette</option>
-              <option value="soft">Soft vignette</option>
-              <option value="heavy">Heavy vignette</option>
-              <option value="spotlight">Spotlight</option>
-            </select>
-            <span></span>
-          </div>
+          <div class="chip-group" data-chip-key="vignette"
+               data-options='[["none","∅ None"],["soft","🌫 Soft"],["heavy","🌑 Heavy"],["spotlight","⭐ Spotlight"]]'></div>
           <div class="row" style="margin-top: 8px;"><label>Saturation</label><input type="range" id="mapSaturation" min="0" max="200" step="5" value="100"><span class="val" id="mapSaturationVal">100%</span></div>
           <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
           <div class="row"><label>Hue</label><input type="range" id="mapHue" min="0" max="360" step="5" value="0"><span class="val" id="mapHueVal">0°</span></div>
 
-          <div class="sub-title" style="margin: 14px 0 6px;">🅰 Title flair</div>
-          <div class="effects-grid">
-            <select id="titleOrnament">
-              <option value="none">No ornament</option>
-              <option value="bullets">● Title ●</option>
-              <option value="dashes">— Title —</option>
-              <option value="brackets">[ Title ]</option>
-              <option value="asterisks">✦ Title ✦</option>
-            </select>
-            <select id="captionDivider">
-              <option value="line">Line divider</option>
-              <option value="none">No divider</option>
-              <option value="dotted">Dotted</option>
-              <option value="double">Double</option>
-              <option value="wave">Wavy</option>
-            </select>
-          </div>
+          <div class="sub-title" style="margin: 14px 0 6px;">🅰 Title ornament</div>
+          <div class="chip-group" data-chip-key="titleOrnament"
+               data-options='[["none","∅ Plain"],["bullets","● ●"],["dashes","— —"],["brackets","[ ]"],["asterisks","✦ ✦"]]'></div>
+          <div class="sub-title" style="margin: 12px 0 6px;">Caption divider</div>
+          <div class="chip-group" data-chip-key="captionDivider"
+               data-options='[["line","─ Line"],["none","∅ None"],["dotted","┄ Dotted"],["double","═ Double"],["wave","∿ Wavy"]]'></div>
           <div class="row" style="margin-top: 8px;"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
 
           <div class="sub-title" style="margin: 14px 0 6px;">🎭 Mask & overlays</div>
@@ -1513,10 +1511,12 @@
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <!-- SunCalc — production-ready sun position calculator (~3KB) -->
 <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
-<!-- Internal modules: pure helpers + data constants + style generator.
-     window.LIB / window.DATA / window.STYLE. -->
+<!-- Internal modules. Loaded in dependency order:
+     LIB (pure helpers) → DATA (constants) → PRESET_DATA (templates) →
+     STYLE (buildStyle, depends on LIB). -->
 <script src="./js/lib.js"></script>
 <script src="./js/data.js"></script>
+<script src="./js/presets.js"></script>
 <script src="./js/style.js"></script>
 <script>
 // =====================================================================
@@ -1571,230 +1571,9 @@ const Loader = (function() {
 // Templates are presets that may also dictate frame, border, texture,
 // compass, scale — i.e. they reshape the whole poster, not just colors.
 // =====================================================================
-const PRESETS = {
-  blueprint: {
-    name: 'Blueprint',
-    palette: { bg: '#0a2540', water: '#1a3a5f', green: '#0f2c4d', urban: '#0d2a47', building: '#1f426e', road: '#ffffff', rail: '#a8c8ff', label: '#ffffff', accent: '#7fb3ff' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, railways: false, paths: false, airports: false, places: false, streets: false, pois: false },
-    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
-  },
-  mono: {
-    name: 'Mono Line',
-    palette: { bg: '#ffffff', water: '#ffffff', green: '#ffffff', urban: '#ffffff', building: '#ffffff', road: '#111111', rail: '#444444', label: '#111111', accent: '#666666' },
-    layers: { water: false, rivers: false, parks: false, greenery: false, buildings: false, industrial: false, railways: false, paths: false, airports: false, places: false, streets: false, pois: false },
-    roadWeight: 0.6, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
-  },
-  midnight: {
-    name: 'Midnight',
-    palette: { bg: '#0d0d14', water: '#161624', green: '#13131c', urban: '#1a1a26', building: '#1d1d2c', road: '#d4af37', rail: '#8b6914', label: '#e8c870', accent: '#ffd966' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: true, streets: false, pois: false },
-    roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
-  },
-  vintage: {
-    name: 'Vintage',
-    palette: { bg: '#f4ecd8', water: '#bda280', green: '#c9b88a', urban: '#e0d0a8', building: '#d6c19e', road: '#6e3f24', rail: '#3a2410', label: '#3d2914', accent: '#7a4a2b' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: true, streets: false, pois: false },
-    roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
-  },
-  pastel: {
-    name: 'Pastel',
-    palette: { bg: '#fef3f2', water: '#a8d8e8', green: '#c8e4c5', urban: '#fae3d9', building: '#f7d8c9', road: '#e88aa3', rail: '#b591a5', label: '#5b4f6e', accent: '#b8a8d8' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: false, streets: false, pois: false },
-    roadWeight: 1.2, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
-  },
-  neon: {
-    name: 'Neon',
-    palette: { bg: '#000000', water: '#021a14', green: '#01170a', urban: '#080808', building: '#0d0d0d', road: '#00ff9d', rail: '#ff00aa', label: '#ff2bd6', accent: '#00e5ff' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: false, streets: false, pois: false },
-    roadWeight: 0.8, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-  },
-  parchment: {
-    name: 'Parchment',
-    palette: { bg: '#efe2bf', water: '#a89169', green: '#cbb583', urban: '#dac9a0', building: '#c8b48a', road: '#5d3a1a', rail: '#3a2410', label: '#3d2510', accent: '#8a5a2b' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, railways: false, paths: true, airports: false, places: true, streets: false, pois: false },
-    roadWeight: 1.3, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
-  },
-  tron: {
-    name: 'Tron',
-    palette: { bg: '#020617', water: '#06283d', green: '#031f1c', urban: '#040a18', building: '#0a1430', road: '#22d3ee', rail: '#a855f7', label: '#67e8f9', accent: '#f472b6' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: false, streets: false, pois: false },
-    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-  },
-  solarpunk: {
-    name: 'Solarpunk',
-    palette: { bg: '#fef9e7', water: '#88c9a1', green: '#7cb87a', urban: '#f5e6a8', building: '#e8d68a', road: '#d97706', rail: '#9f661a', label: '#3f5d3a', accent: '#d97706' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: false, paths: true, airports: false, places: true, streets: false, pois: false },
-    roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
-  },
-  newspaper: {
-    name: 'Newspaper',
-    palette: { bg: '#f5f5f0', water: '#d8d8d0', green: '#e8e8e0', urban: '#ededdf', building: '#cccac0', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#444444' },
-    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: true, streets: false, pois: false },
-    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-  },
-  desert: {
-    name: 'Desert',
-    palette: { bg: '#f5d9a3', water: '#7eb6c4', green: '#c8a86a', urban: '#e8c280', building: '#c69155', road: '#8b3a1a', rail: '#5a2a10', label: '#4a2810', accent: '#c44d2e' },
-    layers: { water: true, rivers: true, parks: false, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: true, streets: false, pois: false },
-    roadWeight: 1.1, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
-  },
+// PRESETS lives in ./js/presets.js
+const PRESETS = PRESET_DATA.PRESETS;
 
-  // ============= FULL TEMPLATES =================================
-  // These also dictate frame/border/texture/compass/scale — clicking
-  // one reshapes the whole poster, not just the palette.
-
-  appleMin: {
-    name: 'Apple Min',
-    isTemplate: true,
-    palette: { bg: '#fafafa', water: '#e8ecef', green: '#f0f3f0', urban: '#f5f5f5', building: '#ececec', road: '#1d1d1f', rail: '#86868b', label: '#1d1d1f', accent: '#007aff' },
-    layers: { water: true, rivers: false, parks: false, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 0.5, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
-    frame: 'square', border: 'none', texture: 'none', compass: false, scale: false,
-  },
-  editorial: {
-    name: 'Editorial',
-    isTemplate: true,
-    palette: { bg: '#f8f6ee', water: '#cdc9bd', green: '#dcdacf', urban: '#ebe7d8', building: '#bcb8a8', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#c44d2e' },
-    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: true, places: true, streets: false, pois: false },
-    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'portrait', border: 'thin', texture: 'grain', compass: true, scale: false,
-  },
-  travelGuide: {
-    name: 'Travel Guide',
-    isTemplate: true,
-    palette: { bg: '#f1e4c2', water: '#a89169', green: '#cbb583', urban: '#dac9a0', building: '#c8b48a', road: '#5d3a1a', rail: '#3a2410', label: '#3d2510', accent: '#c44d2e' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: true, places: true, streets: false, pois: true },
-    roadWeight: 1.3, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
-    frame: 'portrait', border: 'double', texture: 'grain', compass: true, scale: true,
-  },
-  subway: {
-    name: 'Subway',
-    isTemplate: true,
-    palette: { bg: '#ffffff', water: '#bee5f0', green: '#d4e8d4', urban: '#fafafa', building: '#f0f0f0', road: '#dd4444', rail: '#1a1a1a', label: '#1a1a1a', accent: '#007aff' },
-    layers: { water: true, rivers: false, parks: true, greenery: false, buildings: false, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 1.6, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'landscape', border: 'thin', texture: 'none', compass: false, scale: false,
-  },
-  risograph: {
-    name: 'Risograph',
-    isTemplate: true,
-    palette: { bg: '#fef0f5', water: '#9ad8e5', green: '#a8d8a0', urban: '#fde4ec', building: '#f7c8d8', road: '#e91e63', rail: '#7c8fbc', label: '#1a1a2e', accent: '#00bcd4' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 1.3, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'square', border: 'thin', texture: 'grain', compass: false, scale: false,
-  },
-  brutalist: {
-    name: 'Brutalist',
-    isTemplate: true,
-    palette: { bg: '#e8e8e8', water: '#bababa', green: '#c0c0c0', urban: '#d4d4d4', building: '#888888', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#1a1a1a' },
-    layers: { water: true, rivers: false, parks: false, greenery: false, buildings: true, industrial: true, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 1.6, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'portrait', border: 'bold', texture: 'none', compass: false, scale: false,
-  },
-  botanical: {
-    name: 'Botanical',
-    isTemplate: true,
-    palette: { bg: '#f7f1de', water: '#9ec1a3', green: '#5c8b4a', urban: '#e8dab9', building: '#bba27a', road: '#5d4523', rail: '#3d2510', label: '#2c4a1d', accent: '#8b5a2b' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
-    frame: 'portrait', border: 'double', texture: 'grain', compass: true, scale: false,
-  },
-  cyberpunk: {
-    name: 'Cyberpunk',
-    isTemplate: true,
-    palette: { bg: '#0a0014', water: '#0a0a3a', green: '#0a0a14', urban: '#100020', building: '#1a0030', road: '#ff00aa', rail: '#00ffff', label: '#fff200', accent: '#00ffff' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 1.2, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'portrait', border: 'thin', texture: 'none', compass: false, scale: false,
-  },
-  watercolor: {
-    name: 'Watercolor',
-    isTemplate: true,
-    palette: { bg: '#fdfaf3', water: '#a8c8d8', green: '#bcd2a8', urban: '#f0e3d0', building: '#dabd9d', road: '#7a5a48', rail: '#5e4536', label: '#3a2e25', accent: '#c97a5e' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
-    frame: 'portrait', border: 'thin', texture: 'grain', compass: true, scale: false,
-  },
-  espresso: {
-    name: 'Espresso',
-    isTemplate: true,
-    palette: { bg: '#3a2418', water: '#6b4438', green: '#4a3424', urban: '#4d2f1f', building: '#5e3a26', roof: '#a07654', road: '#e8c994', rail: '#d4a373', label: '#f5dfb8', accent: '#e8c994' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
-    roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
-    frame: 'square', border: 'double', texture: 'grain', compass: false, scale: false,
-    cardShadow: 'soft', roofTone: 'lighter', labelCase: 'uppercase',
-    titleWeight: 'bold', titleSize: 'medium', captionDivider: 'double',
-  },
-  constructivist: {
-    name: 'Constructivist',
-    isTemplate: true,
-    palette: { bg: '#f4e8d8', water: '#1a1a1a', green: '#1a1a1a', urban: '#f0d8c0', building: '#1a1a1a', road: '#d62828', rail: '#1a1a1a', label: '#1a1a1a', accent: '#d62828' },
-    layers: { water: true, rivers: false, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, places: true, streets: false, pois: false },
-    roadWeight: 1.8, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'portrait', border: 'bold', texture: 'none', compass: false, scale: false,
-  },
-  aurora: {
-    name: 'Aurora',
-    isTemplate: true,
-    palette: { bg: '#0d1b2a', water: '#1b4332', green: '#2d6a4f', urban: '#1a2433', building: '#243447', roof: '#3d5a7a', road: '#95d5b2', rail: '#52b788', label: '#d8f3dc', accent: '#7dd3fc' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
-    roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
-    frame: 'portrait', border: 'thin', texture: 'none', compass: true, scale: false,
-    stars: true, cardShadow: 'float', tod: 'night', roofTone: 'lighter',
-    titleSize: 'large', titleWeight: 'bold', subtitleStyle: 'italic',
-  },
-
-  // === 4 NEW TEMPLATES ===
-
-  manhattan: {
-    name: 'Manhattan',
-    isTemplate: true,
-    palette: { bg: '#1a1f2e', water: '#0c4a6e', green: '#143524', urban: '#1f2a40', building: '#3b4a6b', roof: '#7a92b8', road: '#fcd34d', rail: '#94a3b8', label: '#f1f5f9', accent: '#fcd34d' },
-    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: true, countries: false, water_names: false, park_names: false, streets: true, pois: false },
-    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'portrait', border: 'thin', texture: 'none', compass: false, scale: false,
-    pitch: 50, buildingHeight: 4.5, buildingShading: true,
-    realisticLight: true, roofTone: 'lighter', cardShadow: 'float',
-    titleSize: 'large', titleWeight: 'heavy', labelCase: 'uppercase',
-  },
-
-  sketchbook: {
-    name: 'Sketchbook',
-    isTemplate: true,
-    palette: { bg: '#f4ecd8', water: '#8c7853', green: '#a8956a', urban: '#e8dab9', building: '#cdb892', roof: '#cdb892', road: '#3a2418', rail: '#3a2418', label: '#1f1408', accent: '#a04020' },
-    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: true, park_names: false, streets: false, pois: false },
-    roadWeight: 1.1, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
-    frame: 'portrait', border: 'none', texture: 'grain', compass: false, scale: false,
-    sketchFrame: true, frameOrnaments: true, cardShadow: 'soft',
-    roadCaps: 'round', labelCase: 'asis', captionDivider: 'wave',
-    titleSize: 'medium', titleWeight: 'regular', subtitleStyle: 'italic',
-    titleOrnament: 'bullets',
-  },
-
-  risoPop: {
-    name: 'Riso Pop',
-    isTemplate: true,
-    palette: { bg: '#fff5e0', water: '#22d3ee', green: '#fde68a', urban: '#fef3c7', building: '#fbcfe8', roof: '#f0abfc', road: '#ec4899', rail: '#a855f7', label: '#0f172a', accent: '#22d3ee' },
-    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
-    roadWeight: 1.5, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
-    frame: 'square', border: 'bold', texture: 'halftone', compass: false, scale: false,
-    cardShadow: 'hard', roofTone: 'accent', labelCase: 'uppercase',
-    titleSize: 'large', titleWeight: 'heavy', captionDivider: 'double',
-    mapSaturation: 130,
-  },
-
-  twilight: {
-    name: 'Twilight',
-    isTemplate: true,
-    palette: { bg: '#1e1b4b', water: '#312e81', green: '#1e1b4b', urban: '#2e1065', building: '#3b0764', roof: '#7c3aed', road: '#fbbf24', rail: '#f472b6', label: '#fef3c7', accent: '#f472b6' },
-    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
-    roadWeight: 0.8, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
-    frame: 'portrait', border: 'thin', texture: 'none', compass: true, scale: false,
-    pitch: 25, buildingHeight: 2, stars: true, vignette: 'soft',
-    tod: 'dusk', cardShadow: 'float', roofTone: 'darker',
-    titleSize: 'large', subtitleStyle: 'italic',
-  },
-};
 
 const PRESET_KEYS = Object.keys(PRESETS);
 // PALETTE_KEYS, LAYER_*, CITIES, PINHEAD_BASE, ICON_CATEGORIES come from
@@ -2363,25 +2142,9 @@ function randomizePalette() {
 const TEMPLATE_KEYS = PRESET_KEYS.filter(k => PRESETS[k].isTemplate);
 const PALETTE_KEYS_LIST = PRESET_KEYS.filter(k => !PRESETS[k].isTemplate);
 
-// Short marketing copy for each full template
-const TEMPLATE_BLURBS = {
-  appleMin:    'Square, white, system blue',
-  editorial:   'Magazine grain & compass',
-  travelGuide: 'Vintage with scale bar',
-  subway:      'Transit-map landscape',
-  risograph:   '2-color riso print, pink & cyan',
-  brutalist:   'Concrete grays, hard edges',
-  botanical:   'Forest greens on cream paper',
-  cyberpunk:   'Neon magenta on midnight',
-  watercolor:  'Soft pastel wash on cream',
-  espresso:    'Coffee brown with cream lines',
-  constructivist: 'Soviet poster: red, black, cream',
-  aurora:      'Deep teal with sky-green roads',
-  manhattan:   '3D skyline · sun-lit at 50° tilt',
-  sketchbook:  'Wobbly hand-drawn travel journal',
-  risoPop:     'Pink/cyan riso with hard shadow',
-  twilight:    'Dusk + stars + atmospheric',
-};
+// TEMPLATE_BLURBS lives in ./js/presets.js
+const TEMPLATE_BLURBS = PRESET_DATA.TEMPLATE_BLURBS;
+
 
 const templatesEl = document.getElementById('templates');
 TEMPLATE_KEYS.forEach(key => {
@@ -3540,19 +3303,13 @@ map.on('idle', () => { try { observeProximity(); } catch (_) {} });
 // 10 NEW DIALS — ADR-032..041
 // =====================================================================
 
-// ADR-036 — vignette overlay
+// ADR-036 — vignette overlay (sync only; chip group handles input)
 function applyVignette() {
   const v = document.getElementById('vignette');
   if (!v) return;
   ['soft','heavy','spotlight'].forEach(c => v.classList.remove('vignette-' + c));
   if (state.vignette && state.vignette !== 'none') v.classList.add('vignette-' + state.vignette);
-  const sel = document.getElementById('vignetteSel');
-  if (sel) sel.value = state.vignette || 'none';
 }
-const vignetteEl = document.getElementById('vignetteSel');
-if (vignetteEl) vignetteEl.addEventListener('change', safe(e => {
-  pushHistory(); state.vignette = e.target.value; applyVignette(); persist();
-}, 'vignette'));
 
 // ADR-039 — sprinkle stars decorative overlay
 function applyStars() {
@@ -3567,19 +3324,13 @@ if (starsCb) starsCb.addEventListener('change', safe(e => {
   state.stars = e.target.checked; applyStars(); persist();
 }, 'stars'));
 
-// ADR-038 — caption divider style
+// ADR-038 — caption divider style (sync only; chip group handles input)
 function applyCaptionDivider() {
   const cap = document.getElementById('caption');
   if (!cap) return;
   ['none','line','dotted','double','wave'].forEach(c => cap.classList.remove('div-' + c));
   cap.classList.add('div-' + (state.captionDivider || 'line'));
-  const sel = document.getElementById('captionDivider');
-  if (sel) sel.value = state.captionDivider || 'line';
 }
-const dividerEl = document.getElementById('captionDivider');
-if (dividerEl) dividerEl.addEventListener('change', safe(e => {
-  pushHistory(); state.captionDivider = e.target.value; applyCaptionDivider(); persist();
-}, 'captionDivider'));
 
 // ADR-037 — title ornament wraps the title text. ORNAMENTS lives in DATA.
 function decorateTitle(text) {
@@ -3588,13 +3339,7 @@ function decorateTitle(text) {
 function applyTitleOrnament() {
   const tEl = document.getElementById('caption-title');
   if (tEl) tEl.textContent = decorateTitle(state.caption.title || 'PARIS');
-  const sel = document.getElementById('titleOrnament');
-  if (sel) sel.value = state.titleOrnament || 'none';
 }
-const ornEl = document.getElementById('titleOrnament');
-if (ornEl) ornEl.addEventListener('change', safe(e => {
-  pushHistory(); state.titleOrnament = e.target.value; applyTitleOrnament(); persist();
-}, 'titleOrnament'));
 
 // ADR-034 / 035 — saturation + contrast (CSS filter compose w/ TOD)
 function applyMapFilters() {
@@ -3822,16 +3567,21 @@ function applyCardShadow() {
 }
 
 // Per-key effect after a chip is clicked. Default = restyle the map.
+// Keys with CSS-only effects skip the map restyle entirely.
 const CHIP_AFTER = {
-  border:     () => applyBorder(),
-  texture:    () => applyTexture(),
-  cardShadow: () => applyCardShadow(),
+  border:         () => applyBorder(),
+  texture:        () => applyTexture(),
+  cardShadow:     () => applyCardShadow(),
+  vignette:       () => applyVignette(),
+  titleOrnament:  () => applyTitleOrnament(),
+  captionDivider: () => applyCaptionDivider(),
 };
 
 const _chipDefaults = {
   roadStyle: 'solid', roadCaps: 'round',
   roofTone: 'match', labelCase: 'asis', parkOpacity: 'normal',
   border: 'none', texture: 'none', cardShadow: 'soft',
+  vignette: 'none', titleOrnament: 'none', captionDivider: 'line',
 };
 
 function initChipGroups() {

@@ -17,15 +17,15 @@
   }
 
   aside {
-    width: 360px;
+    width: 380px;
     background: #fff;
-    padding: 24px 22px;
+    padding: 22px 22px 32px;
     overflow-y: auto;
     border-right: 1px solid #e6e4dc;
     flex-shrink: 0;
   }
   aside h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  aside .tag { font-size: 12px; color: #888; margin-bottom: 22px; display: block; margin-top: 2px; }
+  aside .tag { font-size: 12px; color: #888; margin-bottom: 20px; display: block; margin-top: 2px; }
   aside h3 {
     font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
     color: #999; margin: 18px 0 8px; font-weight: 600;
@@ -47,21 +47,21 @@
   }
   #results .result:hover { background: #f0eee6; color: #111; }
 
-  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
   .preset {
     cursor: pointer; border: 2px solid transparent;
-    border-radius: 8px; overflow: hidden; transition: all 0.15s;
+    border-radius: 7px; overflow: hidden; transition: all 0.15s;
     background: #f5f4ee;
   }
   .preset:hover { transform: translateY(-1px); }
   .preset.active { border-color: #111; }
   .preset .swatch {
-    height: 44px; display: grid; grid-template-columns: 1fr 1fr 1fr;
+    height: 36px; display: grid; grid-template-columns: 1fr 1fr 1fr;
   }
   .preset .swatch span { display: block; }
   .preset .label {
-    font-size: 11px; padding: 4px 6px; text-align: center; background: #fff;
-    color: #333; font-weight: 500;
+    font-size: 10px; padding: 3px 4px; text-align: center; background: #fff;
+    color: #333; font-weight: 500; white-space: nowrap; overflow: hidden;
   }
 
   .frames { display: flex; gap: 6px; }
@@ -77,21 +77,29 @@
   .row input[type="range"] { flex: 1; accent-color: #111; }
   .row .val { font-size: 12px; color: #888; min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
 
-  .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
-  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #444; cursor: pointer; padding: 4px 0; user-select: none; }
-  .toggle input { accent-color: #111; cursor: pointer; }
+  .toggles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 10px; }
+  .toggle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #444; cursor: pointer; padding: 3px 0; user-select: none; }
+  .toggle input { accent-color: #111; cursor: pointer; flex-shrink: 0; }
 
-  .palette-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px; }
+  .palette-row {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px;
+  }
   .palette-row label {
     cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
     font-size: 10px; color: #888;
   }
   .palette-row .swatch-btn {
-    width: 100%; height: 32px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;
+    width: 100%; height: 28px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer;
     position: relative; overflow: hidden;
   }
   .palette-row input[type="color"] {
     position: absolute; inset: 0; opacity: 0; cursor: pointer; border: none;
+  }
+
+  .style-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .style-options select {
+    padding: 7px 8px; border: 1px solid #ddd; border-radius: 6px;
+    font-size: 12px; font-family: inherit; background: #fff; cursor: pointer;
   }
 
   .actions { display: flex; gap: 6px; margin-top: 10px; }
@@ -174,9 +182,24 @@
   <h3>Layers <span class="small">click to toggle</span></h3>
   <div class="toggles" id="toggles"></div>
 
+  <h3>Style Options</h3>
+  <div class="style-options">
+    <select id="roadStyle">
+      <option value="solid">Solid roads</option>
+      <option value="dashed">Dashed roads</option>
+      <option value="dotted">Dotted roads</option>
+    </select>
+    <select id="labelFont">
+      <option value="Noto Sans Regular">Sans regular</option>
+      <option value="Noto Sans Bold">Sans bold</option>
+      <option value="Noto Sans Italic">Sans italic</option>
+      <option value="Noto Sans Medium">Sans medium</option>
+    </select>
+  </div>
+
   <h3>Road Weight</h3>
   <div class="row">
-    <input type="range" id="roadWeight" min="0.3" max="2.5" step="0.1" value="1">
+    <input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1">
     <span class="val" id="roadWeightVal">1.0×</span>
   </div>
 
@@ -224,54 +247,103 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <script>
-// ---------- PRESETS ----------
-// Each preset is a fully self-contained design: palette, road weights, layer choices.
-// We generate the MapLibre style JSON from these — we never load a 3rd-party style.
+// =====================================================================
+// PRESETS — every visual decision lives here, no external styles loaded.
+// =====================================================================
+//
+// Palette keys:
+//   bg       background fill
+//   water    sea, lakes, rivers
+//   green    parks, forest, farmland (derived shades for each)
+//   urban    residential / commercial landuse (also building fallback at low zoom)
+//   building actual building footprints (z >= 12)
+//   road     roads (motorway → minor)
+//   rail     railways
+//   label    text labels
+//   accent   highlights, paths, special features
 const PRESETS = {
   blueprint: {
     name: 'Blueprint',
-    palette: { bg: '#0a2540', water: '#1a3a5f', park: '#0f2c4d', road: '#ffffff', building: '#1a3a5f', label: '#ffffff' },
-    layers: { water: true, parks: false, buildings: false, labels: false, pois: false },
-    roadWeight: 0.7,
+    palette: { bg: '#0a2540', water: '#1a3a5f', green: '#0f2c4d', urban: '#0d2a47', building: '#1f426e', road: '#ffffff', rail: '#a8c8ff', label: '#ffffff', accent: '#7fb3ff' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, railways: false, paths: false, airports: false, places: false, streets: false, pois: false },
+    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
   },
   mono: {
     name: 'Mono Line',
-    palette: { bg: '#ffffff', water: '#ffffff', park: '#ffffff', road: '#111111', building: '#ffffff', label: '#111111' },
-    layers: { water: false, parks: false, buildings: false, labels: false, pois: false },
-    roadWeight: 0.6,
+    palette: { bg: '#ffffff', water: '#ffffff', green: '#ffffff', urban: '#ffffff', building: '#ffffff', road: '#111111', rail: '#444444', label: '#111111', accent: '#666666' },
+    layers: { water: false, rivers: false, parks: false, greenery: false, buildings: false, industrial: false, railways: false, paths: false, airports: false, places: false, streets: false, pois: false },
+    roadWeight: 0.6, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
   },
   midnight: {
     name: 'Midnight',
-    palette: { bg: '#0d0d14', water: '#161624', park: '#13131c', road: '#d4af37', building: '#1d1d2c', label: '#e8c870' },
-    layers: { water: true, parks: true, buildings: true, labels: true, pois: false },
-    roadWeight: 0.9,
+    palette: { bg: '#0d0d14', water: '#161624', green: '#13131c', urban: '#1a1a26', building: '#1d1d2c', road: '#d4af37', rail: '#8b6914', label: '#e8c870', accent: '#ffd966' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: true, streets: false, pois: false },
+    roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
   },
   vintage: {
     name: 'Vintage',
-    palette: { bg: '#f4ecd8', water: '#bda280', park: '#dcc89b', road: '#6e3f24', building: '#d6c19e', label: '#3d2914' },
-    layers: { water: true, parks: true, buildings: true, labels: true, pois: false },
-    roadWeight: 1.0,
+    palette: { bg: '#f4ecd8', water: '#bda280', green: '#c9b88a', urban: '#e0d0a8', building: '#d6c19e', road: '#6e3f24', rail: '#3a2410', label: '#3d2914', accent: '#7a4a2b' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: true, streets: false, pois: false },
+    roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
   },
   pastel: {
     name: 'Pastel',
-    palette: { bg: '#fef3f2', water: '#a8d8e8', park: '#c8e4c5', road: '#e88aa3', building: '#f7d8c9', label: '#5b4f6e' },
-    layers: { water: true, parks: true, buildings: true, labels: false, pois: false },
-    roadWeight: 1.2,
+    palette: { bg: '#fef3f2', water: '#a8d8e8', green: '#c8e4c5', urban: '#fae3d9', building: '#f7d8c9', road: '#e88aa3', rail: '#b591a5', label: '#5b4f6e', accent: '#b8a8d8' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: false, streets: false, pois: false },
+    roadWeight: 1.2, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
   },
   neon: {
     name: 'Neon',
-    palette: { bg: '#000000', water: '#021a14', park: '#01170a', road: '#00ff9d', building: '#080808', label: '#ff2bd6' },
-    layers: { water: true, parks: true, buildings: true, labels: false, pois: false },
-    roadWeight: 0.8,
+    palette: { bg: '#000000', water: '#021a14', green: '#01170a', urban: '#080808', building: '#0d0d0d', road: '#00ff9d', rail: '#ff00aa', label: '#ff2bd6', accent: '#00e5ff' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: false, streets: false, pois: false },
+    roadWeight: 0.8, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+  },
+  parchment: {
+    name: 'Parchment',
+    palette: { bg: '#efe2bf', water: '#a89169', green: '#cbb583', urban: '#dac9a0', building: '#c8b48a', road: '#5d3a1a', rail: '#3a2410', label: '#3d2510', accent: '#8a5a2b' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, railways: false, paths: true, airports: false, places: true, streets: false, pois: false },
+    roadWeight: 1.3, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
+  },
+  tron: {
+    name: 'Tron',
+    palette: { bg: '#020617', water: '#06283d', green: '#031f1c', urban: '#040a18', building: '#0a1430', road: '#22d3ee', rail: '#a855f7', label: '#67e8f9', accent: '#f472b6' },
+    layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: false, streets: false, pois: false },
+    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+  },
+  solarpunk: {
+    name: 'Solarpunk',
+    palette: { bg: '#fef9e7', water: '#88c9a1', green: '#7cb87a', urban: '#f5e6a8', building: '#e8d68a', road: '#d97706', rail: '#9f661a', label: '#3f5d3a', accent: '#d97706' },
+    layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, railways: false, paths: true, airports: false, places: true, streets: false, pois: false },
+    roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
+  },
+  newspaper: {
+    name: 'Newspaper',
+    palette: { bg: '#f5f5f0', water: '#d8d8d0', green: '#e8e8e0', urban: '#ededdf', building: '#cccac0', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#444444' },
+    layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, railways: true, paths: false, airports: false, places: true, streets: false, pois: false },
+    roadWeight: 0.7, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+  },
+  desert: {
+    name: 'Desert',
+    palette: { bg: '#f5d9a3', water: '#7eb6c4', green: '#c8a86a', urban: '#e8c280', building: '#c69155', road: '#8b3a1a', rail: '#5a2a10', label: '#4a2810', accent: '#c44d2e' },
+    layers: { water: true, rivers: true, parks: false, greenery: true, buildings: true, industrial: false, railways: false, paths: false, airports: false, places: true, streets: false, pois: false },
+    roadWeight: 1.1, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
   },
 };
 
-const PALETTE_KEYS = ['bg', 'water', 'park', 'road', 'building', 'label'];
-const PALETTE_LABELS = { bg: 'Bg', water: 'Water', park: 'Parks', road: 'Roads', building: 'Bldgs', label: 'Labels' };
-const LAYER_KEYS = ['water', 'parks', 'buildings', 'labels', 'pois'];
-const LAYER_LABELS = { water: 'Water', parks: 'Parks', buildings: 'Buildings', labels: 'Labels', pois: 'POIs' };
+const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'road', 'rail', 'label', 'accent'];
+const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Bldgs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
 
-// Mutable state
+const LAYER_ORDER = [
+  'water', 'rivers', 'parks', 'greenery',
+  'buildings', 'industrial', 'railways', 'paths',
+  'airports', 'places', 'streets', 'pois',
+];
+const LAYER_LABELS = {
+  water: 'Water', rivers: 'Rivers', parks: 'Parks', greenery: 'Greenery',
+  buildings: 'Buildings', industrial: 'Industrial', railways: 'Railways', paths: 'Paths',
+  airports: 'Airports', places: 'Place names', streets: 'Streets', pois: 'POIs',
+};
+
 let activePreset = 'blueprint';
 let state = clonePreset('blueprint');
 
@@ -281,76 +353,181 @@ function clonePreset(key) {
     palette: { ...p.palette },
     layers: { ...p.layers },
     roadWeight: p.roadWeight,
+    roadStyle: p.roadStyle,
+    labelFont: p.labelFont,
   };
 }
 
-// ---------- STYLE GENERATOR ----------
-// Builds a complete MapLibre style JSON from `state`.
+// =====================================================================
+// STYLE GENERATOR — builds the MapLibre style JSON from `state`.
 // Source = OpenFreeMap planet vector tiles (OpenMapTiles schema).
+// =====================================================================
+function darken(hex, amount) {
+  const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16));
+  return '#' + m.map(c => Math.max(0, Math.min(255, Math.round(c * (1 - amount)))).toString(16).padStart(2, '0')).join('');
+}
+function lighten(hex, amount) {
+  const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16));
+  return '#' + m.map(c => Math.max(0, Math.min(255, Math.round(c + (255 - c) * amount))).toString(16).padStart(2, '0')).join('');
+}
+
+function dashFor(style, baseW) {
+  if (style === 'dashed') return [4, 1.5];
+  if (style === 'dotted') return [0.5, 2];
+  return null;
+}
+
 function buildStyle(s) {
   const layers = [];
   const w = s.roadWeight;
+  const p = s.palette;
 
-  // background
-  layers.push({ id: 'bg', type: 'background', paint: { 'background-color': s.palette.bg } });
+  layers.push({ id: 'bg', type: 'background', paint: { 'background-color': p.bg } });
 
-  // water
+  // ---------- Water ----------
   if (s.layers.water) {
     layers.push({
       id: 'water', type: 'fill',
       source: 'omt', 'source-layer': 'water',
-      paint: { 'fill-color': s.palette.water, 'fill-antialias': true },
+      paint: { 'fill-color': p.water, 'fill-antialias': true },
     });
+  }
+
+  // ---------- Rivers / waterways ----------
+  if (s.layers.rivers) {
     layers.push({
       id: 'waterway', type: 'line',
       source: 'omt', 'source-layer': 'waterway',
       paint: {
-        'line-color': s.palette.water,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 16, 2],
+        'line-color': p.water,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 14, 1.5, 18, 4],
       },
     });
   }
 
-  // landuse / parks
+  // ---------- Greenery (forest + farmland) ----------
+  if (s.layers.greenery) {
+    layers.push({
+      id: 'landcover-wood', type: 'fill',
+      source: 'omt', 'source-layer': 'landcover',
+      filter: ['in', ['get', 'class'], ['literal', ['wood', 'forest']]],
+      paint: { 'fill-color': darken(p.green, 0.1), 'fill-opacity': 0.7 },
+    });
+    layers.push({
+      id: 'landcover-grass', type: 'fill',
+      source: 'omt', 'source-layer': 'landcover',
+      filter: ['in', ['get', 'class'], ['literal', ['grass', 'farmland']]],
+      paint: { 'fill-color': lighten(p.green, 0.15), 'fill-opacity': 0.5 },
+    });
+  }
+
+  // ---------- Parks (specific tagged parks/protected areas) ----------
   if (s.layers.parks) {
     layers.push({
       id: 'park', type: 'fill',
       source: 'omt', 'source-layer': 'park',
-      paint: { 'fill-color': s.palette.park, 'fill-opacity': 0.7 },
-    });
-    layers.push({
-      id: 'landcover', type: 'fill',
-      source: 'omt', 'source-layer': 'landcover',
-      filter: ['in', ['get', 'class'], ['literal', ['wood', 'grass', 'farmland']]],
-      paint: { 'fill-color': s.palette.park, 'fill-opacity': 0.45 },
+      paint: { 'fill-color': p.green, 'fill-opacity': 0.75 },
     });
   }
 
-  // buildings
+  // ---------- Buildings (smart: low-zoom fallback uses urban color) ----------
   if (s.layers.buildings) {
+    // Low-zoom: residential/commercial landuse stands in for "built-up area".
+    layers.push({
+      id: 'building-fallback', type: 'fill',
+      source: 'omt', 'source-layer': 'landuse',
+      filter: ['in', ['get', 'class'], ['literal', ['residential', 'commercial', 'suburb', 'neighbourhood']]],
+      maxzoom: 13.5,
+      paint: {
+        'fill-color': p.urban,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.4, 11, 0.75, 13.5, 0.4],
+      },
+    });
+    // Actual building footprints from z 12 upward, fading in.
     layers.push({
       id: 'building', type: 'fill',
       source: 'omt', 'source-layer': 'building',
-      minzoom: 13,
+      minzoom: 12,
       paint: {
-        'fill-color': s.palette.building,
-        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 14, 0.8],
-        'fill-outline-color': s.palette.building,
+        'fill-color': p.building,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 14, 0.85, 18, 0.95],
+        'fill-outline-color': darken(p.building, 0.15),
       },
     });
   }
 
-  // road casing (subtle outline beneath the line) for darker themes
-  const roadClasses = [
-    { id: 'minor', match: ['minor', 'service', 'track'],     w: 0.6, minzoom: 12 },
-    { id: 'tert',  match: ['tertiary'],                       w: 1.0, minzoom: 10 },
-    { id: 'sec',   match: ['secondary'],                      w: 1.4, minzoom: 9  },
-    { id: 'pri',   match: ['primary'],                        w: 1.8, minzoom: 7  },
-    { id: 'trunk', match: ['trunk'],                          w: 2.4, minzoom: 6  },
-    { id: 'mot',   match: ['motorway'],                       w: 3.0, minzoom: 5  },
-  ];
-  roadClasses.forEach(rc => {
+  // ---------- Industrial ----------
+  if (s.layers.industrial) {
     layers.push({
+      id: 'industrial', type: 'fill',
+      source: 'omt', 'source-layer': 'landuse',
+      filter: ['in', ['get', 'class'], ['literal', ['industrial', 'railway']]],
+      paint: { 'fill-color': darken(p.urban, 0.15), 'fill-opacity': 0.7 },
+    });
+  }
+
+  // ---------- Airports ----------
+  if (s.layers.airports) {
+    layers.push({
+      id: 'airport-area', type: 'fill',
+      source: 'omt', 'source-layer': 'aeroway',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: { 'fill-color': lighten(p.urban, 0.05), 'fill-opacity': 0.6 },
+    });
+    layers.push({
+      id: 'airport-runway', type: 'line',
+      source: 'omt', 'source-layer': 'aeroway',
+      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', ['runway', 'taxiway']]]],
+      paint: {
+        'line-color': p.road,
+        'line-width': ['case', ['==', ['get', 'class'], 'runway'], 4, 1.5],
+      },
+    });
+  }
+
+  // ---------- Paths / footways ----------
+  if (s.layers.paths) {
+    layers.push({
+      id: 'path', type: 'line',
+      source: 'omt', 'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', ['path', 'track', 'footway', 'pedestrian', 'cycleway', 'bridleway']]],
+      minzoom: 12,
+      paint: {
+        'line-color': p.accent,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 18, 1.6],
+        'line-dasharray': [2, 1.5],
+        'line-opacity': 0.7,
+      },
+    });
+  }
+
+  // ---------- Railways ----------
+  if (s.layers.railways) {
+    layers.push({
+      id: 'rail', type: 'line',
+      source: 'omt', 'source-layer': 'transportation',
+      filter: ['in', ['get', 'class'], ['literal', ['rail', 'transit']]],
+      minzoom: 8,
+      paint: {
+        'line-color': p.rail,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 14, 1.2, 18, 2.5],
+        'line-dasharray': [3, 2],
+      },
+    });
+  }
+
+  // ---------- Roads (always rendered, no toggle) ----------
+  const roadClasses = [
+    { id: 'minor', match: ['minor', 'service'],  base: 0.6, minzoom: 12 },
+    { id: 'tert',  match: ['tertiary'],          base: 1.0, minzoom: 10 },
+    { id: 'sec',   match: ['secondary'],         base: 1.4, minzoom: 9  },
+    { id: 'pri',   match: ['primary'],           base: 1.8, minzoom: 7  },
+    { id: 'trunk', match: ['trunk'],             base: 2.4, minzoom: 6  },
+    { id: 'mot',   match: ['motorway'],          base: 3.0, minzoom: 5  },
+  ];
+  const dash = dashFor(s.roadStyle);
+  roadClasses.forEach(rc => {
+    const layer = {
       id: 'road-' + rc.id,
       type: 'line',
       source: 'omt',
@@ -360,71 +537,95 @@ function buildStyle(s) {
         ['in', ['get', 'class'], ['literal', rc.match]],
       ],
       minzoom: rc.minzoom,
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      layout: { 'line-cap': dash ? 'butt' : 'round', 'line-join': 'round' },
       paint: {
-        'line-color': s.palette.road,
+        'line-color': p.road,
         'line-width': [
           'interpolate', ['exponential', 1.4], ['zoom'],
-          5,  rc.w * w * 0.15,
-          12, rc.w * w * 0.9,
-          18, rc.w * w * 4.5,
+          5,  rc.base * w * 0.15,
+          12, rc.base * w * 0.9,
+          18, rc.base * w * 4.5,
         ],
       },
-    });
+    };
+    if (dash) layer.paint['line-dasharray'] = dash;
+    layers.push(layer);
   });
 
-  // boundaries (subtle, only on dark themes look nice — always include)
+  // ---------- Boundaries (always subtle) ----------
   layers.push({
     id: 'boundary', type: 'line',
     source: 'omt', 'source-layer': 'boundary',
     filter: ['<=', ['get', 'admin_level'], 4],
     paint: {
-      'line-color': s.palette.label,
-      'line-opacity': 0.15,
-      'line-width': 0.5,
+      'line-color': p.label,
+      'line-opacity': 0.18,
+      'line-width': 0.6,
       'line-dasharray': [3, 2],
     },
   });
 
-  // labels
-  if (s.layers.labels) {
+  // ---------- Place labels ----------
+  if (s.layers.places) {
     layers.push({
       id: 'place-major', type: 'symbol',
       source: 'omt', 'source-layer': 'place',
       filter: ['in', ['get', 'class'], ['literal', ['city', 'town']]],
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': ['Noto Sans Bold'],
+        'text-font': [s.labelFont],
         'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 12, 16],
         'text-letter-spacing': 0.1,
         'text-transform': 'uppercase',
       },
       paint: {
-        'text-color': s.palette.label,
-        'text-halo-color': s.palette.bg,
-        'text-halo-width': 1.2,
+        'text-color': p.label,
+        'text-halo-color': p.bg,
+        'text-halo-width': 1.4,
       },
     });
     layers.push({
       id: 'place-minor', type: 'symbol',
       source: 'omt', 'source-layer': 'place',
-      minzoom: 11,
+      minzoom: 10,
       filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood']]],
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': [s.labelFont],
         'text-size': 11,
       },
       paint: {
-        'text-color': s.palette.label,
-        'text-halo-color': s.palette.bg,
+        'text-color': p.label,
+        'text-halo-color': p.bg,
         'text-halo-width': 1,
         'text-opacity': 0.7,
       },
     });
   }
 
-  // POIs
+  // ---------- Street names ----------
+  if (s.layers.streets) {
+    layers.push({
+      id: 'street-name', type: 'symbol',
+      source: 'omt', 'source-layer': 'transportation_name',
+      minzoom: 14,
+      filter: ['in', ['get', 'class'], ['literal', ['primary', 'secondary', 'tertiary', 'minor']]],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': [s.labelFont],
+        'text-size': 10,
+        'symbol-placement': 'line',
+      },
+      paint: {
+        'text-color': p.label,
+        'text-halo-color': p.bg,
+        'text-halo-width': 1,
+        'text-opacity': 0.85,
+      },
+    });
+  }
+
+  // ---------- POIs ----------
   if (s.layers.pois) {
     layers.push({
       id: 'poi', type: 'symbol',
@@ -432,14 +633,14 @@ function buildStyle(s) {
       minzoom: 14,
       layout: {
         'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': ['Noto Sans Regular'],
+        'text-font': [s.labelFont],
         'text-size': 10,
       },
       paint: {
-        'text-color': s.palette.label,
-        'text-halo-color': s.palette.bg,
+        'text-color': p.accent,
+        'text-halo-color': p.bg,
         'text-halo-width': 1,
-        'text-opacity': 0.8,
+        'text-opacity': 0.85,
       },
     });
   }
@@ -454,7 +655,9 @@ function buildStyle(s) {
   };
 }
 
-// ---------- MAP ----------
+// =====================================================================
+// MAP
+// =====================================================================
 const map = new maplibregl.Map({
   container: 'map',
   style: buildStyle(state),
@@ -477,16 +680,17 @@ function formatCoords(lat, lng) {
 
 let restyleTimer;
 function restyle() {
-  // Debounce — color picker fires fast.
   clearTimeout(restyleTimer);
   restyleTimer = setTimeout(() => {
-    const c = map.getCenter(), z = map.getZoom(), b = map.getBearing(), p = map.getPitch();
+    const c = map.getCenter(), z = map.getZoom(), b = map.getBearing(), pi = map.getPitch();
     map.setStyle(buildStyle(state));
-    map.once('style.load', () => map.jumpTo({ center: c, zoom: z, bearing: b, pitch: p }));
+    map.once('style.load', () => map.jumpTo({ center: c, zoom: z, bearing: b, pitch: pi }));
   }, 80);
 }
 
-// ---------- UI: PRESETS ----------
+// =====================================================================
+// UI WIRING
+// =====================================================================
 const presetsEl = document.getElementById('presets');
 Object.entries(PRESETS).forEach(([key, p]) => {
   const div = document.createElement('div');
@@ -510,9 +714,8 @@ Object.entries(PRESETS).forEach(([key, p]) => {
   presetsEl.appendChild(div);
 });
 
-// ---------- UI: TOGGLES ----------
 const togglesEl = document.getElementById('toggles');
-LAYER_KEYS.forEach(k => {
+LAYER_ORDER.forEach(k => {
   const lbl = document.createElement('label');
   lbl.className = 'toggle';
   lbl.innerHTML = `<input type="checkbox" data-layer="${k}"> ${LAYER_LABELS[k]}`;
@@ -523,7 +726,6 @@ LAYER_KEYS.forEach(k => {
   });
 });
 
-// ---------- UI: ROAD WEIGHT ----------
 const rw = document.getElementById('roadWeight');
 const rwVal = document.getElementById('roadWeightVal');
 rw.addEventListener('input', () => {
@@ -532,7 +734,15 @@ rw.addEventListener('input', () => {
   restyle();
 });
 
-// ---------- UI: PALETTE ----------
+document.getElementById('roadStyle').addEventListener('change', e => {
+  state.roadStyle = e.target.value;
+  restyle();
+});
+document.getElementById('labelFont').addEventListener('change', e => {
+  state.labelFont = e.target.value;
+  restyle();
+});
+
 const paletteEl = document.getElementById('palette');
 PALETTE_KEYS.forEach(k => {
   const lbl = document.createElement('label');
@@ -551,7 +761,6 @@ PALETTE_KEYS.forEach(k => {
   });
 });
 
-// ---------- UI: ACTIONS ----------
 document.getElementById('reset').addEventListener('click', () => {
   state = clonePreset(activePreset);
   syncControls();
@@ -559,7 +768,6 @@ document.getElementById('reset').addEventListener('click', () => {
 });
 
 document.getElementById('randomize').addEventListener('click', () => {
-  // Pick a base hue, then derive a coherent palette from it.
   const baseHue = Math.floor(Math.random() * 360);
   const dark = Math.random() > 0.5;
   const sat = 30 + Math.random() * 50;
@@ -568,21 +776,25 @@ document.getElementById('randomize').addEventListener('click', () => {
                    : hsl(baseHue,            sat * 0.3, 92 + Math.random() * 4),
     water:    dark ? hsl((baseHue + 200) % 360, sat * 0.7, 15 + Math.random() * 8)
                    : hsl((baseHue + 200) % 360, sat * 0.6, 75 + Math.random() * 8),
-    park:     dark ? hsl((baseHue + 100) % 360, sat * 0.5, 12 + Math.random() * 6)
-                   : hsl((baseHue + 100) % 360, sat * 0.5, 82 + Math.random() * 6),
+    green:    dark ? hsl((baseHue + 100) % 360, sat * 0.5, 12 + Math.random() * 6)
+                   : hsl((baseHue + 100) % 360, sat * 0.5, 78 + Math.random() * 8),
+    urban:    dark ? hsl(baseHue,            sat * 0.4, 14 + Math.random() * 5)
+                   : hsl(baseHue,            sat * 0.3, 88 + Math.random() * 4),
+    building: dark ? hsl(baseHue,            sat * 0.4, 18 + Math.random() * 6)
+                   : hsl(baseHue,            sat * 0.3, 84 + Math.random() * 6),
     road:     dark ? hsl((baseHue + 30)  % 360, sat,        65 + Math.random() * 25)
                    : hsl((baseHue + 30)  % 360, sat,        25 + Math.random() * 20),
-    building: dark ? hsl(baseHue,            sat * 0.4, 16 + Math.random() * 6)
-                   : hsl(baseHue,            sat * 0.3, 86 + Math.random() * 6),
+    rail:     dark ? hsl((baseHue + 60)  % 360, sat * 0.7,  55)
+                   : hsl((baseHue + 60)  % 360, sat * 0.7,  35),
     label:    dark ? hsl((baseHue + 60)  % 360, sat * 0.6, 80)
                    : hsl((baseHue + 60)  % 360, sat * 0.7, 22),
+    accent:   hsl((baseHue + 180) % 360, sat * 0.9, dark ? 65 : 45),
   };
   syncControls();
   restyle();
 });
 
 function hsl(h, s, l) {
-  // Convert to hex via a tiny canvas-free routine.
   s /= 100; l /= 100;
   const k = n => (n + h / 30) % 12;
   const a = s * Math.min(l, 1 - l);
@@ -602,19 +814,18 @@ function syncSwatches() {
 }
 
 function syncControls() {
-  // Sync toggles
-  LAYER_KEYS.forEach(k => {
+  LAYER_ORDER.forEach(k => {
     togglesEl.querySelector(`input[data-layer="${k}"]`).checked = state.layers[k];
   });
-  // Sync road weight
   rw.value = state.roadWeight;
   rwVal.textContent = state.roadWeight.toFixed(1) + '×';
-  // Sync palette
+  document.getElementById('roadStyle').value = state.roadStyle;
+  document.getElementById('labelFont').value = state.labelFont;
   syncSwatches();
 }
 syncControls();
 
-// ---------- UI: FRAMES ----------
+// Frames
 document.querySelectorAll('#frames button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#frames button').forEach(b => b.classList.remove('active'));
@@ -626,7 +837,7 @@ document.querySelectorAll('#frames button').forEach(btn => {
   });
 });
 
-// ---------- UI: SEARCH ----------
+// Search
 const search = document.getElementById('search');
 const results = document.getElementById('results');
 let searchTimer;
@@ -670,17 +881,15 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// ---------- UI: CAPTION ----------
-const titleInput = document.getElementById('title');
-const subtitleInput = document.getElementById('subtitle');
-titleInput.addEventListener('input', () => {
-  document.getElementById('caption-title').textContent = titleInput.value || 'PARIS';
+// Caption
+document.getElementById('title').addEventListener('input', e => {
+  document.getElementById('caption-title').textContent = e.target.value || 'PARIS';
 });
-subtitleInput.addEventListener('input', () => {
-  document.getElementById('caption-subtitle').textContent = subtitleInput.value || 'The City of Light';
+document.getElementById('subtitle').addEventListener('input', e => {
+  document.getElementById('caption-subtitle').textContent = e.target.value || 'The City of Light';
 });
 
-// ---------- EXPORT ----------
+// Export
 document.getElementById('export').addEventListener('click', async () => {
   const btn = document.getElementById('export');
   const original = btn.textContent;

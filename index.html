@@ -16,43 +16,53 @@
     overflow: hidden;
   }
 
+  /* ===== Sidebar ===== */
   aside {
     width: 380px;
     background: #fff;
-    padding: 22px 22px 32px;
+    padding: 20px 22px 32px;
     overflow-y: auto;
     border-right: 1px solid #e6e4dc;
     flex-shrink: 0;
   }
   .header-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .header-actions { display: flex; gap: 6px; }
   aside h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  .gh-link {
+  .gh-link, .help-btn {
     font-size: 11px; color: #888; text-decoration: none;
     border: 1px solid #e0ddd0; border-radius: 6px; padding: 4px 8px;
-    transition: all 0.15s; white-space: nowrap;
+    transition: all 0.15s; white-space: nowrap; cursor: pointer; background: #fff; font-family: inherit;
   }
-  .gh-link:hover { color: #111; border-color: #111; background: #fafaf5; }
-  aside .tag { font-size: 12px; color: #888; margin-bottom: 20px; display: block; margin-top: 2px; }
+  .gh-link:hover, .help-btn:hover { color: #111; border-color: #111; background: #fafaf5; }
+  aside .tag { font-size: 12px; color: #888; margin-bottom: 18px; display: block; margin-top: 2px; }
   aside h3 {
     font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: #999; margin: 18px 0 8px; font-weight: 600;
+    color: #999; margin: 16px 0 7px; font-weight: 600;
     display: flex; justify-content: space-between; align-items: center;
   }
   aside h3 .small { font-size: 10px; text-transform: none; letter-spacing: 0; color: #bbb; font-weight: 500; }
-  aside input[type="text"] {
-    width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+  aside input[type="text"], aside input[type="date"] {
+    width: 100%; padding: 9px 11px; border: 1px solid #ddd;
     border-radius: 8px; font-size: 14px; font-family: inherit;
     background: #fafafa;
   }
-  aside input[type="text"]:focus { outline: none; border-color: #111; background: #fff; }
+  aside input[type="text"]:focus, aside input[type="date"]:focus { outline: none; border-color: #111; background: #fff; }
   aside input[type="text"] + input[type="text"] { margin-top: 6px; }
 
-  #results { margin-top: 6px; max-height: 200px; overflow-y: auto; }
+  #results { margin-top: 6px; max-height: 180px; overflow-y: auto; }
   #results .result {
     padding: 7px 10px; cursor: pointer; font-size: 13px; border-radius: 6px;
     color: #444; line-height: 1.3;
   }
   #results .result:hover { background: #f0eee6; color: #111; }
+
+  .cities { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .cities button {
+    padding: 6px 4px; border: 1px solid #e8e6dd; background: #fafaf5;
+    border-radius: 6px; cursor: pointer; font-size: 10.5px; font-family: inherit;
+    color: #555; letter-spacing: 0.3px;
+  }
+  .cities button:hover { background: #fff; border-color: #111; color: #111; }
 
   .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
   .preset {
@@ -62,35 +72,31 @@
   }
   .preset:hover { transform: translateY(-1px); }
   .preset.active { border-color: #111; }
-  .preset .swatch {
-    height: 36px; display: grid; grid-template-columns: 1fr 1fr 1fr;
-  }
+  .preset .swatch { height: 36px; display: grid; grid-template-columns: 1fr 1fr 1fr; }
   .preset .swatch span { display: block; }
   .preset .label {
     font-size: 10px; padding: 3px 4px; text-align: center; background: #fff;
     color: #333; font-weight: 500; white-space: nowrap; overflow: hidden;
   }
 
-  .frames { display: flex; gap: 6px; }
+  .frames { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
   .frames button {
-    flex: 1; padding: 9px 6px; border: 1px solid #ddd; background: #fff;
-    border-radius: 8px; cursor: pointer; font-size: 12px; font-family: inherit;
+    padding: 8px 4px; border: 1px solid #ddd; background: #fff;
+    border-radius: 6px; cursor: pointer; font-size: 11px; font-family: inherit;
   }
   .frames button:hover { border-color: #111; }
   .frames button.active { background: #111; color: #fff; border-color: #111; }
 
   .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 10px; }
-  .row label { font-size: 13px; color: #444; flex: 1; }
+  .row label { font-size: 12px; color: #444; min-width: 50px; flex-shrink: 0; }
   .row input[type="range"] { flex: 1; accent-color: #111; }
-  .row .val { font-size: 12px; color: #888; min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+  .row .val { font-size: 11px; color: #888; min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
 
-  .toggles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 10px; }
+  .toggles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px 10px; }
   .toggle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #444; cursor: pointer; padding: 3px 0; user-select: none; }
   .toggle input { accent-color: #111; cursor: pointer; flex-shrink: 0; }
 
-  .palette-row {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px;
-  }
+  .palette-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 6px; }
   .palette-row label {
     cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
     font-size: 10px; color: #888;
@@ -109,17 +115,41 @@
     font-size: 12px; font-family: inherit; background: #fff; cursor: pointer;
   }
 
-  .actions { display: flex; gap: 6px; margin-top: 10px; }
+  .seed-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+  .seed-row input { flex: 1; padding: 7px 9px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; font-family: ui-monospace, monospace; background: #fafafa; }
+  .seed-row input:focus { outline: none; border-color: #111; background: #fff; }
+
+  .actions { display: flex; gap: 6px; margin-top: 8px; }
   .actions button {
     flex: 1; padding: 8px; border: 1px solid #ddd; background: #fff;
     border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit;
   }
   .actions button:hover { border-color: #111; background: #fafaf5; }
 
+  .marker-row { display: flex; gap: 5px; }
+  .marker-row button {
+    flex: 1; padding: 6px; border: 1px solid #ddd; background: #fff;
+    border-radius: 6px; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .marker-row button.active { background: #111; color: #fff; border-color: #111; }
+  .marker-row button svg { width: 18px; height: 18px; }
+
+  .gpx-upload {
+    display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+    border: 1px dashed #ccc; border-radius: 8px; cursor: pointer; font-size: 12px;
+    color: #666; background: #fafafa; transition: all 0.15s;
+  }
+  .gpx-upload:hover { border-color: #111; color: #111; background: #fafaf5; }
+  .gpx-upload input[type="file"] { display: none; }
+  .gpx-status { font-size: 11px; color: #888; margin-top: 4px; }
+  .gpx-status .clear { color: #c44; cursor: pointer; text-decoration: underline; }
+
+  #export-section { margin-top: 22px; }
   #export {
     width: 100%; padding: 13px; background: #111; color: #fff;
     border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-    cursor: pointer; margin-top: 22px; font-family: inherit;
+    cursor: pointer; font-family: inherit;
   }
   #export:hover:not(:disabled) { background: #333; }
   #export:disabled { opacity: 0.6; cursor: wait; }
@@ -130,29 +160,62 @@
   }
   .footer-note a { color: #888; }
 
+  /* ===== Main ===== */
   main {
     flex: 1; display: flex; align-items: center; justify-content: center;
-    padding: 32px; min-width: 0;
+    padding: 32px; min-width: 0; position: relative;
   }
   .poster-wrap {
     position: relative;
     background: #fff;
     box-shadow: 0 30px 80px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.06);
-    transition: aspect-ratio 0.3s;
+    transition: aspect-ratio 0.3s, width 0.3s;
   }
-  .poster-wrap.frame-portrait { width: min(560px, 90%); aspect-ratio: 2 / 3; }
-  .poster-wrap.frame-square { width: min(640px, 90%); aspect-ratio: 1 / 1; }
+  .poster-wrap.frame-portrait  { width: min(560px, 90%); aspect-ratio: 2 / 3; }
+  .poster-wrap.frame-square    { width: min(640px, 90%); aspect-ratio: 1 / 1; }
   .poster-wrap.frame-landscape { width: min(800px, 95%); aspect-ratio: 3 / 2; }
+  .poster-wrap.frame-story     { width: min(440px, 85%); aspect-ratio: 9 / 16; }
+  .poster-wrap.frame-a4        { width: min(540px, 90%); aspect-ratio: 1 / 1.414; }
+  .poster-wrap.frame-banner    { width: min(900px, 98%); aspect-ratio: 3 / 1; }
 
-  #poster { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-  #map-wrap { flex: 1; position: relative; min-height: 0; }
+  /* border styles applied to #poster (the inner) so the border renders inside the export */
+  #poster.border-thin   { border: 6px solid var(--border-color); }
+  #poster.border-double { border: 10px double var(--border-color); }
+  #poster.border-bold   { border: 18px solid var(--border-color); }
+
+  #poster { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; --border-color: #111; }
+  #map-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; }
   #map { position: absolute; inset: 0; }
 
+  /* compass overlay */
+  .compass {
+    position: absolute; top: 14px; right: 14px; width: 56px; height: 56px;
+    pointer-events: none; opacity: 0.85; z-index: 5;
+  }
+  .compass.hidden { display: none; }
+
+  /* grain overlay */
+  .grain {
+    position: absolute; inset: 0; pointer-events: none;
+    mix-blend-mode: multiply; opacity: 0;
+    z-index: 4;
+  }
+  .grain.grain-on {
+    opacity: 0.18;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .grain.halftone-on {
+    opacity: 0.16;
+    background-image: radial-gradient(circle at 1px 1px, #000 0.6px, transparent 1px);
+    background-size: 4px 4px;
+  }
+
   #caption {
-    padding: 24px 32px 28px;
+    padding: 22px 28px 26px;
     text-align: center;
     background: #fff;
     border-top: 1px solid #f0ede3;
+    position: relative; z-index: 6;
   }
   #caption-title {
     font-size: 30px; font-weight: 700; letter-spacing: 6px;
@@ -163,9 +226,49 @@
     font-size: 11px; color: #999; margin-top: 11px;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
   }
+  #caption.anniversary #caption-title::before,
+  #caption.anniversary #caption-title::after { content: ''; }
 
   .maplibregl-ctrl-attrib { font-size: 9px; opacity: 0.7; }
   .maplibregl-ctrl-attrib a { color: #777; }
+  .maplibregl-ctrl-scale { background: rgba(255,255,255,0.85); border-color: #888 !important; color: #333 !important; }
+
+  /* ===== Modal ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,15,15,0.55);
+    display: none; align-items: center; justify-content: center; z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px; padding: 28px 32px;
+    width: min(560px, 90vw); max-height: 86vh; overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 6px; }
+  .modal .modal-subtitle { color: #888; font-size: 12px; margin-bottom: 18px; }
+  .modal h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 16px 0 8px; }
+  .shortcut-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
+  .shortcut-grid kbd {
+    background: #f4f4ee; border: 1px solid #e0ddd0; border-radius: 4px;
+    padding: 1px 7px; font-family: ui-monospace, monospace; font-size: 12px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  }
+  .modal .close {
+    position: absolute; top: 14px; right: 14px; background: none; border: none;
+    font-size: 22px; cursor: pointer; color: #aaa; line-height: 1;
+  }
+  .modal-wrap { position: relative; }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff; padding: 12px 18px; border-radius: 10px;
+    font-size: 13px; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    display: none; z-index: 999; align-items: center; gap: 12px;
+  }
+  .toast.show { display: flex; }
+  .toast button { background: rgba(255,255,255,0.18); color: #fff; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit; }
 
   @media (max-width: 800px) {
     body { flex-direction: column; overflow: auto; }
@@ -178,7 +281,10 @@
 <aside>
   <div class="header-row">
     <h1>OSM Poster</h1>
-    <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener" class="gh-link" title="View source on GitHub">GitHub ↗</a>
+    <div class="header-actions">
+      <button class="help-btn" id="helpBtn" title="Shortcuts & tips (?)">?</button>
+      <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener" class="gh-link">GitHub ↗</a>
+    </div>
   </div>
   <span class="tag">Custom-styled maps from OpenStreetMap</span>
 
@@ -186,10 +292,13 @@
   <input type="text" id="search" placeholder="City, address, landmark..." autocomplete="off">
   <div id="results"></div>
 
-  <h3>Style Preset</h3>
+  <h3>Quick Cities</h3>
+  <div class="cities" id="cities"></div>
+
+  <h3>Style Preset <span class="small">[ ] cycle</span></h3>
   <div class="presets" id="presets"></div>
 
-  <h3>Layers <span class="small">click to toggle</span></h3>
+  <h3>Layers</h3>
   <div class="toggles" id="toggles"></div>
 
   <h3>Style Options</h3>
@@ -205,46 +314,108 @@
       <option value="Noto Sans Italic">Sans italic</option>
       <option value="Noto Sans Medium">Sans medium</option>
     </select>
+    <select id="border">
+      <option value="none">No border</option>
+      <option value="thin">Thin border</option>
+      <option value="double">Double border</option>
+      <option value="bold">Bold border</option>
+    </select>
+    <select id="texture">
+      <option value="none">No texture</option>
+      <option value="grain">Paper grain</option>
+      <option value="halftone">Halftone dots</option>
+    </select>
   </div>
 
-  <h3>Road Weight</h3>
-  <div class="row">
-    <input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1">
-    <span class="val" id="roadWeightVal">1.0×</span>
+  <h3>Map View</h3>
+  <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>
+  <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
+  <div class="row"><label>Roads</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
+
+  <h3>Center Marker <span class="small">M to toggle</span></h3>
+  <div class="marker-row" id="markerRow"></div>
+
+  <h3>Decorations</h3>
+  <div class="toggles" style="grid-template-columns: 1fr 1fr;">
+    <label class="toggle"><input type="checkbox" id="compassToggle"> Compass rose</label>
+    <label class="toggle"><input type="checkbox" id="scaleToggle"> Scale bar</label>
   </div>
 
   <h3>Palette <span class="small">click any swatch</span></h3>
   <div class="palette-row" id="palette"></div>
-
+  <div class="seed-row">
+    <input type="text" id="seed" placeholder="Seed (optional, for reproducibility)" maxlength="32">
+  </div>
   <div class="actions">
-    <button id="randomize">Randomize</button>
+    <button id="randomize" title="R">⚂ Randomize</button>
     <button id="reset">Reset preset</button>
   </div>
 
-  <h3>Frame</h3>
+  <h3>Aspect Ratio</h3>
   <div class="frames" id="frames">
-    <button data-frame="portrait" class="active">Portrait</button>
-    <button data-frame="square">Square</button>
-    <button data-frame="landscape">Landscape</button>
+    <button data-frame="portrait" class="active">Portrait 2:3</button>
+    <button data-frame="square">Square 1:1</button>
+    <button data-frame="landscape">Landscape 3:2</button>
+    <button data-frame="story">Story 9:16</button>
+    <button data-frame="a4">A4 √2</button>
+    <button data-frame="banner">Banner 3:1</button>
   </div>
 
   <h3>Caption</h3>
   <input type="text" id="title" placeholder="Title (e.g. PARIS)" maxlength="40">
   <input type="text" id="subtitle" placeholder="Subtitle (e.g. The City of Light)" maxlength="80">
+  <label class="toggle" style="margin-top:6px"><input type="checkbox" id="anniversary"> Commemorative mode (names &amp; date)</label>
+  <input type="date" id="commemDate" style="margin-top:6px; display:none">
 
-  <button id="export">Download PNG</button>
+  <h3>GPX Route <span class="small">drop or click</span></h3>
+  <label class="gpx-upload">
+    <input type="file" id="gpxFile" accept=".gpx,application/gpx+xml,text/xml">
+    <span>📍 Click to upload a GPX file</span>
+  </label>
+  <div class="gpx-status" id="gpxStatus"></div>
+
+  <div id="export-section">
+    <h3>Export</h3>
+    <div class="style-options">
+      <select id="exportFormat">
+        <option value="png">PNG</option>
+        <option value="svg">SVG</option>
+        <option value="pdf">PDF</option>
+      </select>
+      <select id="exportSize">
+        <option value="screen">Screen 4×</option>
+        <option value="a2">A2 print</option>
+        <option value="a3">A3 print</option>
+        <option value="a4">A4 print</option>
+        <option value="4k">4K</option>
+      </select>
+    </div>
+    <button id="export" style="margin-top:8px">Download</button>
+  </div>
 
   <div class="footer-note">
     Map data © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>
     Vector tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a><br>
-    Style designs generated in your browser
+    <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source on GitHub</a>
   </div>
 </aside>
 
 <main>
   <div class="poster-wrap frame-portrait" id="poster-wrap">
     <div id="poster">
-      <div id="map-wrap"><div id="map"></div></div>
+      <div id="map-wrap">
+        <div id="map"></div>
+        <div class="grain" id="grain"></div>
+        <svg class="compass hidden" id="compass" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.7"/>
+          <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+          <polygon points="50,8 54,50 50,52 46,50" fill="currentColor"/>
+          <polygon points="50,92 54,52 50,50 46,52" fill="currentColor" opacity="0.45"/>
+          <polygon points="8,50 50,46 52,50 50,54" fill="currentColor" opacity="0.6"/>
+          <polygon points="92,50 52,50 50,46 50,54" fill="currentColor" opacity="0.6"/>
+          <text x="50" y="6" text-anchor="middle" font-size="8" fill="currentColor" font-family="ui-serif, Georgia">N</text>
+        </svg>
+      </div>
       <div id="caption">
         <div id="caption-title">PARIS</div>
         <div id="caption-subtitle">The City of Light</div>
@@ -254,23 +425,52 @@
   </div>
 </main>
 
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal-wrap">
+    <div class="modal">
+      <button class="close" id="closeHelp">&times;</button>
+      <h2>OSM Poster — Quick Reference</h2>
+      <div class="modal-subtitle">Browser-only. Your design lives in the URL hash and localStorage.</div>
+
+      <h4>Keyboard Shortcuts</h4>
+      <div class="shortcut-grid">
+        <kbd>R</kbd><span>Randomize palette</span>
+        <kbd>E</kbd><span>Export with current settings</span>
+        <kbd>F</kbd><span>Toggle fullscreen preview</span>
+        <kbd>M</kbd><span>Toggle center marker</span>
+        <kbd>[</kbd><span>Previous style preset</span>
+        <kbd>]</kbd><span>Next style preset</span>
+        <kbd>?</kbd><span>This dialog</span>
+        <kbd>⌘ Z</kbd><span>Undo</span>
+        <kbd>⌘ ⇧ Z</kbd><span>Redo</span>
+        <kbd>Esc</kbd><span>Close dialog / clear search</span>
+      </div>
+
+      <h4>Sharing</h4>
+      <p style="font-size:13px; line-height:1.55; color:#444;">Every change updates the URL hash. Copy the URL to share your exact design — palette, layers, view, caption, marker, even the random seed.</p>
+
+      <h4>GPX Routes</h4>
+      <p style="font-size:13px; line-height:1.55; color:#444;">Upload a .gpx file (run, ride, hike) and the route renders in the accent color. Files never leave your browser.</p>
+
+      <h4>Reproducible Random</h4>
+      <p style="font-size:13px; line-height:1.55; color:#444;">Type a seed before pressing Randomize for a deterministic palette. The seed is shared via URL so anyone opening the link sees the same colors.</p>
+    </div>
+  </div>
+</div>
+
+<!-- First-visit toast -->
+<div class="toast" id="onboardToast">
+  <span>👋 New here? Press <kbd style="background:#444; padding:1px 6px; border-radius:3px; font-family:ui-monospace, monospace;">R</kbd> to randomize, or <kbd style="background:#444; padding:1px 6px; border-radius:3px; font-family:ui-monospace, monospace;">?</kbd> for shortcuts.</span>
+  <button id="dismissOnboard">Got it</button>
+</div>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <script>
 // =====================================================================
-// PRESETS — every visual decision lives here, no external styles loaded.
+// PRESETS
 // =====================================================================
-//
-// Palette keys:
-//   bg       background fill
-//   water    sea, lakes, rivers
-//   green    parks, forest, farmland (derived shades for each)
-//   urban    residential / commercial landuse (also building fallback at low zoom)
-//   building actual building footprints (z >= 12)
-//   road     roads (motorway → minor)
-//   rail     railways
-//   label    text labels
-//   accent   highlights, paths, special features
 const PRESETS = {
   blueprint: {
     name: 'Blueprint',
@@ -340,22 +540,57 @@ const PRESETS = {
   },
 };
 
+const PRESET_KEYS = Object.keys(PRESETS);
 const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'road', 'rail', 'label', 'accent'];
 const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Bldgs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
+const LAYER_ORDER = ['water', 'rivers', 'parks', 'greenery', 'buildings', 'industrial', 'railways', 'paths', 'airports', 'places', 'streets', 'pois'];
+const LAYER_LABELS = { water: 'Water', rivers: 'Rivers', parks: 'Parks', greenery: 'Greenery', buildings: 'Buildings', industrial: 'Industrial', railways: 'Railways', paths: 'Paths', airports: 'Airports', places: 'Place names', streets: 'Streets', pois: 'POIs' };
 
-const LAYER_ORDER = [
-  'water', 'rivers', 'parks', 'greenery',
-  'buildings', 'industrial', 'railways', 'paths',
-  'airports', 'places', 'streets', 'pois',
+// ADR-018: City quick-flys
+const CITIES = [
+  { name: 'PARIS',       coord: [2.3522, 48.8566],   zoom: 12 },
+  { name: 'NEW YORK',    coord: [-74.0060, 40.7128], zoom: 12 },
+  { name: 'TOKYO',       coord: [139.6503, 35.6762], zoom: 11 },
+  { name: 'LONDON',      coord: [-0.1276, 51.5074],  zoom: 11 },
+  { name: 'BERLIN',      coord: [13.4050, 52.5200],  zoom: 11 },
+  { name: 'SÃO PAULO',   coord: [-46.6333, -23.5505],zoom: 11 },
+  { name: 'MUMBAI',      coord: [72.8777, 19.0760],  zoom: 11 },
+  { name: 'SYDNEY',      coord: [151.2093, -33.8688],zoom: 11 },
+  { name: 'CAIRO',       coord: [31.2357, 30.0444],  zoom: 11 },
+  { name: 'MEXICO CITY', coord: [-99.1332, 19.4326], zoom: 11 },
+  { name: 'ISTANBUL',    coord: [28.9784, 41.0082],  zoom: 11 },
+  { name: 'LAGOS',       coord: [3.3792, 6.5244],    zoom: 11 },
 ];
-const LAYER_LABELS = {
-  water: 'Water', rivers: 'Rivers', parks: 'Parks', greenery: 'Greenery',
-  buildings: 'Buildings', industrial: 'Industrial', railways: 'Railways', paths: 'Paths',
-  airports: 'Airports', places: 'Place names', streets: 'Streets', pois: 'POIs',
-};
 
-let activePreset = 'blueprint';
-let state = clonePreset('blueprint');
+const MARKER_ICONS = {
+  pin:   '<svg viewBox="0 0 24 24" width="36" height="36"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.5 8 12 8 12s8-6.5 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" fill="currentColor"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" width="32" height="32"><path d="M12 21s-7-4.5-7-10a4.5 4.5 0 018-3 4.5 4.5 0 018 3c0 5.5-7 10-7 10z" fill="currentColor"/></svg>',
+  star:  '<svg viewBox="0 0 24 24" width="32" height="32"><path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.7 7L12 17.5 5.7 21.1l1.7-7L2 9.3l7.1-.7z" fill="currentColor"/></svg>',
+  dot:   '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="8" fill="currentColor"/><circle cx="12" cy="12" r="3" fill="white"/></svg>',
+};
+const MARKER_TYPES = ['pin', 'heart', 'star', 'dot'];
+
+// =====================================================================
+// STATE
+// =====================================================================
+function defaultState() {
+  const p = clonePreset('blueprint');
+  return {
+    preset: 'blueprint',
+    ...p,
+    bearing: 0,
+    pitch: 0,
+    frame: 'portrait',
+    border: 'none',
+    texture: 'none',
+    compass: false,
+    scale: false,
+    marker: { enabled: false, type: 'pin', lng: 2.3522, lat: 48.8566 },
+    caption: { title: 'PARIS', subtitle: 'The City of Light', anniversary: false, date: '' },
+    view: { center: [2.3522, 48.8566], zoom: 12 },
+    seed: '',
+  };
+}
 
 function clonePreset(key) {
   const p = PRESETS[key];
@@ -368,9 +603,80 @@ function clonePreset(key) {
   };
 }
 
+let state = defaultState();
+let gpxData = null; // GeoJSON LineString, kept in memory + localStorage
+
 // =====================================================================
-// STYLE GENERATOR — builds the MapLibre style JSON from `state`.
-// Source = OpenFreeMap planet vector tiles (OpenMapTiles schema).
+// ADR-016: Undo/redo
+// =====================================================================
+const history = { past: [], future: [] };
+const HISTORY_CAP = 30;
+let historyTimer;
+
+function snapshot() {
+  return JSON.parse(JSON.stringify(state));
+}
+function pushHistory() {
+  clearTimeout(historyTimer);
+  historyTimer = setTimeout(() => {
+    history.past.push(snapshot());
+    if (history.past.length > HISTORY_CAP) history.past.shift();
+    history.future = [];
+  }, 220);
+}
+function undo() {
+  if (!history.past.length) return;
+  history.future.push(snapshot());
+  state = history.past.pop();
+  applyState({ silent: true });
+}
+function redo() {
+  if (!history.future.length) return;
+  history.past.push(snapshot());
+  state = history.future.pop();
+  applyState({ silent: true });
+}
+
+// =====================================================================
+// ADR-001 + 002: Persistence (URL hash + localStorage)
+// =====================================================================
+const LS_KEY = 'osm-poster:last';
+const LS_GPX = 'osm-poster:gpx';
+const LS_VISITED = 'osm-poster:visited';
+
+function encodeState() {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
+  catch (e) { return ''; }
+}
+function decodeState(hash) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(hash)))); }
+  catch (e) { return null; }
+}
+let saveTimer;
+function persist() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const enc = encodeState();
+    if (enc) {
+      try { window.history.replaceState(null, '', '#' + enc); } catch (e) { location.hash = enc; }
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+  }, 250);
+}
+function loadFromUrlOrStorage() {
+  if (location.hash.length > 1) {
+    const decoded = decodeState(location.hash.slice(1));
+    if (decoded) return decoded;
+  }
+  try {
+    const ls = localStorage.getItem(LS_KEY);
+    if (ls) return JSON.parse(ls);
+  } catch (e) {}
+  return null;
+}
+
+// =====================================================================
+// COLOR HELPERS
 // =====================================================================
 function darken(hex, amount) {
   const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16));
@@ -380,169 +686,100 @@ function lighten(hex, amount) {
   const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16));
   return '#' + m.map(c => Math.max(0, Math.min(255, Math.round(c + (255 - c) * amount))).toString(16).padStart(2, '0')).join('');
 }
-
-function dashFor(style, baseW) {
-  if (style === 'dashed') return [4, 1.5];
-  if (style === 'dotted') return [0.5, 2];
-  return null;
-}
-
-// Relative luminance (sRGB), 0..1
 function lum(hex) {
   const m = hex.replace('#', '').match(/../g).map(h => parseInt(h, 16) / 255);
   const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   return 0.2126 * lin(m[0]) + 0.7152 * lin(m[1]) + 0.0722 * lin(m[2]);
 }
-
-// Pick a halo color that gives good contrast vs both the label and the basemap.
-// If label/bg already contrast well, return bg (clean halo around labels crossing roads/buildings).
-// If contrast is poor, return whichever of black/white best contrasts the label.
 function haloFor(labelHex, bgHex) {
   const ll = lum(labelHex), bl = lum(bgHex);
   if (Math.abs(ll - bl) > 0.35) return bgHex;
   return ll > 0.5 ? '#000000' : '#ffffff';
 }
+function dashFor(style) {
+  if (style === 'dashed') return [4, 1.5];
+  if (style === 'dotted') return [0.5, 2];
+  return null;
+}
 
+// =====================================================================
+// STYLE GENERATOR
+// =====================================================================
 function buildStyle(s) {
   const layers = [];
   const w = s.roadWeight;
   const p = s.palette;
-
   layers.push({ id: 'bg', type: 'background', paint: { 'background-color': p.bg } });
 
-  // ---------- Water ----------
   if (s.layers.water) {
-    layers.push({
-      id: 'water', type: 'fill',
-      source: 'omt', 'source-layer': 'water',
-      paint: { 'fill-color': p.water, 'fill-antialias': true },
-    });
+    layers.push({ id: 'water', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': p.water, 'fill-antialias': true } });
   }
-
-  // ---------- Rivers / waterways ----------
   if (s.layers.rivers) {
-    layers.push({
-      id: 'waterway', type: 'line',
-      source: 'omt', 'source-layer': 'waterway',
-      paint: {
-        'line-color': p.water,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 14, 1.5, 18, 4],
-      },
-    });
+    layers.push({ id: 'waterway', type: 'line', source: 'omt', 'source-layer': 'waterway',
+      paint: { 'line-color': p.water, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 14, 1.5, 18, 4] } });
   }
-
-  // ---------- Greenery (forest + farmland) ----------
   if (s.layers.greenery) {
-    layers.push({
-      id: 'landcover-wood', type: 'fill',
-      source: 'omt', 'source-layer': 'landcover',
+    layers.push({ id: 'lc-wood', type: 'fill', source: 'omt', 'source-layer': 'landcover',
       filter: ['in', ['get', 'class'], ['literal', ['wood', 'forest']]],
-      paint: { 'fill-color': darken(p.green, 0.1), 'fill-opacity': 0.7 },
-    });
-    layers.push({
-      id: 'landcover-grass', type: 'fill',
-      source: 'omt', 'source-layer': 'landcover',
+      paint: { 'fill-color': darken(p.green, 0.1), 'fill-opacity': 0.7 } });
+    layers.push({ id: 'lc-grass', type: 'fill', source: 'omt', 'source-layer': 'landcover',
       filter: ['in', ['get', 'class'], ['literal', ['grass', 'farmland']]],
-      paint: { 'fill-color': lighten(p.green, 0.15), 'fill-opacity': 0.5 },
-    });
+      paint: { 'fill-color': lighten(p.green, 0.15), 'fill-opacity': 0.5 } });
   }
-
-  // ---------- Parks (specific tagged parks/protected areas) ----------
   if (s.layers.parks) {
-    layers.push({
-      id: 'park', type: 'fill',
-      source: 'omt', 'source-layer': 'park',
-      paint: { 'fill-color': p.green, 'fill-opacity': 0.75 },
-    });
+    layers.push({ id: 'park', type: 'fill', source: 'omt', 'source-layer': 'park',
+      paint: { 'fill-color': p.green, 'fill-opacity': 0.75 } });
   }
-
-  // ---------- Buildings (smart: low-zoom fallback uses urban color) ----------
   if (s.layers.buildings) {
-    // Low-zoom: residential/commercial landuse stands in for "built-up area".
-    layers.push({
-      id: 'building-fallback', type: 'fill',
-      source: 'omt', 'source-layer': 'landuse',
+    layers.push({ id: 'building-fallback', type: 'fill', source: 'omt', 'source-layer': 'landuse',
       filter: ['in', ['get', 'class'], ['literal', ['residential', 'commercial', 'suburb', 'neighbourhood']]],
       maxzoom: 13.5,
-      paint: {
-        'fill-color': p.urban,
-        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.4, 11, 0.75, 13.5, 0.4],
-      },
-    });
-    // Actual building footprints from z 12 upward, fading in.
-    layers.push({
-      id: 'building', type: 'fill',
-      source: 'omt', 'source-layer': 'building',
-      minzoom: 12,
-      paint: {
-        'fill-color': p.building,
-        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 14, 0.85, 18, 0.95],
-        'fill-outline-color': darken(p.building, 0.15),
-      },
-    });
-  }
+      paint: { 'fill-color': p.urban, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.4, 11, 0.75, 13.5, 0.4] } });
 
-  // ---------- Industrial ----------
+    // ADR-006: 3D extrusion when pitched
+    if (s.pitch > 8) {
+      layers.push({ id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 13,
+        paint: {
+          'fill-extrusion-color': p.building,
+          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
+          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+          'fill-extrusion-opacity': 0.92,
+        } });
+    } else {
+      layers.push({ id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 12,
+        paint: {
+          'fill-color': p.building,
+          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.2, 14, 0.85, 18, 0.95],
+          'fill-outline-color': darken(p.building, 0.15),
+        } });
+    }
+  }
   if (s.layers.industrial) {
-    layers.push({
-      id: 'industrial', type: 'fill',
-      source: 'omt', 'source-layer': 'landuse',
+    layers.push({ id: 'industrial', type: 'fill', source: 'omt', 'source-layer': 'landuse',
       filter: ['in', ['get', 'class'], ['literal', ['industrial', 'railway']]],
-      paint: { 'fill-color': darken(p.urban, 0.15), 'fill-opacity': 0.7 },
-    });
+      paint: { 'fill-color': darken(p.urban, 0.15), 'fill-opacity': 0.7 } });
   }
-
-  // ---------- Airports ----------
   if (s.layers.airports) {
-    layers.push({
-      id: 'airport-area', type: 'fill',
-      source: 'omt', 'source-layer': 'aeroway',
+    layers.push({ id: 'air-area', type: 'fill', source: 'omt', 'source-layer': 'aeroway',
       filter: ['==', ['geometry-type'], 'Polygon'],
-      paint: { 'fill-color': lighten(p.urban, 0.05), 'fill-opacity': 0.6 },
-    });
-    layers.push({
-      id: 'airport-runway', type: 'line',
-      source: 'omt', 'source-layer': 'aeroway',
+      paint: { 'fill-color': lighten(p.urban, 0.05), 'fill-opacity': 0.6 } });
+    layers.push({ id: 'air-runway', type: 'line', source: 'omt', 'source-layer': 'aeroway',
       filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', ['runway', 'taxiway']]]],
-      paint: {
-        'line-color': p.road,
-        'line-width': ['case', ['==', ['get', 'class'], 'runway'], 4, 1.5],
-      },
-    });
+      paint: { 'line-color': p.road, 'line-width': ['case', ['==', ['get', 'class'], 'runway'], 4, 1.5] } });
   }
-
-  // ---------- Paths / footways ----------
   if (s.layers.paths) {
-    layers.push({
-      id: 'path', type: 'line',
-      source: 'omt', 'source-layer': 'transportation',
+    layers.push({ id: 'path', type: 'line', source: 'omt', 'source-layer': 'transportation',
       filter: ['in', ['get', 'class'], ['literal', ['path', 'track', 'footway', 'pedestrian', 'cycleway', 'bridleway']]],
       minzoom: 12,
-      paint: {
-        'line-color': p.accent,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 18, 1.6],
-        'line-dasharray': [2, 1.5],
-        'line-opacity': 0.7,
-      },
-    });
+      paint: { 'line-color': p.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 18, 1.6], 'line-dasharray': [2, 1.5], 'line-opacity': 0.7 } });
   }
-
-  // ---------- Railways ----------
   if (s.layers.railways) {
-    layers.push({
-      id: 'rail', type: 'line',
-      source: 'omt', 'source-layer': 'transportation',
+    layers.push({ id: 'rail', type: 'line', source: 'omt', 'source-layer': 'transportation',
       filter: ['in', ['get', 'class'], ['literal', ['rail', 'transit']]],
       minzoom: 8,
-      paint: {
-        'line-color': p.rail,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 14, 1.2, 18, 2.5],
-        'line-dasharray': [3, 2],
-      },
-    });
+      paint: { 'line-color': p.rail, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 14, 1.2, 18, 2.5], 'line-dasharray': [3, 2] } });
   }
 
-  // ---------- Roads (always rendered, no toggle) ----------
   const roadClasses = [
     { id: 'minor', match: ['minor', 'service'],  base: 0.6, minzoom: 12 },
     { id: 'tert',  match: ['tertiary'],          base: 1.0, minzoom: 10 },
@@ -554,133 +791,53 @@ function buildStyle(s) {
   const dash = dashFor(s.roadStyle);
   roadClasses.forEach(rc => {
     const layer = {
-      id: 'road-' + rc.id,
-      type: 'line',
-      source: 'omt',
-      'source-layer': 'transportation',
-      filter: ['all',
-        ['==', ['geometry-type'], 'LineString'],
-        ['in', ['get', 'class'], ['literal', rc.match]],
-      ],
+      id: 'road-' + rc.id, type: 'line', source: 'omt', 'source-layer': 'transportation',
+      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', rc.match]]],
       minzoom: rc.minzoom,
       layout: { 'line-cap': dash ? 'butt' : 'round', 'line-join': 'round' },
       paint: {
         'line-color': p.road,
-        'line-width': [
-          'interpolate', ['exponential', 1.4], ['zoom'],
-          5,  rc.base * w * 0.15,
-          12, rc.base * w * 0.9,
-          18, rc.base * w * 4.5,
-        ],
+        'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 5, rc.base * w * 0.15, 12, rc.base * w * 0.9, 18, rc.base * w * 4.5],
       },
     };
     if (dash) layer.paint['line-dasharray'] = dash;
     layers.push(layer);
   });
 
-  // ---------- Boundaries (always subtle) ----------
-  layers.push({
-    id: 'boundary', type: 'line',
-    source: 'omt', 'source-layer': 'boundary',
+  layers.push({ id: 'boundary', type: 'line', source: 'omt', 'source-layer': 'boundary',
     filter: ['<=', ['get', 'admin_level'], 4],
-    paint: {
-      'line-color': p.label,
-      'line-opacity': 0.18,
-      'line-width': 0.6,
-      'line-dasharray': [3, 2],
-    },
-  });
+    paint: { 'line-color': p.label, 'line-opacity': 0.18, 'line-width': 0.6, 'line-dasharray': [3, 2] } });
 
   const labelHalo = haloFor(p.label, p.bg);
   const accentHalo = haloFor(p.accent, p.bg);
-
-  // ---------- Place labels ----------
   if (s.layers.places) {
-    layers.push({
-      id: 'place-major', type: 'symbol',
-      source: 'omt', 'source-layer': 'place',
+    layers.push({ id: 'place-major', type: 'symbol', source: 'omt', 'source-layer': 'place',
       filter: ['in', ['get', 'class'], ['literal', ['city', 'town']]],
-      layout: {
-        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': [s.labelFont],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 12, 12, 18],
-        'text-letter-spacing': 0.1,
-        'text-transform': 'uppercase',
-      },
-      paint: {
-        'text-color': p.label,
-        'text-halo-color': labelHalo,
-        'text-halo-width': 2.2,
-        'text-halo-blur': 0.5,
-      },
-    });
-    layers.push({
-      id: 'place-minor', type: 'symbol',
-      source: 'omt', 'source-layer': 'place',
+      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 12, 12, 18], 'text-letter-spacing': 0.1, 'text-transform': 'uppercase' },
+      paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 2.2, 'text-halo-blur': 0.5 } });
+    layers.push({ id: 'place-minor', type: 'symbol', source: 'omt', 'source-layer': 'place',
       minzoom: 10,
       filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood']]],
-      layout: {
-        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': [s.labelFont],
-        'text-size': 12,
-      },
-      paint: {
-        'text-color': p.label,
-        'text-halo-color': labelHalo,
-        'text-halo-width': 1.8,
-        'text-halo-blur': 0.5,
-      },
-    });
+      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 12 },
+      paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
   }
-
-  // ---------- Street names ----------
   if (s.layers.streets) {
-    layers.push({
-      id: 'street-name', type: 'symbol',
-      source: 'omt', 'source-layer': 'transportation_name',
-      minzoom: 14,
-      filter: ['in', ['get', 'class'], ['literal', ['primary', 'secondary', 'tertiary', 'minor']]],
-      layout: {
-        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': [s.labelFont],
-        'text-size': 11,
-        'symbol-placement': 'line',
-      },
-      paint: {
-        'text-color': p.label,
-        'text-halo-color': labelHalo,
-        'text-halo-width': 1.8,
-        'text-halo-blur': 0.5,
-      },
-    });
+    layers.push({ id: 'street-name', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name',
+      minzoom: 14, filter: ['in', ['get', 'class'], ['literal', ['primary', 'secondary', 'tertiary', 'minor']]],
+      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 11, 'symbol-placement': 'line' },
+      paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
   }
-
-  // ---------- POIs ----------
   if (s.layers.pois) {
-    layers.push({
-      id: 'poi', type: 'symbol',
-      source: 'omt', 'source-layer': 'poi',
-      minzoom: 14,
-      layout: {
-        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
-        'text-font': [s.labelFont],
-        'text-size': 11,
-      },
-      paint: {
-        'text-color': p.accent,
-        'text-halo-color': accentHalo,
-        'text-halo-width': 1.8,
-        'text-halo-blur': 0.5,
-      },
-    });
+    layers.push({ id: 'poi', type: 'symbol', source: 'omt', 'source-layer': 'poi', minzoom: 14,
+      layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 11 },
+      paint: { 'text-color': p.accent, 'text-halo-color': accentHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
   }
 
   return {
     version: 8,
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-    sources: {
-      omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' },
-    },
+    sources: { omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' } },
     layers,
   };
 }
@@ -688,18 +845,34 @@ function buildStyle(s) {
 // =====================================================================
 // MAP
 // =====================================================================
+const initialState = loadFromUrlOrStorage();
+if (initialState) state = { ...defaultState(), ...initialState, palette: { ...defaultState().palette, ...(initialState.palette || {}) }, layers: { ...defaultState().layers, ...(initialState.layers || {}) }, marker: { ...defaultState().marker, ...(initialState.marker || {}) }, caption: { ...defaultState().caption, ...(initialState.caption || {}) }, view: { ...defaultState().view, ...(initialState.view || {}) } };
+
 const map = new maplibregl.Map({
   container: 'map',
   style: buildStyle(state),
-  center: [2.3522, 48.8566],
-  zoom: 12,
+  center: state.view.center,
+  zoom: state.view.zoom,
+  bearing: state.bearing,
+  pitch: state.pitch,
   attributionControl: { compact: true },
   preserveDrawingBuffer: true,
 });
 
+const scaleControl = new maplibregl.ScaleControl({ maxWidth: 100, unit: 'metric' });
+
 map.on('move', () => {
   const c = map.getCenter();
   document.getElementById('caption-coords').textContent = formatCoords(c.lat, c.lng);
+  state.view.center = [c.lng, c.lat];
+  state.view.zoom = map.getZoom();
+  state.bearing = map.getBearing();
+  state.pitch = map.getPitch();
+  bearingInput.value = Math.round(state.bearing);
+  bearingVal.textContent = Math.round(state.bearing) + '°';
+  pitchInput.value = Math.round(state.pitch);
+  pitchVal.textContent = Math.round(state.pitch) + '°';
+  persist();
 });
 
 function formatCoords(lat, lng) {
@@ -714,115 +887,100 @@ function restyle() {
   restyleTimer = setTimeout(() => {
     const c = map.getCenter(), z = map.getZoom(), b = map.getBearing(), pi = map.getPitch();
     map.setStyle(buildStyle(state));
-    map.once('style.load', () => map.jumpTo({ center: c, zoom: z, bearing: b, pitch: pi }));
+    map.once('style.load', () => {
+      map.jumpTo({ center: c, zoom: z, bearing: b, pitch: pi });
+      ensureGpx();
+    });
   }, 80);
 }
 
 // =====================================================================
-// UI WIRING
+// ADR-009: GPX overlay
 // =====================================================================
-const presetsEl = document.getElementById('presets');
-Object.entries(PRESETS).forEach(([key, p]) => {
-  const div = document.createElement('div');
-  div.className = 'preset' + (key === activePreset ? ' active' : '');
-  div.dataset.key = key;
-  div.innerHTML = `
-    <div class="swatch">
-      <span style="background:${p.palette.bg}"></span>
-      <span style="background:${p.palette.water}"></span>
-      <span style="background:${p.palette.road}"></span>
-    </div>
-    <div class="label">${p.name}</div>
-  `;
-  div.addEventListener('click', () => {
-    activePreset = key;
-    state = clonePreset(key);
-    syncControls();
-    document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.key === key));
-    restyle();
+function parseGpx(text) {
+  const xml = new DOMParser().parseFromString(text, 'application/xml');
+  const pts = [...xml.querySelectorAll('trkpt, rtept, wpt')]
+    .map(p => [parseFloat(p.getAttribute('lon')), parseFloat(p.getAttribute('lat'))])
+    .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+  if (pts.length < 2) return null;
+  return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } };
+}
+function ensureGpx() {
+  if (!gpxData) return;
+  if (map.getLayer('gpx-line')) map.removeLayer('gpx-line');
+  if (map.getSource('gpx')) map.removeSource('gpx');
+  map.addSource('gpx', { type: 'geojson', data: gpxData });
+  map.addLayer({
+    id: 'gpx-line', type: 'line', source: 'gpx',
+    paint: { 'line-color': state.palette.accent, 'line-width': 4, 'line-opacity': 0.92 },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
   });
-  presetsEl.appendChild(div);
-});
+}
+function loadGpx(geojson, fitBounds = true) {
+  gpxData = geojson;
+  ensureGpx();
+  if (fitBounds && geojson) {
+    const coords = geojson.geometry.coordinates;
+    let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+    coords.forEach(([x, y]) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); });
+    map.fitBounds([[minX, minY], [maxX, maxY]], { padding: 50 });
+  }
+  try {
+    if (geojson) localStorage.setItem(LS_GPX, JSON.stringify(geojson));
+    else localStorage.removeItem(LS_GPX);
+  } catch (e) {}
+  updateGpxStatus();
+}
+function updateGpxStatus() {
+  const el = document.getElementById('gpxStatus');
+  if (gpxData) el.innerHTML = `Route loaded: ${gpxData.geometry.coordinates.length} points · <span class="clear" id="gpxClear">remove</span>`;
+  else el.innerHTML = '';
+  const clear = document.getElementById('gpxClear');
+  if (clear) clear.addEventListener('click', () => loadGpx(null, false));
+}
+try {
+  const saved = localStorage.getItem(LS_GPX);
+  if (saved) gpxData = JSON.parse(saved);
+} catch (e) {}
 
-const togglesEl = document.getElementById('toggles');
-LAYER_ORDER.forEach(k => {
-  const lbl = document.createElement('label');
-  lbl.className = 'toggle';
-  lbl.innerHTML = `<input type="checkbox" data-layer="${k}"> ${LAYER_LABELS[k]}`;
-  togglesEl.appendChild(lbl);
-  lbl.querySelector('input').addEventListener('change', e => {
-    state.layers[k] = e.target.checked;
-    restyle();
-  });
-});
+// =====================================================================
+// ADR-008: Center marker
+// =====================================================================
+let markerInstance = null;
+function updateMarker() {
+  if (markerInstance) { markerInstance.remove(); markerInstance = null; }
+  if (!state.marker.enabled) return;
+  const el = document.createElement('div');
+  el.style.color = state.palette.accent;
+  el.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))';
+  el.style.pointerEvents = 'none';
+  el.innerHTML = MARKER_ICONS[state.marker.type] || MARKER_ICONS.pin;
+  markerInstance = new maplibregl.Marker({ element: el, anchor: state.marker.type === 'pin' ? 'bottom' : 'center' })
+    .setLngLat([state.marker.lng, state.marker.lat]).addTo(map);
+}
 
-const rw = document.getElementById('roadWeight');
-const rwVal = document.getElementById('roadWeightVal');
-rw.addEventListener('input', () => {
-  state.roadWeight = parseFloat(rw.value);
-  rwVal.textContent = state.roadWeight.toFixed(1) + '×';
-  restyle();
-});
-
-document.getElementById('roadStyle').addEventListener('change', e => {
-  state.roadStyle = e.target.value;
-  restyle();
-});
-document.getElementById('labelFont').addEventListener('change', e => {
-  state.labelFont = e.target.value;
-  restyle();
-});
-
-const paletteEl = document.getElementById('palette');
-PALETTE_KEYS.forEach(k => {
-  const lbl = document.createElement('label');
-  lbl.innerHTML = `
-    <div class="swatch-btn" data-key="${k}">
-      <input type="color" data-key="${k}">
-    </div>
-    <span>${PALETTE_LABELS[k]}</span>
-  `;
-  paletteEl.appendChild(lbl);
-  const input = lbl.querySelector('input');
-  input.addEventListener('input', e => {
-    state.palette[k] = e.target.value;
-    syncSwatches();
-    restyle();
-  });
-});
-
-document.getElementById('reset').addEventListener('click', () => {
-  state = clonePreset(activePreset);
-  syncControls();
-  restyle();
-});
-
-document.getElementById('randomize').addEventListener('click', () => {
-  const baseHue = Math.floor(Math.random() * 360);
-  const dark = Math.random() > 0.5;
-  const sat = 30 + Math.random() * 50;
-  state.palette = {
-    bg:       dark ? hsl(baseHue,            sat * 0.6, 8 + Math.random() * 6)
-                   : hsl(baseHue,            sat * 0.3, 92 + Math.random() * 4),
-    water:    dark ? hsl((baseHue + 200) % 360, sat * 0.7, 15 + Math.random() * 8)
-                   : hsl((baseHue + 200) % 360, sat * 0.6, 75 + Math.random() * 8),
-    green:    dark ? hsl((baseHue + 100) % 360, sat * 0.5, 12 + Math.random() * 6)
-                   : hsl((baseHue + 100) % 360, sat * 0.5, 78 + Math.random() * 8),
-    urban:    dark ? hsl(baseHue,            sat * 0.4, 14 + Math.random() * 5)
-                   : hsl(baseHue,            sat * 0.3, 88 + Math.random() * 4),
-    building: dark ? hsl(baseHue,            sat * 0.4, 18 + Math.random() * 6)
-                   : hsl(baseHue,            sat * 0.3, 84 + Math.random() * 6),
-    road:     dark ? hsl((baseHue + 30)  % 360, sat,        65 + Math.random() * 25)
-                   : hsl((baseHue + 30)  % 360, sat,        25 + Math.random() * 20),
-    rail:     dark ? hsl((baseHue + 60)  % 360, sat * 0.7,  55)
-                   : hsl((baseHue + 60)  % 360, sat * 0.7,  35),
-    label:    dark ? hsl((baseHue + 60)  % 360, sat * 0.6, 80)
-                   : hsl((baseHue + 60)  % 360, sat * 0.7, 22),
-    accent:   hsl((baseHue + 180) % 360, sat * 0.9, dark ? 65 : 45),
+// =====================================================================
+// ADR-019: Seedable PRNG
+// =====================================================================
+function mulberry32(seed) {
+  let a = seed | 0;
+  return function() {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  syncControls();
-  restyle();
-});
+}
+function seedToInt(s) {
+  if (!s) return Math.floor(Math.random() * 2147483647);
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h | 0);
+}
 
 function hsl(h, s, l) {
   s /= 100; l /= 100;
@@ -835,117 +993,513 @@ function hsl(h, s, l) {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
+function randomizePalette() {
+  const rng = mulberry32(seedToInt(state.seed));
+  const baseHue = Math.floor(rng() * 360);
+  const dark = rng() > 0.5;
+  const sat = 30 + rng() * 50;
+  state.palette = {
+    bg:       dark ? hsl(baseHue, sat * 0.6, 8 + rng() * 6) : hsl(baseHue, sat * 0.3, 92 + rng() * 4),
+    water:    dark ? hsl((baseHue + 200) % 360, sat * 0.7, 15 + rng() * 8) : hsl((baseHue + 200) % 360, sat * 0.6, 75 + rng() * 8),
+    green:    dark ? hsl((baseHue + 100) % 360, sat * 0.5, 12 + rng() * 6) : hsl((baseHue + 100) % 360, sat * 0.5, 78 + rng() * 8),
+    urban:    dark ? hsl(baseHue, sat * 0.4, 14 + rng() * 5) : hsl(baseHue, sat * 0.3, 88 + rng() * 4),
+    building: dark ? hsl(baseHue, sat * 0.4, 18 + rng() * 6) : hsl(baseHue, sat * 0.3, 84 + rng() * 6),
+    road:     dark ? hsl((baseHue + 30) % 360, sat, 65 + rng() * 25) : hsl((baseHue + 30) % 360, sat, 25 + rng() * 20),
+    rail:     dark ? hsl((baseHue + 60) % 360, sat * 0.7, 55) : hsl((baseHue + 60) % 360, sat * 0.7, 35),
+    label:    dark ? hsl((baseHue + 60) % 360, sat * 0.6, 80) : hsl((baseHue + 60) % 360, sat * 0.7, 22),
+    accent:   hsl((baseHue + 180) % 360, sat * 0.9, dark ? 65 : 45),
+  };
+}
+
+// =====================================================================
+// UI WIRING
+// =====================================================================
+const presetsEl = document.getElementById('presets');
+PRESET_KEYS.forEach((key) => {
+  const p = PRESETS[key];
+  const div = document.createElement('div');
+  div.className = 'preset' + (key === state.preset ? ' active' : '');
+  div.dataset.key = key;
+  div.innerHTML = `<div class="swatch"><span style="background:${p.palette.bg}"></span><span style="background:${p.palette.water}"></span><span style="background:${p.palette.road}"></span></div><div class="label">${p.name}</div>`;
+  div.addEventListener('click', () => selectPreset(key));
+  presetsEl.appendChild(div);
+});
+
+function selectPreset(key) {
+  pushHistory();
+  state.preset = key;
+  Object.assign(state, clonePreset(key));
+  applyState();
+}
+function cyclePreset(dir) {
+  const i = PRESET_KEYS.indexOf(state.preset);
+  const next = PRESET_KEYS[(i + dir + PRESET_KEYS.length) % PRESET_KEYS.length];
+  selectPreset(next);
+}
+
+const citiesEl = document.getElementById('cities');
+CITIES.forEach(c => {
+  const b = document.createElement('button');
+  b.textContent = c.name;
+  b.addEventListener('click', () => {
+    pushHistory();
+    map.flyTo({ center: c.coord, zoom: c.zoom, bearing: state.bearing, pitch: state.pitch });
+    state.caption.title = c.name;
+    document.getElementById('caption-title').textContent = c.name;
+    document.getElementById('title').value = c.name;
+    persist();
+  });
+  citiesEl.appendChild(b);
+});
+
+const togglesEl = document.getElementById('toggles');
+LAYER_ORDER.forEach(k => {
+  const lbl = document.createElement('label');
+  lbl.className = 'toggle';
+  lbl.innerHTML = `<input type="checkbox" data-layer="${k}"> ${LAYER_LABELS[k]}`;
+  togglesEl.appendChild(lbl);
+  lbl.querySelector('input').addEventListener('change', e => {
+    pushHistory();
+    state.layers[k] = e.target.checked;
+    restyle(); persist();
+  });
+});
+
+const bearingInput = document.getElementById('bearing');
+const bearingVal = document.getElementById('bearingVal');
+bearingInput.addEventListener('input', () => {
+  state.bearing = parseFloat(bearingInput.value);
+  map.setBearing(state.bearing);
+  bearingVal.textContent = Math.round(state.bearing) + '°';
+  persist();
+});
+const pitchInput = document.getElementById('pitch');
+const pitchVal = document.getElementById('pitchVal');
+pitchInput.addEventListener('input', () => {
+  state.pitch = parseFloat(pitchInput.value);
+  map.setPitch(state.pitch);
+  pitchVal.textContent = Math.round(state.pitch) + '°';
+  restyle(); // pitch toggles 3D extrusion
+});
+
+const rw = document.getElementById('roadWeight');
+const rwVal = document.getElementById('roadWeightVal');
+rw.addEventListener('input', () => {
+  state.roadWeight = parseFloat(rw.value);
+  rwVal.textContent = state.roadWeight.toFixed(1) + '×';
+  restyle(); persist();
+});
+
+document.getElementById('roadStyle').addEventListener('change', e => { pushHistory(); state.roadStyle = e.target.value; restyle(); persist(); });
+document.getElementById('labelFont').addEventListener('change', e => { pushHistory(); state.labelFont = e.target.value; restyle(); persist(); });
+document.getElementById('border').addEventListener('change', e => { pushHistory(); state.border = e.target.value; applyBorder(); persist(); });
+document.getElementById('texture').addEventListener('change', e => { pushHistory(); state.texture = e.target.value; applyTexture(); persist(); });
+
+document.getElementById('compassToggle').addEventListener('change', e => { state.compass = e.target.checked; applyCompass(); persist(); });
+document.getElementById('scaleToggle').addEventListener('change', e => {
+  state.scale = e.target.checked;
+  if (state.scale) map.addControl(scaleControl, 'bottom-left'); else { try { map.removeControl(scaleControl); } catch (e) {} }
+  persist();
+});
+
+// Marker UI
+const markerRow = document.getElementById('markerRow');
+const markerToggleBtn = document.createElement('button');
+markerToggleBtn.id = 'markerOff';
+markerToggleBtn.textContent = 'Off';
+markerToggleBtn.addEventListener('click', () => {
+  state.marker.enabled = false;
+  syncMarkerUI();
+  updateMarker();
+  persist();
+});
+markerRow.appendChild(markerToggleBtn);
+MARKER_TYPES.forEach(type => {
+  const b = document.createElement('button');
+  b.dataset.type = type;
+  b.innerHTML = MARKER_ICONS[type];
+  b.addEventListener('click', () => {
+    pushHistory();
+    state.marker.enabled = true;
+    state.marker.type = type;
+    const c = map.getCenter();
+    state.marker.lng = c.lng; state.marker.lat = c.lat;
+    syncMarkerUI();
+    updateMarker();
+    persist();
+  });
+  markerRow.appendChild(b);
+});
+function syncMarkerUI() {
+  markerRow.querySelectorAll('button').forEach(b => {
+    if (b.id === 'markerOff') b.classList.toggle('active', !state.marker.enabled);
+    else b.classList.toggle('active', state.marker.enabled && state.marker.type === b.dataset.type);
+  });
+}
+
+// Palette
+const paletteEl = document.getElementById('palette');
+PALETTE_KEYS.forEach(k => {
+  const lbl = document.createElement('label');
+  lbl.innerHTML = `<div class="swatch-btn" data-key="${k}"><input type="color" data-key="${k}"></div><span>${PALETTE_LABELS[k]}</span>`;
+  paletteEl.appendChild(lbl);
+  const input = lbl.querySelector('input');
+  input.addEventListener('input', e => {
+    state.palette[k] = e.target.value;
+    syncSwatches();
+    restyle();
+    if (markerInstance) updateMarker();
+    persist();
+  });
+  input.addEventListener('change', () => pushHistory());
+});
+
+document.getElementById('seed').addEventListener('input', e => { state.seed = e.target.value; persist(); });
+
+document.getElementById('reset').addEventListener('click', () => {
+  pushHistory();
+  Object.assign(state, clonePreset(state.preset));
+  applyState();
+});
+document.getElementById('randomize').addEventListener('click', () => {
+  pushHistory();
+  randomizePalette();
+  applyState();
+});
+
+// Frames
+document.querySelectorAll('#frames button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    pushHistory();
+    state.frame = btn.dataset.frame;
+    applyFrame();
+    persist();
+  });
+});
+
+// Caption
+const titleInput = document.getElementById('title');
+const subtitleInput = document.getElementById('subtitle');
+titleInput.addEventListener('input', () => { state.caption.title = titleInput.value; document.getElementById('caption-title').textContent = titleInput.value || 'PARIS'; persist(); });
+subtitleInput.addEventListener('input', () => { state.caption.subtitle = subtitleInput.value; document.getElementById('caption-subtitle').textContent = subtitleInput.value || 'The City of Light'; persist(); });
+
+const annivCheck = document.getElementById('anniversary');
+const dateInput = document.getElementById('commemDate');
+annivCheck.addEventListener('change', () => {
+  state.caption.anniversary = annivCheck.checked;
+  dateInput.style.display = state.caption.anniversary ? 'block' : 'none';
+  applyCaption();
+  persist();
+});
+dateInput.addEventListener('change', () => { state.caption.date = dateInput.value; applyCaption(); persist(); });
+
+function applyCaption() {
+  const cap = document.getElementById('caption');
+  if (state.caption.anniversary) {
+    cap.classList.add('anniversary');
+    const t = state.caption.title || 'A & B';
+    document.getElementById('caption-title').textContent = t.includes('&') ? t : `${t} & ___`;
+    if (state.caption.date) {
+      const d = new Date(state.caption.date + 'T00:00');
+      const fmt = d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('caption-subtitle').textContent = fmt;
+    }
+  } else {
+    cap.classList.remove('anniversary');
+    document.getElementById('caption-title').textContent = state.caption.title || 'PARIS';
+    document.getElementById('caption-subtitle').textContent = state.caption.subtitle || 'The City of Light';
+  }
+}
+
+// GPX upload
+document.getElementById('gpxFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const geo = parseGpx(text);
+    if (!geo) { alert('Could not parse GPX (no track points found).'); return; }
+    loadGpx(geo, true);
+  } catch (err) { alert('Failed to read GPX: ' + err.message); }
+  e.target.value = '';
+});
+
+// Drag-and-drop for GPX
+const main = document.querySelector('main');
+['dragenter','dragover','dragleave','drop'].forEach(ev =>
+  main.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+main.addEventListener('drop', async e => {
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.name.toLowerCase().endsWith('.gpx')) return;
+  const text = await file.text();
+  const geo = parseGpx(text);
+  if (geo) loadGpx(geo, true);
+});
+
+// Search
+const searchEl = document.getElementById('search');
+const resultsEl = document.getElementById('results');
+let searchTimer;
+searchEl.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const q = searchEl.value.trim();
+  if (!q) { resultsEl.innerHTML = ''; return; }
+  searchTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
+      const items = await r.json();
+      resultsEl.innerHTML = items.map((it, i) => `<div class="result" data-i="${i}">${escapeHtml(it.display_name)}</div>`).join('');
+      resultsEl.querySelectorAll('.result').forEach(el => {
+        el.addEventListener('click', () => {
+          const it = items[+el.dataset.i];
+          pushHistory();
+          if (it.boundingbox) {
+            const [s, n, w, e] = it.boundingbox.map(Number);
+            map.fitBounds([[w, s], [e, n]], { padding: 30 });
+          } else {
+            map.flyTo({ center: [+it.lon, +it.lat], zoom: 13 });
+          }
+          resultsEl.innerHTML = ''; searchEl.value = '';
+          const name = it.display_name.split(',')[0].toUpperCase();
+          state.caption.title = name;
+          document.getElementById('title').value = name;
+          document.getElementById('caption-title').textContent = name;
+          persist();
+        });
+      });
+    } catch (e) { resultsEl.innerHTML = `<div class="result">Search failed.</div>`; }
+  }, 400);
+});
+function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// =====================================================================
+// APPLY HELPERS
+// =====================================================================
+function applyFrame() {
+  const w = document.getElementById('poster-wrap');
+  ['portrait','square','landscape','story','a4','banner'].forEach(f => w.classList.remove('frame-' + f));
+  w.classList.add('frame-' + state.frame);
+  document.querySelectorAll('#frames button').forEach(b => b.classList.toggle('active', b.dataset.frame === state.frame));
+  setTimeout(() => map.resize(), 320);
+}
+function applyBorder() {
+  const p = document.getElementById('poster');
+  ['none','thin','double','bold'].forEach(b => p.classList.remove('border-' + b));
+  if (state.border !== 'none') p.classList.add('border-' + state.border);
+  p.style.setProperty('--border-color', state.palette.label);
+  document.getElementById('border').value = state.border;
+}
+function applyTexture() {
+  const g = document.getElementById('grain');
+  g.classList.remove('grain-on', 'halftone-on');
+  if (state.texture === 'grain') g.classList.add('grain-on');
+  else if (state.texture === 'halftone') g.classList.add('halftone-on');
+  document.getElementById('texture').value = state.texture;
+}
+function applyCompass() {
+  const c = document.getElementById('compass');
+  c.classList.toggle('hidden', !state.compass);
+  c.style.color = state.palette.label;
+  document.getElementById('compassToggle').checked = state.compass;
+}
 function syncSwatches() {
   PALETTE_KEYS.forEach(k => {
     const sw = paletteEl.querySelector(`.swatch-btn[data-key="${k}"]`);
     sw.style.background = state.palette[k];
     paletteEl.querySelector(`input[data-key="${k}"]`).value = state.palette[k];
   });
+  applyBorder();
+  applyCompass();
 }
-
 function syncControls() {
-  LAYER_ORDER.forEach(k => {
-    togglesEl.querySelector(`input[data-layer="${k}"]`).checked = state.layers[k];
-  });
-  rw.value = state.roadWeight;
-  rwVal.textContent = state.roadWeight.toFixed(1) + '×';
+  LAYER_ORDER.forEach(k => { togglesEl.querySelector(`input[data-layer="${k}"]`).checked = state.layers[k]; });
+  rw.value = state.roadWeight; rwVal.textContent = state.roadWeight.toFixed(1) + '×';
+  bearingInput.value = state.bearing; bearingVal.textContent = Math.round(state.bearing) + '°';
+  pitchInput.value = state.pitch; pitchVal.textContent = Math.round(state.pitch) + '°';
   document.getElementById('roadStyle').value = state.roadStyle;
   document.getElementById('labelFont').value = state.labelFont;
+  document.getElementById('seed').value = state.seed || '';
+  document.getElementById('compassToggle').checked = state.compass;
+  document.getElementById('scaleToggle').checked = state.scale;
+  document.getElementById('title').value = state.caption.title || '';
+  document.getElementById('subtitle').value = state.caption.subtitle || '';
+  annivCheck.checked = state.caption.anniversary;
+  dateInput.style.display = state.caption.anniversary ? 'block' : 'none';
+  dateInput.value = state.caption.date || '';
+  document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.key === state.preset));
   syncSwatches();
+  syncMarkerUI();
 }
-syncControls();
 
-// Frames
-document.querySelectorAll('#frames button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#frames button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const wrap = document.getElementById('poster-wrap');
-    wrap.classList.remove('frame-portrait', 'frame-square', 'frame-landscape');
-    wrap.classList.add('frame-' + btn.dataset.frame);
-    setTimeout(() => map.resize(), 350);
-  });
+function applyState({ silent } = {}) {
+  syncControls();
+  applyFrame();
+  applyBorder();
+  applyTexture();
+  applyCompass();
+  applyCaption();
+  restyle();
+  updateMarker();
+  if (state.scale) {
+    try { map.removeControl(scaleControl); } catch (e) {}
+    map.addControl(scaleControl, 'bottom-left');
+  }
+  if (!silent) persist();
+}
+
+// =====================================================================
+// ADR-015: Keyboard shortcuts
+// =====================================================================
+function inInput(e) {
+  const t = e.target;
+  return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+}
+window.addEventListener('keydown', e => {
+  if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); openHelp(); return; }
+  if (e.key === 'Escape') { closeHelp(); return; }
+  if (inInput(e)) return;
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    e.shiftKey ? redo() : undo();
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); document.getElementById('randomize').click(); }
+  else if (e.key === 'e' || e.key === 'E') { e.preventDefault(); document.getElementById('export').click(); }
+  else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.body.classList.toggle('fullscreen-preview'); document.querySelector('aside').style.display = document.body.classList.contains('fullscreen-preview') ? 'none' : ''; setTimeout(() => map.resize(), 200); }
+  else if (e.key === 'm' || e.key === 'M') { e.preventDefault();
+    pushHistory();
+    state.marker.enabled = !state.marker.enabled;
+    if (state.marker.enabled) { const c = map.getCenter(); state.marker.lng = c.lng; state.marker.lat = c.lat; }
+    syncMarkerUI(); updateMarker(); persist();
+  }
+  else if (e.key === '[') { e.preventDefault(); cyclePreset(-1); }
+  else if (e.key === ']') { e.preventDefault(); cyclePreset(1); }
 });
 
-// Search
-const search = document.getElementById('search');
-const results = document.getElementById('results');
-let searchTimer;
-search.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  const q = search.value.trim();
-  if (!q) { results.innerHTML = ''; return; }
-  searchTimer = setTimeout(async () => {
-    try {
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`,
-        { headers: { 'Accept': 'application/json' } }
-      );
-      const items = await r.json();
-      results.innerHTML = items.map((it, i) =>
-        `<div class="result" data-i="${i}">${escapeHtml(it.display_name)}</div>`
-      ).join('');
-      results.querySelectorAll('.result').forEach(el => {
-        el.addEventListener('click', () => {
-          const it = items[+el.dataset.i];
-          if (it.boundingbox) {
-            const [s, n, w, e] = it.boundingbox.map(Number);
-            map.fitBounds([[w, s], [e, n]], { padding: 30, animate: true });
-          } else {
-            map.flyTo({ center: [+it.lon, +it.lat], zoom: 13 });
-          }
-          results.innerHTML = '';
-          search.value = '';
-          const name = it.display_name.split(',')[0].toUpperCase();
-          document.getElementById('title').value = name;
-          document.getElementById('caption-title').textContent = name;
-        });
+// =====================================================================
+// ADR-017: Help modal
+// =====================================================================
+function openHelp() { document.getElementById('helpModal').classList.add('open'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('open'); }
+document.getElementById('helpBtn').addEventListener('click', openHelp);
+document.getElementById('closeHelp').addEventListener('click', closeHelp);
+document.getElementById('helpModal').addEventListener('click', e => { if (e.target.id === 'helpModal') closeHelp(); });
+
+// =====================================================================
+// ADR-020: Onboarding hint
+// =====================================================================
+window.addEventListener('load', () => {
+  try {
+    if (!localStorage.getItem(LS_VISITED)) {
+      const t = document.getElementById('onboardToast');
+      t.classList.add('show');
+      document.getElementById('dismissOnboard').addEventListener('click', () => {
+        t.classList.remove('show');
+        try { localStorage.setItem(LS_VISITED, '1'); } catch (e) {}
       });
-    } catch (e) {
-      results.innerHTML = `<div class="result">Search failed.</div>`;
     }
-  }, 400);
+  } catch (e) {}
 });
 
-function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// =====================================================================
+// EXPORT (ADR-011, 012, 013)
+// =====================================================================
+const SIZE_PRESETS = {
+  screen: { mul: 4 },
+  a2:     { mul: 8, mm: { portrait: [420, 594], square: [594, 594], landscape: [594, 420], story: [420, 594], a4: [420, 594], banner: [594, 200] } },
+  a3:     { mul: 6, mm: { portrait: [297, 420], square: [420, 420], landscape: [420, 297], story: [297, 420], a4: [297, 420], banner: [420, 140] } },
+  a4:     { mul: 4, mm: { portrait: [210, 297], square: [297, 297], landscape: [297, 210], story: [210, 297], a4: [210, 297], banner: [297, 100] } },
+  '4k':   { mul: 6 },
+};
+
+let jsPdfPromise;
+function loadJsPdf() {
+  if (!jsPdfPromise) {
+    jsPdfPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js';
+      s.onload = () => resolve(window.jspdf.jsPDF);
+      s.onerror = () => reject(new Error('Could not load jsPDF'));
+      document.head.appendChild(s);
+    });
+  }
+  return jsPdfPromise;
 }
 
-// Caption
-document.getElementById('title').addEventListener('input', e => {
-  document.getElementById('caption-title').textContent = e.target.value || 'PARIS';
-});
-document.getElementById('subtitle').addEventListener('input', e => {
-  document.getElementById('caption-subtitle').textContent = e.target.value || 'The City of Light';
-});
-
-// Export
 document.getElementById('export').addEventListener('click', async () => {
   const btn = document.getElementById('export');
-  const original = btn.textContent;
-  btn.textContent = 'Rendering...';
+  const originalText = btn.textContent;
+  btn.textContent = 'Rendering…';
   btn.disabled = true;
   try {
     map.triggerRepaint();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const node = document.getElementById('poster');
-    const dataUrl = await htmlToImage.toPng(node, {
-      pixelRatio: 4,
-      cacheBust: true,
-      backgroundColor: state.palette.bg,
-    });
-    const a = document.createElement('a');
+    const fmt = document.getElementById('exportFormat').value;
+    const sz = document.getElementById('exportSize').value;
+    const mul = SIZE_PRESETS[sz]?.mul || 4;
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    a.download = `osm-poster-${ts}.png`;
-    a.href = dataUrl;
-    a.click();
+
+    if (fmt === 'svg') {
+      const svg = await htmlToImage.toSvg(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
+      download(svg, `osm-poster-${ts}.svg`);
+    } else if (fmt === 'pdf') {
+      const dataUrl = await htmlToImage.toPng(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
+      const jsPDF = await loadJsPdf();
+      const sizeMm = (SIZE_PRESETS[sz]?.mm || {})[state.frame] || [210, 297];
+      const orientation = sizeMm[0] > sizeMm[1] ? 'l' : 'p';
+      const pdf = new jsPDF({ unit: 'mm', format: [Math.min(...sizeMm), Math.max(...sizeMm)], orientation });
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pw, ph);
+      pdf.save(`osm-poster-${ts}.pdf`);
+    } else {
+      const dataUrl = await htmlToImage.toPng(node, { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg });
+      const a = document.createElement('a');
+      a.download = `osm-poster-${ts}.png`;
+      a.href = dataUrl;
+      a.click();
+    }
   } catch (e) {
     alert('Export failed: ' + e.message);
     console.error(e);
   } finally {
-    btn.textContent = original;
+    btn.textContent = originalText;
     btn.disabled = false;
   }
+});
+
+function download(svgString, name) {
+  const blob = new Blob([svgString.startsWith('data:') ? atob(svgString.split(',')[1]) : svgString], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.download = name;
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+// =====================================================================
+// HASH-CHANGE LISTENER (when user pastes a shared URL)
+// =====================================================================
+window.addEventListener('hashchange', () => {
+  if (location.hash.length > 1) {
+    const decoded = decodeState(location.hash.slice(1));
+    if (decoded) {
+      state = { ...defaultState(), ...decoded };
+      applyState({ silent: true });
+      if (state.view) map.jumpTo({ center: state.view.center, zoom: state.view.zoom, bearing: state.bearing || 0, pitch: state.pitch || 0 });
+    }
+  }
+});
+
+// =====================================================================
+// INIT
+// =====================================================================
+map.on('load', () => {
+  ensureGpx();
+  updateGpxStatus();
+  applyState({ silent: true });
+  history.past = []; // clean undo history at boot
 });
 </script>
 </body>

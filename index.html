@@ -271,10 +271,44 @@
   .row input[type="range"] { flex: 1; accent-color: #007aff; }
   .row .val { font-size: 11.5px; color: #86868b; min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
 
-  /* Layer toggles */
+  /* Layer toggles — kept for the few remaining checkbox usages
+     (Decorations, Map icons, Commemorative). user-select removed so
+     label text can be highlighted and copied. */
   .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
-  .toggle { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #424248; cursor: pointer; padding: 4px 0; user-select: none; }
-  .toggle input { accent-color: #007aff; cursor: pointer; flex-shrink: 0; }
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text); cursor: pointer; padding: 6px 0; }
+  .toggle input { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; width: 16px; height: 16px; }
+
+  /* Layer icon buttons — grouped grid replacing the checkbox list */
+  .layer-group-title {
+    font-size: 10.5px; color: var(--text-3);
+    font-weight: 600; letter-spacing: 0.5px;
+    margin: 14px 0 7px; text-transform: uppercase;
+  }
+  .layer-group-title:first-child { margin-top: 4px; }
+  .layer-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  }
+  .layer-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 10px 4px 8px; border-radius: var(--r-2);
+    background: var(--bg);
+    border: 1.5px solid var(--separator);
+    cursor: pointer; font-family: inherit;
+    transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+    font-size: 10.5px; color: var(--text-2);
+    min-height: 56px;
+  }
+  .layer-btn:hover {
+    border-color: var(--text-3);
+    transform: translateY(-1px);
+  }
+  .layer-btn.active {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .layer-icon { font-size: 18px; line-height: 1; filter: grayscale(0.05); }
+  .layer-label { line-height: 1.1; text-align: center; }
 
   /* Palette */
   .palette-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-top: 4px; }
@@ -389,13 +423,20 @@
     100% { left: 100%; }
   }
 
-  /* POI icon markers (Pinhead-based) */
+  /* POI icon markers — circular surface lifts them off the map */
   .poi-marker {
     pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-    transition: opacity 0.2s ease;
+    width: 30px; height: 30px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 2px 6px rgba(0,0,0,0.22),
+      0 0 0 1px rgba(0,0,0,0.06);
+    transition: transform 0.15s ease;
   }
-  .poi-marker svg { fill: currentColor; }
+  .poi-marker:hover { transform: scale(1.08); }
+  .poi-marker svg { fill: currentColor; width: 18px; height: 18px; }
 
   /* ===== Main ===== */
   main {
@@ -457,12 +498,34 @@
   #caption-title {
     font-size: 30px; font-weight: 700; letter-spacing: 6px;
     text-transform: uppercase; line-height: 1;
+    transition: font-size 0.2s ease, letter-spacing 0.2s ease;
   }
+  #caption-title.tw-regular { font-weight: 500; }
+  #caption-title.tw-medium  { font-weight: 600; }
+  #caption-title.tw-bold    { font-weight: 700; }
+  #caption-title.tw-heavy   { font-weight: 800; }
+  #caption-title.ts-small   { font-size: 22px; letter-spacing: 4px; }
+  #caption-title.ts-medium  { font-size: 30px; letter-spacing: 6px; }
+  #caption-title.ts-large   { font-size: 40px; letter-spacing: 8px; }
+  #caption-title.ts-xl      { font-size: 52px; letter-spacing: 10px; }
   #caption-subtitle { font-size: 13px; color: #666; margin-top: 8px; letter-spacing: 1px; }
+  #caption-subtitle.ss-italic { font-style: italic; }
+  #caption-subtitle.ss-hidden { display: none; }
   #caption-coords {
     font-size: 11px; color: #999; margin-top: 11px;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
   }
+  #caption-coords.cs-hidden { display: none; }
+
+  /* Randomize-style button — full-width, subtle until hovered */
+  .randomize-style-btn {
+    width: 100%; margin-top: 10px; padding: 11px;
+    background: #fff; border: 1.5px solid var(--input-stroke);
+    border-radius: var(--r-2); cursor: pointer; font-family: inherit;
+    font-size: 13px; color: var(--text); font-weight: 500;
+    transition: all 0.15s; min-height: var(--tap);
+  }
+  .randomize-style-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg-2); }
   .caption-mark {
     position: absolute; bottom: 6px; right: 12px;
     font-size: 8px; color: #c8c8c8; opacity: 0.85;
@@ -642,14 +705,14 @@
       <div class="toggles" id="toggles"></div>
 
       <div class="sub-title" style="margin-top: 16px;">Map icons</div>
-      <label class="toggle"><input type="checkbox" id="iconsOn"> Show map icons</label>
+      <label class="toggle"><input type="checkbox" id="iconsOn"> Drop café / sight / park icons on the map</label>
       <div class="row" style="margin-top: 8px;">
-        <label>Density</label>
+        <label>Max icons</label>
         <input type="range" id="iconDensity" min="5" max="60" step="5" value="25">
         <span class="val" id="iconDensityVal">25</span>
       </div>
       <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
-        Cafés, sights, parks, transit — drawn as Pinhead icons. Zoom in past street level.
+        Pulls real OpenStreetMap places (cafés, sights, parks, transit) and draws each as a Pinhead icon. Zoom past street level to see them.
       </div>
 
       <div class="sub-title" style="margin-top: 16px;">Custom colors</div>
@@ -686,7 +749,30 @@
           <option value="grain">Paper grain</option>
           <option value="halftone">Halftone dots</option>
         </select>
+        <select id="titleWeight">
+          <option value="regular">Regular title</option>
+          <option value="medium">Medium title</option>
+          <option value="bold">Bold title</option>
+          <option value="heavy">Heavy title</option>
+        </select>
+        <select id="titleSize">
+          <option value="small">Small title</option>
+          <option value="medium">Medium title</option>
+          <option value="large">Large title</option>
+          <option value="xl">Extra large</option>
+        </select>
+        <select id="subtitleStyle">
+          <option value="regular">Regular subtitle</option>
+          <option value="italic">Italic subtitle</option>
+          <option value="hidden">Hide subtitle</option>
+        </select>
+        <select id="coordsStyle">
+          <option value="decimal">Decimal coords</option>
+          <option value="dms">DMS coords</option>
+          <option value="hidden">Hide coords</option>
+        </select>
       </div>
+      <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style</button>
 
       <div class="sub-title" style="margin-top: 16px;">Decorations</div>
       <div class="toggles">
@@ -1001,8 +1087,58 @@ const PRESETS = {
 const PRESET_KEYS = Object.keys(PRESETS);
 const PALETTE_KEYS = ['bg', 'water', 'green', 'urban', 'building', 'road', 'rail', 'label', 'accent'];
 const PALETTE_LABELS = { bg: 'Bg', water: 'Water', green: 'Green', urban: 'Urban', building: 'Bldgs', road: 'Roads', rail: 'Rail', label: 'Labels', accent: 'Accent' };
-const LAYER_ORDER = ['water', 'rivers', 'parks', 'greenery', 'buildings', 'industrial', 'roads', 'railways', 'paths', 'airports', 'boundaries', 'places', 'streets', 'pois'];
-const LAYER_LABELS = { water: 'Water', rivers: 'Rivers', parks: 'Parks', greenery: 'Greenery', buildings: 'Buildings', industrial: 'Industrial', roads: 'Roads', railways: 'Railways', paths: 'Paths', airports: 'Airports', boundaries: 'Boundaries', places: 'Place names', streets: 'Streets', pois: 'POIs' };
+const LAYER_ORDER = [
+  'water', 'rivers', 'ferries', 'piers',
+  'parks', 'greenery', 'wetlands', 'peaks',
+  'buildings', 'industrial', 'airports', 'military', 'parking',
+  'roads', 'railways', 'paths', 'cycleways', 'aerialways',
+  'boundaries', 'places', 'streets',
+  'pois',
+];
+const LAYER_LABELS = {
+  water: 'Water', rivers: 'Rivers', ferries: 'Ferries', piers: 'Piers',
+  parks: 'Parks', greenery: 'Greenery', wetlands: 'Wetlands', peaks: 'Peaks',
+  buildings: 'Buildings', industrial: 'Industrial', airports: 'Airports', military: 'Military', parking: 'Parking',
+  roads: 'Roads', railways: 'Rail', paths: 'Paths', cycleways: 'Cycle', aerialways: 'Cable car',
+  boundaries: 'Borders', places: 'Place names', streets: 'Streets',
+  pois: 'POIs',
+};
+
+// Logical groups for the icon-button UI (excludes 'pois' which has its own
+// dedicated Map icons section).
+const LAYER_GROUPS = [
+  { name: 'Water', items: [
+    { key: 'water',     icon: '💧' },
+    { key: 'rivers',    icon: '🌊' },
+    { key: 'ferries',   icon: '⛴' },
+    { key: 'piers',     icon: '🪵' },
+  ]},
+  { name: 'Nature', items: [
+    { key: 'parks',     icon: '🌳' },
+    { key: 'greenery',  icon: '🌿' },
+    { key: 'wetlands',  icon: '🪷' },
+    { key: 'peaks',     icon: '⛰' },
+  ]},
+  { name: 'Built', items: [
+    { key: 'buildings', icon: '🏙' },
+    { key: 'industrial',icon: '🏭' },
+    { key: 'airports',  icon: '✈️' },
+    { key: 'military',  icon: '🪖' },
+    { key: 'parking',   icon: '🅿️' },
+  ]},
+  { name: 'Transit', items: [
+    { key: 'roads',     icon: '🛣' },
+    { key: 'railways',  icon: '🚆' },
+    { key: 'paths',     icon: '🥾' },
+    { key: 'cycleways', icon: '🚴' },
+    { key: 'aerialways',icon: '🚡' },
+  ]},
+  { name: 'Labels', items: [
+    { key: 'places',    icon: '🏷️' },
+    { key: 'streets',   icon: '🛤' },
+    { key: 'boundaries',icon: '🗺' },
+  ]},
+];
 
 // City quick-flys — 3 iconic shortcuts, search handles everything else
 const CITIES = [
@@ -1183,6 +1319,10 @@ function defaultState() {
     compass: false,
     scale: false,
     icons: { density: 25 },
+    titleWeight: 'bold',
+    titleSize: 'medium',
+    subtitleStyle: 'regular',
+    coordsStyle: 'decimal',
     caption: { title: 'PARIS', subtitle: 'The City of Light', anniversary: false, date: '' },
     view: { center: [2.3522, 48.8566], zoom: 12 },
     seed: '',
@@ -1378,11 +1518,47 @@ function buildStyle(s) {
       filter: ['all', ['==', ['geometry-type'], 'LineString'], ['in', ['get', 'class'], ['literal', ['runway', 'taxiway']]]],
       paint: { 'line-color': p.road, 'line-width': ['case', ['==', ['get', 'class'], 'runway'], 4, 1.5] } });
   }
+  if (s.layers.parking) {
+    layers.push({ id: 'parking', type: 'fill', source: 'omt', 'source-layer': 'landuse',
+      filter: ['==', ['get', 'class'], 'parking'],
+      paint: { 'fill-color': p.urban, 'fill-opacity': 0.55 } });
+  }
+  if (s.layers.military) {
+    layers.push({ id: 'military', type: 'fill', source: 'omt', 'source-layer': 'landuse',
+      filter: ['==', ['get', 'class'], 'military'],
+      paint: { 'fill-color': '#a04444', 'fill-opacity': 0.18 } });
+  }
+  if (s.layers.wetlands) {
+    layers.push({ id: 'wetland', type: 'fill', source: 'omt', 'source-layer': 'landcover',
+      filter: ['==', ['get', 'class'], 'wetland'],
+      paint: { 'fill-color': p.water, 'fill-opacity': 0.35, 'fill-outline-color': p.water } });
+  }
   if (s.layers.paths) {
     layers.push({ id: 'path', type: 'line', source: 'omt', 'source-layer': 'transportation',
-      filter: ['in', ['get', 'class'], ['literal', ['path', 'track', 'footway', 'pedestrian', 'cycleway', 'bridleway']]],
+      filter: ['in', ['get', 'class'], ['literal', ['path', 'track', 'footway', 'pedestrian', 'bridleway']]],
       minzoom: 12,
       paint: { 'line-color': p.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 18, 1.6], 'line-dasharray': [2, 1.5], 'line-opacity': 0.7 } });
+  }
+  if (s.layers.cycleways) {
+    layers.push({ id: 'cycleway', type: 'line', source: 'omt', 'source-layer': 'transportation',
+      filter: ['==', ['get', 'class'], 'cycleway'],
+      minzoom: 12,
+      paint: { 'line-color': p.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 18, 2.4], 'line-dasharray': [3, 1.5], 'line-opacity': 0.9 } });
+  }
+  if (s.layers.ferries) {
+    layers.push({ id: 'ferry', type: 'line', source: 'omt', 'source-layer': 'transportation',
+      filter: ['==', ['get', 'class'], 'ferry'],
+      paint: { 'line-color': p.accent, 'line-width': 1.2, 'line-dasharray': [3, 3], 'line-opacity': 0.7 } });
+  }
+  if (s.layers.piers) {
+    layers.push({ id: 'pier', type: 'line', source: 'omt', 'source-layer': 'transportation',
+      filter: ['==', ['get', 'class'], 'pier'],
+      paint: { 'line-color': p.label, 'line-width': 1.2, 'line-opacity': 0.7 } });
+  }
+  if (s.layers.aerialways) {
+    layers.push({ id: 'aerialway', type: 'line', source: 'omt', 'source-layer': 'transportation',
+      filter: ['==', ['get', 'class'], 'aerialway'],
+      paint: { 'line-color': p.rail, 'line-width': 0.8, 'line-dasharray': [4, 2], 'line-opacity': 0.85 } });
   }
   if (s.layers.railways) {
     layers.push({ id: 'rail', type: 'line', source: 'omt', 'source-layer': 'transportation',
@@ -1443,6 +1619,18 @@ function buildStyle(s) {
       layout: { 'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']], 'text-font': [s.labelFont], 'text-size': 11, 'symbol-placement': 'line' },
       paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.8, 'text-halo-blur': 0.5 } });
   }
+  if (s.layers.peaks) {
+    layers.push({ id: 'peak', type: 'symbol', source: 'omt', 'source-layer': 'mountain_peak',
+      minzoom: 9,
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
+        'text-font': [s.labelFont],
+        'text-size': 11,
+        'text-offset': [0, 0.6],
+      },
+      paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.4 } });
+  }
+
   // POIs are rendered as Pinhead icon HTML markers (see refreshPOIs).
   // We don't add a symbol layer here so icons fully replace text.
 
@@ -1538,9 +1726,36 @@ map.on('move', () => {
 });
 
 function formatCoords(lat, lng) {
+  if (state.coordsStyle === 'dms') return dms(lat, true) + ' · ' + dms(lng, false);
   const ns = lat >= 0 ? 'N' : 'S';
   const ew = lng >= 0 ? 'E' : 'W';
   return `${Math.abs(lat).toFixed(4)}° ${ns} · ${Math.abs(lng).toFixed(4)}° ${ew}`;
+}
+function dms(deg, isLat) {
+  const abs = Math.abs(deg);
+  const d = Math.floor(abs);
+  const m = Math.floor((abs - d) * 60);
+  const s = Math.round((abs - d - m / 60) * 3600);
+  const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+  return `${d}° ${m}' ${s}" ${dir}`;
+}
+
+function applyTypography() {
+  const t = document.getElementById('caption-title');
+  if (t) {
+    ['tw-regular','tw-medium','tw-bold','tw-heavy','ts-small','ts-medium','ts-large','ts-xl'].forEach(c => t.classList.remove(c));
+    t.classList.add('tw-' + (state.titleWeight || 'bold'));
+    t.classList.add('ts-' + (state.titleSize || 'medium'));
+  }
+  const sub = document.getElementById('caption-subtitle');
+  if (sub) {
+    ['ss-regular','ss-italic','ss-hidden'].forEach(c => sub.classList.remove(c));
+    sub.classList.add('ss-' + (state.subtitleStyle || 'regular'));
+  }
+  const co = document.getElementById('caption-coords');
+  if (co) {
+    co.classList.toggle('cs-hidden', state.coordsStyle === 'hidden');
+  }
 }
 
 let restyleTimer;
@@ -1728,20 +1943,33 @@ CITIES.forEach(c => {
   citiesEl.appendChild(b);
 });
 
-// 'pois' is controlled by the Map icons section, not the Layers grid
-const LAYERS_IN_UI = LAYER_ORDER.filter(k => k !== 'pois');
+// Render the Layers section as grouped icon-buttons (excluding 'pois',
+// which has its own dedicated Map icons section above).
 const togglesEl = document.getElementById('toggles');
-LAYERS_IN_UI.forEach(k => {
-  const lbl = document.createElement('label');
-  lbl.className = 'toggle';
-  lbl.innerHTML = `<input type="checkbox" data-layer="${k}"> ${LAYER_LABELS[k]}`;
-  togglesEl.appendChild(lbl);
-  lbl.querySelector('input').addEventListener('change', safe(e => {
-    pushHistory();
-    state.layers[k] = e.target.checked;
-    restyle();
-    persist();
-  }, 'layerToggle'));
+LAYER_GROUPS.forEach(group => {
+  const heading = document.createElement('div');
+  heading.className = 'layer-group-title';
+  heading.textContent = group.name;
+  togglesEl.appendChild(heading);
+
+  const grid = document.createElement('div');
+  grid.className = 'layer-grid';
+  group.items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'layer-btn' + (state.layers[item.key] ? ' active' : '');
+    btn.dataset.layer = item.key;
+    btn.innerHTML = `<span class="layer-icon">${item.icon}</span><span class="layer-label">${LAYER_LABELS[item.key]}</span>`;
+    btn.addEventListener('click', safe(() => {
+      pushHistory();
+      state.layers[item.key] = !state.layers[item.key];
+      btn.classList.toggle('active', !!state.layers[item.key]);
+      restyle();
+      persist();
+    }, 'layerToggle'));
+    grid.appendChild(btn);
+  });
+  togglesEl.appendChild(grid);
 });
 
 const bearingInput = document.getElementById('bearing');
@@ -1773,6 +2001,37 @@ document.getElementById('roadStyle').addEventListener('change', e => { pushHisto
 document.getElementById('labelFont').addEventListener('change', e => { pushHistory(); state.labelFont = e.target.value; restyle(); persist(); });
 document.getElementById('border').addEventListener('change', e => { pushHistory(); state.border = e.target.value; applyBorder(); persist(); });
 document.getElementById('texture').addEventListener('change', e => { pushHistory(); state.texture = e.target.value; applyTexture(); persist(); });
+document.getElementById('titleWeight').addEventListener('change', e => { pushHistory(); state.titleWeight = e.target.value; applyTypography(); persist(); });
+document.getElementById('titleSize').addEventListener('change', e => { pushHistory(); state.titleSize = e.target.value; applyTypography(); persist(); });
+document.getElementById('subtitleStyle').addEventListener('change', e => { pushHistory(); state.subtitleStyle = e.target.value; applyTypography(); persist(); });
+document.getElementById('coordsStyle').addEventListener('change', e => {
+  pushHistory();
+  state.coordsStyle = e.target.value;
+  applyTypography();
+  // refresh display with new format
+  const c = map.getCenter();
+  document.getElementById('caption-coords').textContent = formatCoords(c.lat, c.lng);
+  persist();
+});
+
+// Randomize style — picks a random value for each of the 8 style selects.
+const STYLE_OPTIONS = {
+  roadStyle:     ['solid', 'dashed', 'dotted'],
+  labelFont:     ['Noto Sans Regular', 'Noto Sans Bold', 'Noto Sans Italic', 'Noto Sans Medium'],
+  border:        ['none', 'thin', 'double', 'bold'],
+  texture:       ['none', 'grain', 'halftone'],
+  titleWeight:   ['regular', 'medium', 'bold', 'heavy'],
+  titleSize:     ['small', 'medium', 'large', 'xl'],
+  subtitleStyle: ['regular', 'italic'],
+  coordsStyle:   ['decimal', 'dms'],
+};
+document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() => {
+  pushHistory();
+  Object.entries(STYLE_OPTIONS).forEach(([key, opts]) => {
+    state[key] = opts[Math.floor(Math.random() * opts.length)];
+  });
+  applyState();
+}, 'randomizeStyle'));
 
 document.getElementById('compassToggle').addEventListener('change', e => { state.compass = e.target.checked; applyCompass(); persist(); });
 document.getElementById('scaleToggle').addEventListener('change', e => {
@@ -1989,15 +2248,18 @@ function syncSwatches() {
   applyCompass();
 }
 function syncControls() {
-  LAYERS_IN_UI.forEach(k => {
-    const el = togglesEl.querySelector(`input[data-layer="${k}"]`);
-    if (el) el.checked = state.layers[k];
+  togglesEl.querySelectorAll('.layer-btn').forEach(btn => {
+    btn.classList.toggle('active', !!state.layers[btn.dataset.layer]);
   });
   rw.value = state.roadWeight; rwVal.textContent = state.roadWeight.toFixed(1) + '×';
   bearingInput.value = state.bearing; bearingVal.textContent = Math.round(state.bearing) + '°';
   pitchInput.value = state.pitch; pitchVal.textContent = Math.round(state.pitch) + '°';
   document.getElementById('roadStyle').value = state.roadStyle;
   document.getElementById('labelFont').value = state.labelFont;
+  document.getElementById('titleWeight').value   = state.titleWeight   || 'bold';
+  document.getElementById('titleSize').value     = state.titleSize     || 'medium';
+  document.getElementById('subtitleStyle').value = state.subtitleStyle || 'regular';
+  document.getElementById('coordsStyle').value   = state.coordsStyle   || 'decimal';
   document.getElementById('seed').value = state.seed || '';
   document.getElementById('compassToggle').checked = state.compass;
   document.getElementById('scaleToggle').checked = state.scale;
@@ -2024,9 +2286,15 @@ function applyState({ silent } = {}) {
   applyBorder();
   applyTexture();
   applyCompass();
+  applyTypography();
   applyCaption();
   restyle();
   refreshPOIs();
+  // refresh coords text with current format
+  try {
+    const c = map.getCenter();
+    document.getElementById('caption-coords').textContent = formatCoords(c.lat, c.lng);
+  } catch (_) {}
   if (state.scale) {
     try { map.removeControl(scaleControl); } catch (e) {}
     map.addControl(scaleControl, 'bottom-left');

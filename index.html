@@ -115,7 +115,22 @@
   .disclose-major .disclose-title { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
   .disclose-major .disclose-desc { font-size: 12.5px; }
   .disclose-major .ico { font-size: 22px; width: 32px; }
-  .disclose-major .body > div { padding: 6px 14px 18px !important; }
+  .disclose-major.open .body > div { padding: 6px 14px 18px; }
+
+  /* Nested sub-disclosure inside Place / Style / Compose */
+  .disclose-sub { border: none; background: transparent; box-shadow: none; margin: 0; }
+  .disclose-sub + .disclose-sub { border-top: 1px solid #f1f1ee; }
+  .disclose-sub .disclose-btn {
+    min-height: 44px; padding: 11px 6px; border-radius: var(--r-2);
+  }
+  .disclose-sub .disclose-btn:hover { background: var(--hover); }
+  .disclose-sub.open .disclose-btn { background: transparent; }
+  .disclose-sub.open .disclose-btn .chev { color: var(--text-3); }
+  .disclose-sub.open .disclose-title { color: var(--text); }
+  .disclose-sub .disclose-title { font-size: 13.5px; font-weight: 500; letter-spacing: -0.1px; }
+  .disclose-sub .disclose-desc { font-size: 11.5px; }
+  .disclose-sub .ico { font-size: 15px; width: 24px; }
+  .disclose-sub.open .body > div { padding: 4px 4px 14px; }
 
   /* Inner disclosure (collapsible) section — bigger, friendlier, touch-friendly */
   .disclose {
@@ -151,8 +166,9 @@
   .disclose .body {
     display: grid; grid-template-rows: 0fr;
     transition: grid-template-rows 0.28s ease;
+    overflow: hidden;
   }
-  .disclose .body > div { overflow: hidden; }
+  .disclose .body > div { overflow: hidden; min-height: 0; padding: 0; }
   .disclose.open .body { grid-template-rows: 1fr; }
   .disclose.open .body > div { padding: 4px 6px 18px; }
 
@@ -283,8 +299,17 @@
     font-size: 10.5px; color: var(--text-3);
     font-weight: 600; letter-spacing: 0.5px;
     margin: 14px 0 7px; text-transform: uppercase;
+    cursor: pointer; user-select: none;
+    transition: color 0.15s ease;
+    display: flex; align-items: center; gap: 6px;
   }
   .layer-group-title:first-child { margin-top: 4px; }
+  .layer-group-title:hover { color: var(--text); }
+  .layer-group-title::after {
+    content: '⊕'; font-size: 11px; opacity: 0.5;
+    transition: opacity 0.15s ease;
+  }
+  .layer-group-title:hover::after { opacity: 1; }
   .layer-grid {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
   }
@@ -703,27 +728,45 @@
       <span class="chev">›</span>
     </button>
     <div class="body"><div>
-      <div class="sub-title">Search</div>
-      <input type="text" id="search" placeholder="City, address, landmark…" autocomplete="off">
-      <div id="results"></div>
 
-      <div class="sub-title" style="margin-top: 14px;">Quick cities</div>
-      <div class="cities" id="cities"></div>
-
-      <div class="sub-title" style="margin-top: 14px;">Roads</div>
-      <div class="frames" style="grid-template-columns: 1fr 1fr 1fr;">
-        <button data-roads="off">Off</button>
-        <button data-roads="simple" class="active">Simple</button>
-        <button data-roads="detailed">Detailed</button>
-      </div>
-      <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
-        Simple = main roads only. Detailed adds paths, streets, and cycleways. One click; no extra fetches.
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🔎</span><span class="disclose-label"><span class="disclose-title">Search</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <input type="text" id="search" placeholder="City, address, landmark…" autocomplete="off">
+          <div id="results"></div>
+        </div></div>
       </div>
 
-      <div class="sub-title" style="margin-top: 14px;">Map view</div>
-      <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>
-      <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
-      <div class="row"><label>Weight</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🏙</span><span class="disclose-label"><span class="disclose-title">Quick cities</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="cities" id="cities"></div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🛣</span><span class="disclose-label"><span class="disclose-title">Roads</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="frames" style="grid-template-columns: 1fr 1fr 1fr;">
+            <button data-roads="off">Off</button>
+            <button data-roads="simple" class="active">Simple</button>
+            <button data-roads="detailed">Detailed</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
+            Simple = main roads only. Detailed adds paths, streets, and cycleways.
+          </div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🧭</span><span class="disclose-label"><span class="disclose-title">Map view</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>
+          <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
+          <div class="row"><label>Weight</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
+        </div></div>
+      </div>
+
     </div></div>
   </div>
 
@@ -738,72 +781,102 @@
       <span class="chev">›</span>
     </button>
     <div class="body"><div>
-      <div class="sub-title">Templates <span class="sec-hint">full looks</span></div>
-      <div class="templates" id="templates"></div>
 
-      <div class="sub-title" style="margin-top: 16px;">Palettes <span class="sec-hint">colors only</span></div>
-      <div class="presets" id="presets"></div>
-
-      <div class="sub-title" style="margin-top: 16px;">Layers</div>
-      <div class="toggles" id="toggles"></div>
-
-      <div class="sub-title" style="margin-top: 16px;">Map icons <span class="sec-hint">pick categories</span></div>
-      <div class="layer-grid" id="iconCategories"></div>
-      <div class="row" style="margin-top: 10px;"><label>Size</label><input type="range" id="iconSize" min="18" max="56" step="2" value="30"><span class="val" id="iconSizeVal">30px</span></div>
-      <div class="row"><label>Max</label><input type="range" id="iconDensity" min="5" max="80" step="5" value="25"><span class="val" id="iconDensityVal">25</span></div>
-      <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
-        Real OpenStreetMap places, each drawn as a Pinhead icon. Visible past street zoom.
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🎯</span><span class="disclose-label"><span class="disclose-title">Templates</span><span class="disclose-desc">Full looks (palette + frame + texture…)</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="templates" id="templates"></div>
+        </div></div>
       </div>
 
-      <div class="sub-title" style="margin-top: 16px;">Custom colors</div>
-      <div class="palette-row" id="palette"></div>
-      <div class="seed-row">
-        <input type="text" id="seed" placeholder="Seed (optional)" maxlength="32">
-      </div>
-      <div class="actions">
-        <button id="randomize" title="R">✨ Randomize</button>
-        <button id="reset">Reset preset</button>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🎨</span><span class="disclose-label"><span class="disclose-title">Palettes</span><span class="disclose-desc">11 themes — colors only</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="presets" id="presets"></div>
+        </div></div>
       </div>
 
-      <div class="sub-title" style="margin-top: 16px;">Style options</div>
-      <div class="style-options">
-        <select id="roadStyle">
-          <option value="solid">Solid roads</option>
-          <option value="dashed">Dashed roads</option>
-          <option value="dotted">Dotted roads</option>
-        </select>
-        <select id="labelFont">
-          <option value="Noto Sans Regular">Sans regular</option>
-          <option value="Noto Sans Bold">Sans bold</option>
-          <option value="Noto Sans Italic">Sans italic</option>
-          <option value="Noto Sans Medium">Sans medium</option>
-        </select>
-        <select id="border">
-          <option value="none">No border</option>
-          <option value="thin">Thin border</option>
-          <option value="double">Double border</option>
-          <option value="bold">Bold border</option>
-        </select>
-        <select id="texture">
-          <option value="none">No texture</option>
-          <option value="grain">Paper grain</option>
-          <option value="halftone">Halftone dots</option>
-        </select>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🗺</span><span class="disclose-label"><span class="disclose-title">Layers</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="toggles" id="toggles"></div>
+        </div></div>
       </div>
-      <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style (all 8)</button>
 
-      <div class="sub-title" style="margin-top: 16px;">Decorations</div>
-      <div class="toggles">
-        <label class="toggle"><input type="checkbox" id="compassToggle"> Compass rose</label>
-        <label class="toggle"><input type="checkbox" id="scaleToggle"> Scale bar</label>
-        <label class="toggle"><input type="checkbox" id="dateStampToggle"> Date stamp</label>
-        <label class="toggle"><input type="checkbox" id="gridToggle"> Coord grid</label>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">📍</span><span class="disclose-label"><span class="disclose-title">Map icons</span><span class="disclose-desc">Pinhead icons over real OSM places</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="layer-grid" id="iconCategories"></div>
+          <div class="row" style="margin-top: 10px;"><label>Size</label><input type="range" id="iconSize" min="18" max="56" step="2" value="30"><span class="val" id="iconSizeVal">30px</span></div>
+          <div class="row"><label>Max</label><input type="range" id="iconDensity" min="5" max="80" step="5" value="25"><span class="val" id="iconDensityVal">25</span></div>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 6px; line-height: 1.45;">
+            Visible past street zoom. Pick categories above.
+          </div>
+        </div></div>
       </div>
-      <select id="compassStyle" style="margin-top: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
-        <option value="classic">Classic compass</option>
-        <option value="minimal">Minimal arrow</option>
-        <option value="windrose">Windrose</option>
-      </select>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">✨</span><span class="disclose-label"><span class="disclose-title">Custom colors</span><span class="disclose-desc">Per-element pickers and randomize</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="palette-row" id="palette"></div>
+          <div class="seed-row">
+            <input type="text" id="seed" placeholder="Seed (optional)" maxlength="32">
+          </div>
+          <div class="actions">
+            <button id="randomize" title="R">✨ Randomize</button>
+            <button id="reset">Reset preset</button>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">⚙️</span><span class="disclose-label"><span class="disclose-title">Style options</span><span class="disclose-desc">Roads, font, border, texture</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="style-options">
+            <select id="roadStyle">
+              <option value="solid">Solid roads</option>
+              <option value="dashed">Dashed roads</option>
+              <option value="dotted">Dotted roads</option>
+            </select>
+            <select id="labelFont">
+              <option value="Noto Sans Regular">Sans regular</option>
+              <option value="Noto Sans Bold">Sans bold</option>
+              <option value="Noto Sans Italic">Sans italic</option>
+              <option value="Noto Sans Medium">Sans medium</option>
+            </select>
+            <select id="border">
+              <option value="none">No border</option>
+              <option value="thin">Thin border</option>
+              <option value="double">Double border</option>
+              <option value="bold">Bold border</option>
+            </select>
+            <select id="texture">
+              <option value="none">No texture</option>
+              <option value="grain">Paper grain</option>
+              <option value="halftone">Halftone dots</option>
+            </select>
+          </div>
+          <button class="randomize-style-btn" id="randomizeStyleBtn">🎲 Randomize style (all 8)</button>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🌟</span><span class="disclose-label"><span class="disclose-title">Decorations</span><span class="disclose-desc">Compass, scale bar, date, grid</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="compassToggle"> Compass rose</label>
+            <label class="toggle"><input type="checkbox" id="scaleToggle"> Scale bar</label>
+            <label class="toggle"><input type="checkbox" id="dateStampToggle"> Date stamp</label>
+            <label class="toggle"><input type="checkbox" id="gridToggle"> Coord grid</label>
+          </div>
+          <select id="compassStyle" style="margin-top: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: var(--r-2); font-size: 12.5px; font-family: inherit; background: var(--surface); box-shadow: inset 0 0 0 1px var(--input-stroke); color: var(--text); cursor: pointer;">
+            <option value="classic">Classic compass</option>
+            <option value="minimal">Minimal arrow</option>
+            <option value="windrose">Windrose</option>
+          </select>
+        </div></div>
+      </div>
+
     </div></div>
   </div>
 
@@ -818,56 +891,78 @@
       <span class="chev">›</span>
     </button>
     <div class="body"><div>
-      <div class="sub-title">Caption</div>
-      <input type="text" id="title" placeholder="Title" maxlength="40">
-      <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
 
-      <div class="sub-title" style="margin-top: 14px;">Typography</div>
-      <div class="style-options">
-        <select id="titleWeight">
-          <option value="regular">Regular title</option>
-          <option value="medium">Medium title</option>
-          <option value="bold">Bold title</option>
-          <option value="heavy">Heavy title</option>
-        </select>
-        <select id="titleSize">
-          <option value="small">Small title</option>
-          <option value="medium">Medium title</option>
-          <option value="large">Large title</option>
-          <option value="xl">Extra large</option>
-        </select>
-        <select id="subtitleStyle">
-          <option value="regular">Regular subtitle</option>
-          <option value="italic">Italic subtitle</option>
-          <option value="hidden">Hide subtitle</option>
-        </select>
-        <select id="coordsStyle">
-          <option value="decimal">Decimal coords</option>
-          <option value="dms">DMS coords</option>
-          <option value="hidden">Hide coords</option>
-        </select>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">📝</span><span class="disclose-label"><span class="disclose-title">Caption</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <input type="text" id="title" placeholder="Title" maxlength="40">
+          <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
+        </div></div>
       </div>
 
-      <div class="sub-title" style="margin-top: 14px;">Aspect ratio</div>
-      <div class="frames" id="frames">
-        <button data-frame="portrait" class="active">Portrait</button>
-        <button data-frame="square">Square</button>
-        <button data-frame="landscape">Landscape</button>
-        <button data-frame="story">Story</button>
-        <button data-frame="a4">A4</button>
-        <button data-frame="banner">Banner</button>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🅰️</span><span class="disclose-label"><span class="disclose-title">Typography</span><span class="disclose-desc">Title / subtitle / coords</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="style-options">
+            <select id="titleWeight">
+              <option value="regular">Regular title</option>
+              <option value="medium">Medium title</option>
+              <option value="bold">Bold title</option>
+              <option value="heavy">Heavy title</option>
+            </select>
+            <select id="titleSize">
+              <option value="small">Small title</option>
+              <option value="medium">Medium title</option>
+              <option value="large">Large title</option>
+              <option value="xl">Extra large</option>
+            </select>
+            <select id="subtitleStyle">
+              <option value="regular">Regular subtitle</option>
+              <option value="italic">Italic subtitle</option>
+              <option value="hidden">Hide subtitle</option>
+            </select>
+            <select id="coordsStyle">
+              <option value="decimal">Decimal coords</option>
+              <option value="dms">DMS coords</option>
+              <option value="hidden">Hide coords</option>
+            </select>
+          </div>
+        </div></div>
       </div>
 
-      <div class="sub-title" style="margin-top: 14px;">Commemorative</div>
-      <label class="toggle"><input type="checkbox" id="anniversary"> Two names with a date</label>
-      <input type="date" id="commemDate" style="margin-top:8px; display:none">
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">📐</span><span class="disclose-label"><span class="disclose-title">Aspect ratio</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="frames" id="frames">
+            <button data-frame="portrait" class="active">Portrait</button>
+            <button data-frame="square">Square</button>
+            <button data-frame="landscape">Landscape</button>
+            <button data-frame="story">Story</button>
+            <button data-frame="a4">A4</button>
+            <button data-frame="banner">Banner</button>
+          </div>
+        </div></div>
+      </div>
 
-      <div class="sub-title" style="margin-top: 14px;">GPX route</div>
-      <label class="gpx-upload">
-        <input type="file" id="gpxFile" accept=".gpx,application/gpx+xml,text/xml">
-        <span>Click or drop a .gpx file</span>
-      </label>
-      <div class="gpx-status" id="gpxStatus"></div>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">💝</span><span class="disclose-label"><span class="disclose-title">Commemorative</span><span class="disclose-desc">Names &amp; date layout</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <label class="toggle"><input type="checkbox" id="anniversary"> Two names with a date</label>
+          <input type="date" id="commemDate" style="margin-top:8px; display:none">
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🥾</span><span class="disclose-label"><span class="disclose-title">GPX route</span><span class="disclose-desc">Trace a run, ride, or hike</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <label class="gpx-upload">
+            <input type="file" id="gpxFile" accept=".gpx,application/gpx+xml,text/xml">
+            <span>Click or drop a .gpx file</span>
+          </label>
+          <div class="gpx-status" id="gpxStatus"></div>
+        </div></div>
+      </div>
+
     </div></div>
   </div>
 
@@ -2038,17 +2133,34 @@ CITIES.forEach(c => {
   citiesEl.appendChild(b);
 });
 
-// Render the Layers section as grouped icon-buttons (excluding 'pois',
-// which has its own dedicated Map icons section above).
+// Render the Layers section as grouped icon-buttons. Group title is
+// click-to-toggle-all: if any item in the group is on, turn ALL off;
+// if all are off, turn ALL on.
 const togglesEl = document.getElementById('toggles');
 LAYER_GROUPS.forEach(group => {
   const heading = document.createElement('div');
   heading.className = 'layer-group-title';
   heading.textContent = group.name;
-  togglesEl.appendChild(heading);
+  heading.title = 'Click to toggle all in this group';
 
   const grid = document.createElement('div');
   grid.className = 'layer-grid';
+
+  heading.addEventListener('click', safe(() => {
+    pushHistory();
+    const allOn = group.items.every(i => state.layers[i.key]);
+    const newVal = !allOn;
+    group.items.forEach(i => {
+      state.layers[i.key] = newVal;
+      const btn = grid.querySelector(`button[data-layer="${i.key}"]`);
+      if (btn) btn.classList.toggle('active', newVal);
+    });
+    restyle();
+    persist();
+  }, 'groupToggle'));
+
+  togglesEl.appendChild(heading);
+
   group.items.forEach(item => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -2728,9 +2840,14 @@ map.on('load', () => {
   }
 
   if (!shownSha) {
-    badge.classList.add('unknown');
-    text.textContent = '?';
-    badge.title = 'Could not determine version';
+    // Both API endpoints failed (likely anonymous rate limit, 60/hr per IP).
+    // Don't strand the user with a useless "?" — show that the page is
+    // running and link to GitHub for the latest commit.
+    badge.classList.add('latest');
+    text.textContent = 'live';
+    badge.title = 'Could not reach the GitHub API (rate limit?). Click to view the latest commits.';
+    badge.style.cursor = 'pointer';
+    badge.addEventListener('click', () => window.open(`https://github.com/${REPO}/commits/main`, '_blank'));
     return;
   }
 

@@ -941,6 +941,10 @@
           <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>
           <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
           <div class="row"><label>Weight</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
+          <div class="row"><label>Heights</label><input type="range" id="buildingHeight" min="0.5" max="8" step="0.5" value="1"><span class="val" id="buildingHeightVal">1.0×</span></div>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.4;">
+            Multiplies 3D building heights — only visible when Tilt &gt; 0.
+          </div>
         </div></div>
       </div>
 
@@ -1874,6 +1878,7 @@ function defaultState() {
     stars: false,             // sprinkle stars overlay
     titleSpacingDelta: 0,     // -4..+8 px adjustment over preset
     // 5 more creative dials (ADR-042..046)
+    buildingHeight: 1,        // multiplier on 3D extrusion height (0.5..8)
     mapHue: 0,                // 0..360° global hue rotation
     mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
     sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
@@ -2052,11 +2057,12 @@ function buildStyle(s) {
       paint: { 'fill-color': p.urban, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.4, 11, 0.75, 13.5, 0.4] } });
 
     if (s.pitch > 8) {
+      const hMul = (typeof s.buildingHeight === 'number' && s.buildingHeight > 0) ? s.buildingHeight : 1;
       building3D = { id: 'building-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 13,
         paint: {
           'fill-extrusion-color': p.building,
-          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
-          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+          'fill-extrusion-height': ['*', ['coalesce', ['get', 'render_height'], 8], hMul],
+          'fill-extrusion-base':   ['*', ['coalesce', ['get', 'render_min_height'], 0], hMul],
           'fill-extrusion-opacity': 0.95,
         } };
     } else {
@@ -2616,6 +2622,15 @@ pitchInput.addEventListener('input', () => {
   restyle(); // pitch toggles 3D extrusion
 });
 
+const buildingHeightEl = document.getElementById('buildingHeight');
+const buildingHeightVal = document.getElementById('buildingHeightVal');
+if (buildingHeightEl) buildingHeightEl.addEventListener('input', safe(() => {
+  state.buildingHeight = parseFloat(buildingHeightEl.value);
+  buildingHeightVal.textContent = state.buildingHeight.toFixed(1) + '×';
+  restyle();
+  persist();
+}, 'buildingHeight'));
+
 const rw = document.getElementById('roadWeight');
 const rwVal = document.getElementById('roadWeightVal');
 rw.addEventListener('input', () => {
@@ -3014,6 +3029,11 @@ function syncControls() {
     btn.classList.toggle('active', !!state.layers[btn.dataset.layer]);
   });
   rw.value = state.roadWeight; rwVal.textContent = state.roadWeight.toFixed(1) + '×';
+  if (buildingHeightEl) {
+    const bh = (typeof state.buildingHeight === 'number' && state.buildingHeight > 0) ? state.buildingHeight : 1;
+    buildingHeightEl.value = bh;
+    buildingHeightVal.textContent = bh.toFixed(1) + '×';
+  }
   bearingInput.value = state.bearing; bearingVal.textContent = Math.round(state.bearing) + '°';
   pitchInput.value = state.pitch; pitchVal.textContent = Math.round(state.pitch) + '°';
   document.getElementById('roadStyle').value = state.roadStyle;

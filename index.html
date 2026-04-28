@@ -2930,8 +2930,24 @@ if (bleedToggleEl) bleedToggleEl.addEventListener('change', e => {
   state.exportBleed = e.target.checked; persist();
 });
 
-function download(svgString, name) {
-  const blob = new Blob([svgString.startsWith('data:') ? atob(svgString.split(',')[1]) : svgString], { type: 'image/svg+xml' });
+// htmlToImage.toSvg returns a data URL whose payload is URI-encoded
+// (data:image/svg+xml;charset=utf-8,<percent-encoded-svg>). The earlier
+// download() blindly called atob() on the payload — which only works for
+// base64 — so SVG exports threw 'InvalidCharacterError'. Decode based
+// on the data URL's actual encoding.
+function dataUrlToText(url) {
+  if (typeof url !== 'string' || !url.startsWith('data:')) return url;
+  const commaIx = url.indexOf(',');
+  const header = url.slice(0, commaIx);
+  const payload = url.slice(commaIx + 1);
+  if (header.includes(';base64')) {
+    try { return atob(payload); } catch (_) { return decodeURIComponent(payload); }
+  }
+  try { return decodeURIComponent(payload); } catch (_) { return payload; }
+}
+function download(svgOrDataUrl, name) {
+  const text = dataUrlToText(svgOrDataUrl);
+  const blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
   const a = document.createElement('a');
   a.download = name;
   a.href = URL.createObjectURL(blob);

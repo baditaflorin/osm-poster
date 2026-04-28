@@ -2643,13 +2643,18 @@ function syncControls() {
   }
   bearingInput.value = state.bearing; bearingVal.textContent = Math.round(state.bearing) + '°';
   pitchInput.value = state.pitch; pitchVal.textContent = Math.round(state.pitch) + '°';
-  document.getElementById('roadStyle').value = state.roadStyle;
-  document.getElementById('labelFont').value = state.labelFont;
-  document.getElementById('titleWeight').value   = state.titleWeight   || 'bold';
-  document.getElementById('titleSize').value     = state.titleSize     || 'medium';
-  document.getElementById('subtitleStyle').value = state.subtitleStyle || 'regular';
-  document.getElementById('coordsStyle').value   = state.coordsStyle   || 'decimal';
-  document.getElementById('seed').value = state.seed || '';
+  // Chip-grouped dials (roadStyle, roadCaps, labelCase, parkOpacity,
+  // roofTone, border, texture, cardShadow, vignette, titleOrnament,
+  // captionDivider) are synced by syncChipGroups() — see syncStyleDials.
+  // Plain selects still in syncControls below.
+  const setSelect = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  setSelect('labelFont',     state.labelFont);
+  setSelect('titleWeight',   state.titleWeight   || 'bold');
+  setSelect('titleSize',     state.titleSize     || 'medium');
+  setSelect('subtitleStyle', state.subtitleStyle || 'regular');
+  setSelect('coordsStyle',   state.coordsStyle   || 'decimal');
+  setSelect('buildingShape', state.buildingShape || 'filled');
+  setSelect('seed',          state.seed || '');
   // Decoration toggles (compass / scale / cityOutline / sun light / etc.)
   // live in the icon-button grid now, synced via syncDecorationGrid().
   const bl = document.getElementById('bleedToggle');       if (bl) bl.checked = !!state.exportBleed;

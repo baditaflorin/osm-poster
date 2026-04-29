@@ -278,6 +278,56 @@ window.PRESET_DATA = (function () {
       titleSize: 'medium', titleWeight: 'medium', subtitleStyle: 'italic',
       captionDivider: 'dotted',
     },
+
+    // === 4 MORE TEMPLATES (seasonal & atmospheric) ===
+
+    autumn: {
+      name: 'Autumn',
+      isTemplate: true,
+      palette: { bg: '#fdf3d8', water: '#5b8da3', green: '#9c8a3d', urban: '#f0e6c4', building: '#d4a574', roof: '#a06b3d', road: '#8b3a1a', rail: '#5a2a10', label: '#4a2c1c', accent: '#c44820' },
+      layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: true, park_names: false, streets: false, pois: false },
+      roadWeight: 0.9, roadStyle: 'solid', labelFont: 'Noto Sans Italic',
+      frame: 'portrait', border: 'thin', texture: 'grain', compass: true, scale: false,
+      cardShadow: 'soft', roofTone: 'darker', parkOpacity: 'bold',
+      titleSize: 'medium', titleWeight: 'bold', subtitleStyle: 'italic',
+      mapSaturation: 115, captionDivider: 'wave',
+    },
+
+    glacier: {
+      name: 'Glacier',
+      isTemplate: true,
+      palette: { bg: '#f0f5f8', water: '#a8c8d8', green: '#d3e0d8', urban: '#e8eef2', building: '#c8d4dc', roof: '#8aa0b0', road: '#3a5a72', rail: '#1e3a52', label: '#1e3a52', accent: '#5fb8c4' },
+      layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: true, park_names: false, streets: false, pois: false },
+      roadWeight: 0.6, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
+      frame: 'square', border: 'thin', texture: 'none', compass: true, scale: true,
+      cardShadow: 'soft', roofTone: 'lighter', parkOpacity: 'subtle',
+      titleSize: 'medium', titleWeight: 'medium', subtitleStyle: 'regular',
+      mapSaturation: 75,
+    },
+
+    chalkboard: {
+      name: 'Chalkboard',
+      isTemplate: true,
+      palette: { bg: '#1a2620', water: '#2a3640', green: '#1f3325', urban: '#1f2823', building: '#2c3a32', roof: '#2c3a32', road: '#f5f5dc', rail: '#e8e8d0', label: '#fafaf0', accent: '#fff5b8' },
+      layers: { water: true, rivers: true, parks: true, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 0.8, roadStyle: 'dashed', labelFont: 'Noto Sans Italic',
+      frame: 'landscape', border: 'thin', texture: 'grain', compass: false, scale: false,
+      cardShadow: 'hard', parkOpacity: 'subtle', labelCase: 'asis',
+      titleSize: 'large', titleWeight: 'regular', subtitleStyle: 'italic',
+      titleOrnament: 'asterisks', captionDivider: 'wave',
+    },
+
+    sunset: {
+      name: 'Sunset',
+      isTemplate: true,
+      palette: { bg: '#ffe5e0', water: '#7eb6c4', green: '#f4c8a8', urban: '#ffeae3', building: '#f8b5a0', roof: '#e8765c', road: '#c44d2e', rail: '#8a2828', label: '#5a1f1c', accent: '#ff6b8a' },
+      layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 1.1, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+      frame: 'portrait', border: 'none', texture: 'none', compass: false, scale: false,
+      cardShadow: 'float', roofTone: 'lighter', parkOpacity: 'normal',
+      titleSize: 'large', titleWeight: 'heavy', subtitleStyle: 'italic',
+      mapSaturation: 120, vignette: 'soft',
+    },
   };
   // Short marketing copy for each full template
   const TEMPLATE_BLURBS = {
@@ -301,6 +351,10 @@ window.PRESET_DATA = (function () {
     nautical:    'Sea-chart navy on parchment',
     coral:       'Tropical reef pinks & turquoise',
     topo:        'Topographic survey, contour-style',
+    autumn:      'Warm rust & mustard on cream',
+    glacier:     'Cool ice palette, low saturation',
+    chalkboard:  'White chalk lines on dark green',
+    sunset:      'Pink-orange dusk with float shadow',
   };
   return { PRESETS, TEMPLATE_BLURBS };
 })();

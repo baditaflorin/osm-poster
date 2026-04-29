@@ -150,10 +150,23 @@ window.DATA = (function () {
   };
 
   // ---- Road quick-mode preset (Place > Roads buttons) ----------------
+  // Each mode is a small partial of state.layers — apply over the current
+  // layer toggles, leaving anything not mentioned untouched. Designed
+  // around "what's the user mapping" intents rather than enumerating
+  // every transport class. Order in the UI matches this object.
   const ROAD_MODES = {
-    off:      { roads: false, paths: false, streets: false, cycleways: false, ferries: false },
-    simple:   { roads: true,  paths: false, streets: false, cycleways: false },
-    detailed: { roads: true,  paths: true,  streets: true,  cycleways: true,  boundaries: true },
+    off:      { roads: false, paths: false, streets: false, cycleways: false, ferries: false, railways: false },
+    simple:   { roads: true,  paths: false, streets: false, cycleways: false, ferries: false, railways: false },
+    detailed: { roads: true,  paths: true,  streets: true,  cycleways: true,  ferries: true,  railways: true,  boundaries: true },
+    // Just the major+minor road network, no paths/cycle/rail. Good for
+    // street-art posters that want clean lines without trail noise.
+    highways: { roads: true,  paths: false, streets: false, cycleways: false, ferries: false, railways: false },
+    // Hike/trail map vibe — paths + footways, no driveable roads.
+    walking:  { roads: false, paths: true,  streets: false, cycleways: false, ferries: true,  railways: false },
+    // Bike map — everything cyclable + the road network for context.
+    cycling:  { roads: true,  paths: true,  streets: false, cycleways: true,  ferries: false, railways: false },
+    // Subway-map style — rails + ferries only, suppress every car road.
+    transit:  { roads: false, paths: false, streets: false, cycleways: false, ferries: true,  railways: true },
   };
 
   // ---- TOD CSS filter strings ----------------------------------------

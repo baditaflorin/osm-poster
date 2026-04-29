@@ -60,17 +60,47 @@
     overflow: hidden;
   }
 
-  /* ===== Sidebar (Apple-feel rewrite) ===== */
+  /* ===== Sidebar (Apple-feel rewrite) =====
+     overflow-x:hidden + the min-width:0 chain on every flex/grid child
+     guard against a single misbehaving control silently blowing the
+     sidebar wider than its 360px declared width — bugs we used to ship
+     because nothing visibly broke until the rightmost column was clipped
+     off. With these two rules in place, an oversized child triggers a
+     visible clip immediately so it gets caught at PR time. */
   aside {
     width: 360px;
     background: #fbfbfa;
     padding: 22px 24px 36px;
     overflow-y: auto;
+    overflow-x: hidden;
     border-right: 1px solid #ececec;
     flex-shrink: 0;
     font-size: 14px;
     color: #1d1d1f;
+    min-width: 0;
   }
+  /* Every flex/grid descendant of the sidebar inherits the right to
+     shrink below its content's min-width. Without this, a long single
+     word inside a chip / layer-btn / .row label would force its column
+     wider than 1fr, the way ADR-058 sidebar shipped broken. */
+  aside .row,
+  aside .frames,
+  aside .toggles,
+  aside .layer-grid,
+  aside .chip-group,
+  aside .style-options,
+  aside .actions,
+  aside .effects-grid,
+  aside .effects-toggles,
+  aside .palette-row,
+  aside .templates,
+  aside .presets,
+  aside .filter-list,
+  aside .filter-row,
+  aside .filter-row-head,
+  aside .filter-row-body,
+  aside .seed-row,
+  aside .marker-row { min-width: 0; }
   .header-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 24px; }
   .header-actions { display: flex; gap: 6px; }
   aside h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
@@ -309,7 +339,14 @@
   }
   .layer-group-title:hover::after { opacity: 1; }
   .layer-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    display: grid;
+    /* minmax(0, 1fr) — without the explicit 0 min the implicit
+       `minmax(auto, 1fr)` lets long words ("Industrial", "Greenery")
+       force a column wider than its 1fr share, blowing the whole grid
+       past the aside. The 0 min holds every column to an even quarter
+       and we let the label wrap if the word doesn't fit. */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
   }
   .layer-btn {
     display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -320,6 +357,7 @@
     transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
     font-size: 10.5px; color: var(--text-2);
     min-height: 56px;
+    min-width: 0; /* allow flex/grid items to shrink below min-content */
   }
   .layer-btn:hover {
     border-color: var(--text-3);
@@ -331,7 +369,15 @@
     color: var(--accent);
   }
   .layer-icon { font-size: 18px; line-height: 1; filter: grayscale(0.05); }
-  .layer-label { line-height: 1.1; text-align: center; }
+  .layer-label {
+    line-height: 1.1; text-align: center;
+    /* Long single words ("Industrial", "Greenery") get to break onto a
+       second line if the column is too narrow rather than forcing the
+       column wider. */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
 
   /* Palette */
   .palette-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-top: 4px; }

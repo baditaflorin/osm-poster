@@ -46,13 +46,12 @@ window.STYLE = (function () {
     });
     layers.push({ id: 'bg', type: 'background', paint: { 'background-color': p.bg } });
 
-    if (s.layers.water) {
-      layers.push({ id: 'water', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': p.water, 'fill-antialias': true } });
-    }
-    if (s.layers.rivers) {
-      layers.push({ id: 'waterway', type: 'line', source: 'omt', 'source-layer': 'waterway',
-        paint: { 'line-color': p.water, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 14, 1.5, 18, 4] } });
-    }
+    // Standard map convention: land features (greenery/parks) FIRST, then
+    // water on top, so rivers cut cleanly through park polygons even where
+    // OMT's park feature spills slightly over the riverbank (which is why
+    // Watercolor used to render the Seine in sage green — the park layer
+    // was painting over the water layer below it). Order now matches the
+    // OpenStreetMap default style.
     if (s.layers.greenery) {
       layers.push({ id: 'lc-wood', type: 'fill', source: 'omt', 'source-layer': 'landcover',
         filter: ['in', ['get', 'class'], ['literal', ['wood', 'forest']]],
@@ -65,6 +64,13 @@ window.STYLE = (function () {
       const PARK_OP = { subtle: 0.35, normal: 0.75, bold: 0.95 };
       layers.push({ id: 'park', type: 'fill', source: 'omt', 'source-layer': 'park',
         paint: { 'fill-color': p.green, 'fill-opacity': PARK_OP[s.parkOpacity] || 0.75 } });
+    }
+    if (s.layers.water) {
+      layers.push({ id: 'water', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': p.water, 'fill-antialias': true } });
+    }
+    if (s.layers.rivers) {
+      layers.push({ id: 'waterway', type: 'line', source: 'omt', 'source-layer': 'waterway',
+        paint: { 'line-color': p.water, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.4, 14, 1.5, 18, 4] } });
     }
 
     // 3D extruded buildings draw AFTER roads (collected here, pushed below).

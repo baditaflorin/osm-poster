@@ -55,10 +55,14 @@
         <button class="disclose-btn"><span class="ico">🧭</span><span class="disclose-label"><span class="disclose-title">View</span><span class="disclose-desc">Roads, rotation, tilt, weights</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <div class="sub-title" style="margin: 4px 0 6px;">Road preset</div>
-          <div class="frames" style="grid-template-columns: 1fr 1fr 1fr;">
-            <button data-roads="off">Off</button>
-            <button data-roads="simple" class="active">Simple</button>
-            <button data-roads="detailed">Detailed</button>
+          <div class="chip-group" id="roadModeGroup">
+            <button type="button" class="chip" data-roads="off">∅ Off</button>
+            <button type="button" class="chip active" data-roads="simple">━ Simple</button>
+            <button type="button" class="chip" data-roads="detailed">≡ Detailed</button>
+            <button type="button" class="chip" data-roads="highways">🛣 Highways</button>
+            <button type="button" class="chip" data-roads="walking">🥾 Walking</button>
+            <button type="button" class="chip" data-roads="cycling">🚴 Cycling</button>
+            <button type="button" class="chip" data-roads="transit">🚆 Transit</button>
           </div>
           <div class="sub-title" style="margin: 12px 0 4px;">Sliders</div>
           <div class="row"><label>Rotate</label><input type="range" id="bearing" min="-180" max="180" step="1" value="0"><span class="val" id="bearingVal">0°</span></div>

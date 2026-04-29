@@ -208,6 +208,10 @@
           <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
           <div class="row"><label>Hue</label><input type="range" id="mapHue" min="0" max="360" step="5" value="0"><span class="val" id="mapHueVal">0°</span></div>
 
+          <div class="sub-title" style="margin: 14px 0 6px;">FX mode <span class="sec-hint">SVG filter — transformative</span></div>
+          <div class="chip-group" data-chip-key="fxMode"
+               data-options='[["none","∅ None"],["glitch","📺 Glitch"],["halftone","⠿ Halftone"],["melt","🌊 Melt"],["bloom","✨ Bloom"],["posterize","🎨 Poster"]]'></div>
+
           <div class="sub-title" style="margin: 14px 0 6px;">Vignette</div>
           <div class="chip-group" data-chip-key="vignette"
                data-options='[["none","∅ None"],["soft","🌫 Soft"],["heavy","🌑 Heavy"],["spotlight","⭐ Spotlight"]]'></div>
@@ -424,6 +428,8 @@
   </div>
 
   <div class="footer-note">
+    Made by <a href="https://www.linkedin.com/in/baditaflorin/" target="_blank" rel="noopener">Florin Badita</a> ·
+    <a href="https://www.paypal.com/paypalme/florinbadita/" target="_blank" rel="noopener" class="coffee-link" title="If this saved you an afternoon, buy me a coffee 🙂">☕ Buy me a coffee</a><br>
     <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source</a> ·
     <a href="https://github.com/baditaflorin/osm-poster/blob/main/LICENSE" target="_blank" rel="noopener" title="OSI-approved MIT license — fork, modify, sell, no strings attached">MIT licensed</a><br>
     Map data © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)<br>
@@ -523,6 +529,76 @@
     </div>
   </div>
 </main>
+
+<!-- =====================================================================
+     SVG filter library — referenced by CSS `filter: url(#fx-X)` from
+     #map-wrap. The whole <svg> is invisible (width:0,height:0) but its
+     defs are accessible via document. Each filter is a self-contained
+     pipeline — no cross-references between them. State key: state.fxMode.
+     ===================================================================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Glitch / chromatic aberration: split RGB channels and offset the
+         red and blue ones a few pixels horizontally. Looks like a CRT
+         or VHS misalignment — instantly cyberpunk. -->
+    <filter id="fx-glitch" x="-10%" y="-10%" width="120%" height="120%">
+      <feColorMatrix in="SourceGraphic" type="matrix"
+        values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+      <feColorMatrix in="SourceGraphic" type="matrix"
+        values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+      <feColorMatrix in="SourceGraphic" type="matrix"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+      <feOffset in="r" dx="3" dy="0" result="rOff"/>
+      <feOffset in="b" dx="-3" dy="1" result="bOff"/>
+      <feBlend in="rOff" in2="g" mode="screen" result="rg"/>
+      <feBlend in="rg"   in2="bOff" mode="screen"/>
+    </filter>
+
+    <!-- Halftone print: Ben-Day dots. feTurbulence makes a noise field;
+         feComponentTransfer thresholds it to a binary dot pattern;
+         feComposite stamps that pattern onto the source's luminance. -->
+    <filter id="fx-halftone" x="0" y="0" width="100%" height="100%">
+      <feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="lum"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="1" seed="3" result="noise"/>
+      <feColorMatrix in="noise" type="matrix"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -2.5" result="dots"/>
+      <feComposite in="dots" in2="lum" operator="in" result="dotMask"/>
+      <feFlood flood-color="black" result="ink"/>
+      <feComposite in="ink" in2="dotMask" operator="in" result="halftone"/>
+      <feFlood flood-color="white"/>
+      <feComposite in="halftone" operator="over"/>
+    </filter>
+
+    <!-- Melt / displacement: turbulence-driven warp. The map wobbles
+         like wet paint — surreal dream effect. scale controls how much
+         it warps; stay under ~30 to keep features recognizable. -->
+    <filter id="fx-melt" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="2" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- Bloom / overdrive glow: blur a brightened copy and screen it
+         back over the original. Neon overdrive look — pairs perfectly
+         with Synthwave / Cyberpunk palettes. -->
+    <filter id="fx-bloom" x="-10%" y="-10%" width="120%" height="120%">
+      <feColorMatrix in="SourceGraphic" type="matrix"
+        values="1.6 0 0 0 0  0 1.6 0 0 0  0 0 1.6 0 0  0 0 0 1 0" result="bright"/>
+      <feGaussianBlur in="bright" stdDeviation="6" result="blur"/>
+      <feBlend in="SourceGraphic" in2="blur" mode="screen"/>
+    </filter>
+
+    <!-- Posterize: discrete value tables collapse RGB to 4 levels per
+         channel = 64 colors total. Looks screen-printed / Andy Warhol /
+         vintage comic book. Hard color bands replace gradients. -->
+    <filter id="fx-posterize">
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0 0.33 0.66 1"/>
+        <feFuncG type="discrete" tableValues="0 0.33 0.66 1"/>
+        <feFuncB type="discrete" tableValues="0 0.33 0.66 1"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
 
 <!-- Help Modal -->
 <div class="modal-overlay" id="helpModal">

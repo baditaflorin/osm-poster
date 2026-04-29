@@ -172,6 +172,11 @@ const STYLE_OPTIONS = {
   parkOpacity:   ['subtle', 'normal', 'bold'],
   cardShadow:    ['none', 'soft', 'hard', 'float'],
   buildingShape: ['filled', 'outlined', 'wireframe', 'ghost', 'bold', 'invert', 'halftone', 'accent', 'hairline'],
+  // SVG-filter FX dial weighted toward 'none' so randomize doesn't always
+  // produce a glitchy result — adding the bare value once gives 'none' a
+  // 1/6 chance, the others 1/6 each. Bias toward 'none' so the
+  // randomize button still produces tasteful posters most of the time.
+  fxMode:        ['none', 'none', 'none', 'glitch', 'halftone', 'melt', 'bloom', 'posterize'],
 };
 document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() => {
   pushHistory();

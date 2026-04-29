@@ -328,6 +328,59 @@ window.PRESET_DATA = (function () {
       titleSize: 'large', titleWeight: 'heavy', subtitleStyle: 'italic',
       mapSaturation: 120, vignette: 'soft',
     },
+
+    // === 4 MORE TEMPLATES (2 cyberpunk + 2 wild) ===
+
+    synthwave: {
+      name: 'Synthwave',
+      isTemplate: true,
+      palette: { bg: '#1a0033', water: '#ff00ff', green: '#2d1b4e', urban: '#261447', building: '#4a1f7a', roof: '#ff77ff', road: '#00f5ff', rail: '#ffaa00', label: '#ffaaff', accent: '#ff77ff' },
+      layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: true, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 1.1, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+      frame: 'portrait', border: 'thin', texture: 'grain', compass: true, scale: false,
+      pitch: 35, buildingHeight: 3, stars: true, vignette: 'spotlight',
+      cardShadow: 'float', roofTone: 'lighter', labelCase: 'uppercase',
+      titleSize: 'xl', titleWeight: 'heavy',
+      mapSaturation: 140, mapContrast: 120,
+      fxMode: 'bloom',
+    },
+
+    acid: {
+      name: 'Acid',
+      isTemplate: true,
+      palette: { bg: '#0a0a0a', water: '#00ff66', green: '#1a2010', urban: '#0f0f0f', building: '#1a1a0a', roof: '#ccff00', road: '#ff0099', rail: '#ffaa00', label: '#ccff00', accent: '#00ff66' },
+      layers: { water: true, rivers: true, parks: false, greenery: true, buildings: true, industrial: true, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 1.4, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+      frame: 'portrait', border: 'bold', texture: 'none', compass: false, scale: false,
+      cardShadow: 'hard', roofTone: 'accent', labelCase: 'uppercase',
+      titleSize: 'large', titleWeight: 'heavy',
+      mapSaturation: 160, mapContrast: 130,
+      fxMode: 'glitch',
+    },
+
+    memphis: {
+      name: 'Memphis',
+      isTemplate: true,
+      palette: { bg: '#fdf5e6', water: '#ff6b9d', green: '#ffd966', urban: '#f4e8d8', building: '#66d2ff', roof: '#b794f4', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#ffd966' },
+      layers: { water: true, rivers: true, parks: true, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 1.6, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+      frame: 'square', border: 'bold', texture: 'halftone', compass: false, scale: false,
+      cardShadow: 'hard', roofTone: 'accent', parkOpacity: 'bold',
+      titleSize: 'large', titleWeight: 'heavy', captionDivider: 'double',
+      titleOrnament: 'bullets',
+      fxMode: 'posterize',
+    },
+
+    monoDark: {
+      name: 'Mono Dark',
+      isTemplate: true,
+      palette: { bg: '#0a0a0a', water: '#1a1a1a', green: '#1a1a1a', urban: '#0f0f0f', building: '#1a1a1a', roof: '#2a2a2a', road: '#ffffff', rail: '#888888', label: '#ffffff', accent: '#888888' },
+      layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: false, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 0.5, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
+      frame: 'portrait', border: 'none', texture: 'none', compass: false, scale: false,
+      cardShadow: 'soft', labelCase: 'asis',
+      titleSize: 'medium', titleWeight: 'regular', subtitleStyle: 'regular',
+    },
   };
   // Short marketing copy for each full template
   const TEMPLATE_BLURBS = {
@@ -355,6 +408,10 @@ window.PRESET_DATA = (function () {
     glacier:     'Cool ice palette, low saturation',
     chalkboard:  'White chalk lines on dark green',
     sunset:      'Pink-orange dusk with float shadow',
+    synthwave:   'Magenta+cyan retro neon, with bloom',
+    acid:        'Toxic green/pink with glitch FX',
+    memphis:     '80s pastel geometric, posterized',
+    monoDark:    'Pure black, white roads, nothing else',
   };
   return { PRESETS, TEMPLATE_BLURBS };
 })();

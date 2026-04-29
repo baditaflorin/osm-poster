@@ -72,6 +72,7 @@ function defaultState() {
     zoomDisplay: false,       // small "z 12.4" label in the corner
     frameOrnaments: false,    // vintage corner flourishes on the poster
     mapHue: 0,                // 0..360° global hue rotation
+    fxMode: 'none',           // none | glitch | halftone | melt | bloom | posterize (SVG filter on #map-wrap)
     mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
     sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
     watermark: '',            // user-typed line shown in caption corner

@@ -142,6 +142,18 @@ applyMapFilters = function() {
     tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
   }
   if (TOD_FILTERS[tod]) parts.unshift(TOD_FILTERS[tod]);
+  // SVG filter chain — applied LAST so the saturation/contrast/hue
+  // adjustments above are part of the input to the FX pipeline.
+  // 'none' is intentionally absent from FX_URLS so it just contributes
+  // nothing to the chain.
+  const FX_URLS = {
+    glitch:    'url(#fx-glitch)',
+    halftone:  'url(#fx-halftone)',
+    melt:      'url(#fx-melt)',
+    bloom:     'url(#fx-bloom)',
+    posterize: 'url(#fx-posterize)',
+  };
+  if (FX_URLS[state.fxMode]) parts.push(FX_URLS[state.fxMode]);
   w.style.filter = parts.length ? parts.join(' ') : '';
   const sa = document.getElementById('mapSaturation'),  saV = document.getElementById('mapSaturationVal');
   const co = document.getElementById('mapContrast'),    coV = document.getElementById('mapContrastVal');
@@ -285,6 +297,7 @@ const CHIP_AFTER = {
   vignette:       () => applyVignette(),
   titleOrnament:  () => applyTitleOrnament(),
   captionDivider: () => applyCaptionDivider(),
+  fxMode:         () => applyMapFilters(),
   titleWeight:    () => applyTypography(),
   titleSize:      () => applyTypography(),
   subtitleStyle:  () => applyTypography(),
@@ -312,6 +325,7 @@ const _chipDefaults = {
   subtitleStyle: 'regular', coordsStyle: 'decimal',
   labelFont: 'Noto Sans Regular',
   compassStyle: 'classic',
+  fxMode: 'none',
 };
 
 function initChipGroups() {

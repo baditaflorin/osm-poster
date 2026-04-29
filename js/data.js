@@ -19,7 +19,7 @@ window.DATA = (function () {
     'pitch', 'bearing', 'buildingHeight', 'buildingShading',
     'roofTone', 'parkOpacity', 'labelCase', 'roadCaps',
     // Filters & decorations
-    'tod', 'mapSaturation', 'mapContrast', 'mapHue',
+    'tod', 'mapSaturation', 'mapContrast', 'mapHue', 'fxMode',
     'vignette', 'stars', 'cardShadow', 'frameOrnaments',
     'sketchFrame', 'realisticLight',
   ];

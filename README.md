@@ -51,6 +51,21 @@ Single static HTML file. Serve with anything:
 python3 -m http.server 8000
 ```
 
+## License
+
+This project is **MIT-licensed** — see [LICENSE](./LICENSE). Use it, fork
+it, embed it, sell posters with it, ship a derivative, no permission
+needed beyond keeping the copyright notice. It is OSI-approved
+[open source](https://opensource.org/license/mit) in the strictest
+sense: no copyleft, no field-of-use restriction, no patent gotcha.
+
+The license covers this codebase. The map *data* shown by the app is
+© [OpenStreetMap](https://openstreetmap.org/copyright) contributors
+under the [ODbL](https://opendatacommons.org/licenses/odbl/), and the
+vector tiles are served by [OpenFreeMap](https://openfreemap.org/)
+under their own terms — those licenses apply to the rendered content,
+not to this app's source.
+
 ## Credits
 
 Map data © [OpenStreetMap](https://openstreetmap.org/copyright) contributors.

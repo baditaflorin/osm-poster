@@ -315,10 +315,15 @@
   .row input[type="range"] { flex: 1; accent-color: #007aff; }
   .row .val { font-size: 11.5px; color: #86868b; min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
 
-  /* Layer toggles — kept for the few remaining checkbox usages
-     (Decorations, Map icons, Commemorative). user-select removed so
-     label text can be highlighted and copied. */
-  .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  /* Layer toggles container.
+     Holds the Layers panel content: each LAYER_GROUP is appended as a
+     heading + a 4-column .layer-grid pair. Originally a 2-column grid
+     (when the panel was a flat list of checkboxes) which made every
+     .layer-grid render at half the sidebar width — labels like
+     "Industrial" or "Greenery" were getting broken into 3 lines per
+     character. Now a vertical stack so each group's grid spans the
+     full panel width. */
+  .toggles { display: flex; flex-direction: column; gap: 0; }
   .toggle { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text); cursor: pointer; padding: 6px 0; }
   .toggle input { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; width: 16px; height: 16px; }
 
@@ -371,11 +376,12 @@
   .layer-icon { font-size: 18px; line-height: 1; filter: grayscale(0.05); }
   .layer-label {
     line-height: 1.1; text-align: center;
-    /* Long single words ("Industrial", "Greenery") get to break onto a
-       second line if the column is too narrow rather than forcing the
-       column wider. */
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    /* overflow-wrap:break-word lets a single very long word fall onto a
+       second line when its column is genuinely too narrow, but unlike
+       overflow-wrap:anywhere it does NOT break mid-word when the word
+       fits — so "Industrial" and "Greenery" render as one line at the
+       current ~70px column width. */
+    overflow-wrap: break-word;
     max-width: 100%;
   }
 

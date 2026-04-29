@@ -83,6 +83,10 @@ function defaultState() {
     caption: { title: 'PARIS', subtitle: 'The City of Light', anniversary: false, date: '' },
     view: { center: [2.3522, 48.8566], zoom: 12 },
     seed: '',
+    // Photoshop-style filter stack: each entry is one full-bleed overlay
+    // composited over the map via mix-blend-mode. See js/filters.js.
+    // Shape: { id, enabled, type, blend, opacity, color?, from?, to?, angle?, inner?, outer?, dataUrl? }
+    filters: [],
   };
 }
 

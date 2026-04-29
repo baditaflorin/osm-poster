@@ -101,12 +101,13 @@ if (spEl) spEl.addEventListener('input', safe(() => {
   applyTitleSpacing(); persist();
 }, 'titleSpacing'));
 
-// ADR-032 / 033 / 041 — road casing, glow, building shape: these
-// touch buildStyle. We toggle and call restyle().
+// ADR-032 / 033 — road casing & glow: these touch buildStyle. We toggle
+// and call restyle(). buildingShape (ADR-041) is now a chip-group, wired
+// via initChipGroups + the default CHIP_AFTER restyle, so it doesn't need
+// a separate handler.
 function syncEffectsToggles() {
   const a = document.getElementById('roadCasingToggle');  if (a) a.checked = !!state.roadCasing;
   const b = document.getElementById('roadGlowToggle');    if (b) b.checked = !!state.roadGlow;
-  const c = document.getElementById('buildingShape');     if (c) c.value   = state.buildingShape || 'filled';
 }
 const casingEl = document.getElementById('roadCasingToggle');
 if (casingEl) casingEl.addEventListener('change', safe(e => {
@@ -116,10 +117,6 @@ const glowEl = document.getElementById('roadGlowToggle');
 if (glowEl) glowEl.addEventListener('change', safe(e => {
   pushHistory(); state.roadGlow = e.target.checked; restyle(); persist();
 }, 'roadGlow'));
-const bShapeEl = document.getElementById('buildingShape');
-if (bShapeEl) bShapeEl.addEventListener('change', safe(e => {
-  pushHistory(); state.buildingShape = e.target.value; restyle(); persist();
-}, 'buildingShape'));
 
 // =====================================================================
 // 5 MORE CREATIVE DIALS — ADR-042..046
@@ -290,6 +287,7 @@ const _chipDefaults = {
   roofTone: 'match', labelCase: 'asis', parkOpacity: 'normal',
   border: 'none', texture: 'none', cardShadow: 'soft',
   vignette: 'none', titleOrnament: 'none', captionDivider: 'line',
+  buildingShape: 'filled',
 };
 
 function initChipGroups() {
@@ -344,11 +342,16 @@ function sunColorFromAlt(alt) {
   return '#ffffff';                         // bright noon
 }
 function applySunLight() {
-  if (!map || !map.setLight) return;
+  // Sun light only matters for the 3D building extrusions, which now live
+  // on the buildings overlay map — point setLight there. The primary
+  // (bg) and fg maps don't have any extrusions so setLight on them
+  // would be a no-op anyway.
+  const target = (typeof mapBuildings !== 'undefined' && mapBuildings) ? mapBuildings : map;
+  if (!target || !target.setLight) return;
   if (!state.realisticLight || !window.SunCalc) {
     // Reset to MapLibre default
     try {
-      map.setLight({ anchor: 'viewport', position: [1.15, 210, 30], color: '#ffffff', intensity: 0.5 });
+      target.setLight({ anchor: 'viewport', position: [1.15, 210, 30], color: '#ffffff', intensity: 0.5 });
     } catch (_) {}
     return;
   }
@@ -361,7 +364,7 @@ function applySunLight() {
     const altitudeDeg = pos.altitude * 180 / Math.PI;
     const polar = Math.max(0, Math.min(180, 90 - altitudeDeg));
     const intensity = altitudeDeg <= 0 ? 0.18 : Math.min(0.85, 0.25 + (altitudeDeg / 90) * 0.6);
-    map.setLight({
+    target.setLight({
       anchor: 'map',
       position: [1.5, azimuthDeg, polar],
       color: sunColorFromAlt(altitudeDeg),

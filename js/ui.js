@@ -269,6 +269,21 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
     refreshPOIs();
     persist();
   }, 'iconDensity'));
+
+  // Master on/off — flip every category at once. Each click pushes a single
+  // history entry, syncs every category button's .active class, then re-runs
+  // the POI overlay once.
+  function setAllCategories(on) {
+    pushHistory();
+    ICON_CATEGORIES.forEach(cat => { state.icons.categories[cat.key] = on; });
+    grid.querySelectorAll('button[data-iconcat]').forEach(b => b.classList.toggle('active', on));
+    refreshPOIs();
+    persist();
+  }
+  const allOnBtn  = document.getElementById('iconAllOn');
+  const allOffBtn = document.getElementById('iconAllOff');
+  if (allOnBtn)  allOnBtn.addEventListener('click',  safe(() => setAllCategories(true),  'iconAllOn'));
+  if (allOffBtn) allOffBtn.addEventListener('click', safe(() => setAllCategories(false), 'iconAllOff'));
 })();
 
 // Palette

@@ -104,6 +104,10 @@
       <div class="disclose disclose-sub">
         <button class="disclose-btn"><span class="ico">📍</span><span class="disclose-label"><span class="disclose-title">Map icons</span><span class="disclose-desc">Pinhead icons over real OSM places</span></span><span class="chev">›</span></button>
         <div class="body"><div>
+          <div class="chip-group" id="iconMaster" style="margin-bottom: 8px;">
+            <button type="button" class="chip" id="iconAllOn">✓ All on</button>
+            <button type="button" class="chip" id="iconAllOff">× All off</button>
+          </div>
           <div class="layer-grid" id="iconCategories"></div>
           <div class="row" style="margin-top: 10px;"><label>Size</label><input type="range" id="iconSize" min="18" max="56" step="2" value="30"><span class="val" id="iconSizeVal">30px</span></div>
           <div class="row"><label>Max</label><input type="range" id="iconDensity" min="5" max="80" step="5" value="25"><span class="val" id="iconDensityVal">25</span></div>
@@ -137,22 +141,13 @@
 
           <div class="sub-title" style="margin: 4px 0 6px;">🛣 Roads</div>
           <div class="chip-group" data-chip-key="roadStyle"
-               data-options='[["solid","━ Solid"],["dashed","┄ Dashed"],["dotted","┈ Dotted"]]'></div>
+               data-options='[["solid","━ Solid"],["dashed","┄ Dashed"],["dotted","┈ Dotted"],["longdash","━━ Long"],["dotdash","━·━ Mix"],["rail","⏐ ⏐ Rail"]]'></div>
           <div class="chip-group" data-chip-key="roadCaps" style="margin-top: 4px;"
                data-options='[["round","⏺ Round"],["butt","▮ Butt"],["square","▢ Square"]]'></div>
 
           <div class="sub-title" style="margin: 14px 0 6px;">🏢 Buildings</div>
-          <select id="buildingShape">
-            <option value="filled">▣ Filled (solid)</option>
-            <option value="outlined">▢ Outlined (faint fill)</option>
-            <option value="wireframe">⬚ Wireframe (no fill)</option>
-            <option value="ghost">⬛ Ghost (very faint)</option>
-            <option value="bold">█ Bold (heavy outline)</option>
-            <option value="invert">◐ Inverted (bg color, accent edge)</option>
-            <option value="halftone">⠿ Stippled (50% pattern)</option>
-            <option value="accent">★ Accent fill</option>
-            <option value="hairline">┄ Hairline outline only</option>
-          </select>
+          <div class="chip-group" data-chip-key="buildingShape"
+               data-options='[["filled","▣ Filled"],["outlined","▢ Outlined"],["wireframe","⬚ Wire"],["ghost","⬛ Ghost"],["bold","█ Bold"],["invert","◐ Invert"],["halftone","⠿ Stipple"],["accent","★ Accent"],["hairline","┄ Hairline"]]'></div>
           <div class="chip-group" data-chip-key="roofTone" style="margin-top: 6px;"
                data-options='[["match","= walls"],["lighter","Lighter"],["darker","Darker"],["accent","Accent"],["custom","Roofs swatch"]]'></div>
           <label class="toggle" style="margin-top: 6px;"><input type="checkbox" id="buildingShading" checked> Side shading (3D)</label>
@@ -238,6 +233,20 @@
             <button id="maskClearBtn">Clear mask</button>
           </div>
           <div class="drop-status" id="maskStatus"></div>
+        </div></div>
+      </div>
+
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🎚</span><span class="disclose-label"><span class="disclose-title">Filter stack</span><span class="disclose-desc">Photoshop-style blend layers</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="filter-list" id="filterList"></div>
+          <div class="actions" style="margin-top: 8px;">
+            <button id="addFilterBtn">+ Add filter</button>
+            <button id="clearFiltersBtn">Clear all</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text-3); margin-top: 8px; line-height: 1.45;">
+            Each filter blends with the map underneath using a Photoshop-style mode (Multiply, Screen, Overlay, Burn…). Top of the list draws on top.
+          </div>
         </div></div>
       </div>
 
@@ -437,7 +446,25 @@
   <div class="poster-wrap frame-portrait" id="poster-wrap">
     <div id="poster">
       <div id="map-wrap">
+        <!-- Three stacked MapLibre canvases for Photoshop-style per-layer
+             blending. Camera is owned by #map; the others are
+             pointer-events:none slaves synced on every move. Filters live
+             in #filterStack and are positioned by z-index per target so
+             mix-blend-mode finds the right backdrop:
+                 z=1 #map               (bg group + canvas color)
+                 z=2 .filter-layer.target-bg
+                 z=3 #map-buildings     (buildings only, transparent)
+                 z=4 .filter-layer.target-buildings
+                 z=5 #map-fg            (fg layers, transparent)
+                 z=6 .filter-layer.target-fg
+                 z=10..13 decorative overlays
+                 z=20 .filter-layer.target-all
+             #map-wrap has isolation:isolate so blending stays contained
+             to this subtree (caption, frame, etc. are unaffected). -->
         <div id="map"></div>
+        <div id="map-buildings" class="map-overlay"></div>
+        <div id="map-fg" class="map-overlay"></div>
+        <div class="filter-stack" id="filterStack"></div>
         <div class="coord-grid" id="coordGrid"></div>
         <div class="vignette" id="vignette"></div>
         <div class="stars-overlay" id="starsOverlay"></div>
@@ -578,6 +605,7 @@
 <script src="./js/export.js"></script>
 <script src="./js/features.js"></script>
 <script src="./js/dials.js"></script>
+<script src="./js/filters.js"></script>
 <script src="./js/boot.js"></script>
 </body>
 </html>

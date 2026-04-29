@@ -228,6 +228,56 @@ window.PRESET_DATA = (function () {
       tod: 'dusk', cardShadow: 'float', roofTone: 'darker',
       titleSize: 'large', subtitleStyle: 'italic',
     },
+
+    // === 4 MORE TEMPLATES (3 water-themed + 1 topographic) ===
+
+    riviera: {
+      name: 'Riviera',
+      isTemplate: true,
+      palette: { bg: '#fef3d7', water: '#3aa3c4', green: '#a3c499', urban: '#fde9c0', building: '#f0d8a0', roof: '#d8a878', road: '#c0392b', rail: '#8b3a1a', label: '#3a2418', accent: '#e67e22' },
+      layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: true, park_names: false, streets: false, pois: false },
+      roadWeight: 1.0, roadStyle: 'solid', labelFont: 'Noto Sans Medium',
+      frame: 'landscape', border: 'thin', texture: 'grain', compass: true, scale: true,
+      cardShadow: 'soft', roofTone: 'lighter', parkOpacity: 'normal',
+      titleSize: 'large', titleWeight: 'medium', subtitleStyle: 'italic',
+      captionDivider: 'wave',
+    },
+
+    nautical: {
+      name: 'Nautical',
+      isTemplate: true,
+      palette: { bg: '#f4ede0', water: '#1e3a5f', green: '#dfd6c2', urban: '#f4ede0', building: '#e8dcc4', roof: '#c8b48a', road: '#1a1a1a', rail: '#1a1a1a', label: '#1e3a5f', accent: '#c0392b' },
+      layers: { water: true, rivers: true, parks: false, greenery: false, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: true, cities: true, neighborhoods: false, countries: false, water_names: true, park_names: false, streets: false, pois: false },
+      roadWeight: 0.6, roadStyle: 'dotdash', labelFont: 'Noto Sans Bold',
+      frame: 'portrait', border: 'double', texture: 'grain', compass: true, scale: true,
+      cardShadow: 'soft', roofTone: 'darker', labelCase: 'uppercase',
+      titleSize: 'medium', titleWeight: 'bold',
+      titleOrnament: 'asterisks', captionDivider: 'double',
+    },
+
+    coral: {
+      name: 'Coral',
+      isTemplate: true,
+      palette: { bg: '#fff4ec', water: '#5fc8d6', green: '#f5b7a8', urban: '#ffe4d4', building: '#f8c8b8', roof: '#e8a09a', road: '#ff6b8a', rail: '#c44569', label: '#5d2438', accent: '#ff6b8a' },
+      layers: { water: true, rivers: true, parks: true, greenery: true, buildings: true, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: true, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 1.2, roadStyle: 'solid', labelFont: 'Noto Sans Bold',
+      frame: 'square', border: 'thin', texture: 'halftone', compass: false, scale: false,
+      cardShadow: 'soft', roofTone: 'lighter', parkOpacity: 'bold',
+      titleSize: 'large', titleWeight: 'heavy',
+      mapSaturation: 115,
+    },
+
+    topo: {
+      name: 'Topo',
+      isTemplate: true,
+      palette: { bg: '#f3eddc', water: '#9bb6a8', green: '#bfc99a', urban: '#ece2c8', building: '#d4c79a', roof: '#a89165', road: '#5a3a1a', rail: '#3a2410', label: '#2d1f0c', accent: '#8b4513' },
+      layers: { water: true, rivers: true, parks: true, greenery: true, buildings: false, industrial: false, roads: true, railways: false, paths: true, airports: false, boundaries: true, cities: true, neighborhoods: true, countries: false, water_names: true, park_names: true, streets: false, pois: false },
+      roadWeight: 0.7, roadStyle: 'longdash', labelFont: 'Noto Sans Italic',
+      frame: 'a4', border: 'thin', texture: 'grain', compass: true, scale: true,
+      cardShadow: 'soft', parkOpacity: 'subtle', labelCase: 'asis',
+      titleSize: 'medium', titleWeight: 'medium', subtitleStyle: 'italic',
+      captionDivider: 'dotted',
+    },
   };
   // Short marketing copy for each full template
   const TEMPLATE_BLURBS = {
@@ -247,6 +297,10 @@ window.PRESET_DATA = (function () {
     sketchbook:  'Wobbly hand-drawn travel journal',
     risoPop:     'Pink/cyan riso with hard shadow',
     twilight:    'Dusk + stars + atmospheric',
+    riviera:     'Mediterranean coast on cream paper',
+    nautical:    'Sea-chart navy on parchment',
+    coral:       'Tropical reef pinks & turquoise',
+    topo:        'Topographic survey, contour-style',
   };
   return { PRESETS, TEMPLATE_BLURBS };
 })();

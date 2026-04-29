@@ -11,8 +11,13 @@
 // Thin wrapper — the real buildStyle lives in ./js/style.js.
 // Adding a new layer renderer = edit STYLE.build there + the layer key
 // in DATA.LAYER_ORDER / LAYER_LABELS / LAYER_GROUPS.
-function buildStyle(s) {
-  return STYLE.build(s, PRESETS.blueprint.palette);
+//
+// Each of the 3 stacked MapLibre instances gets a partial style for its
+// own layer group (bg / buildings / fg). The primary also gets the
+// canvas background-color via the 'bg' layer; the overlays render on a
+// transparent canvas and stack via CSS.
+function buildStyle(s, group) {
+  return STYLE.build(s, PRESETS.blueprint.palette, { group });
 }
 
 // =====================================================================
@@ -55,7 +60,7 @@ if (maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS = 8;
 
 const map = new maplibregl.Map({
   container: 'map',
-  style: buildStyle(state),
+  style: buildStyle(state, 'bg'),
   center: state.view.center,
   zoom: state.view.zoom,
   bearing: state.bearing,
@@ -66,6 +71,63 @@ const map = new maplibregl.Map({
   maxTileCacheSize: 256,
   // Snappier transitions reduce the perceived "many tiles loading" effect.
   fadeDuration: 100,
+});
+
+// ---- Per-layer-group overlay maps -----------------------------------
+// Two extra MapLibre instances stacked above the primary, each rendering
+// only its own group's layers (buildings / foreground). They have no
+// background fill, no controls, and no pointer events — the primary owns
+// the camera and we replicate every move via jumpTo() (cheap enough that
+// it keeps up during interactive pans). attributionControl: false so we
+// don't get duplicated OSM credits.
+const _commonOverlayOpts = {
+  interactive: false,
+  attributionControl: false,
+  preserveDrawingBuffer: true,
+  maxTileCacheSize: 256,
+  fadeDuration: 100,
+};
+const mapBuildings = new maplibregl.Map({
+  container: 'map-buildings',
+  style: buildStyle(state, 'buildings'),
+  center: state.view.center,
+  zoom: state.view.zoom,
+  bearing: state.bearing,
+  pitch: state.pitch,
+  ..._commonOverlayOpts,
+});
+const mapFg = new maplibregl.Map({
+  container: 'map-fg',
+  style: buildStyle(state, 'fg'),
+  center: state.view.center,
+  zoom: state.view.zoom,
+  bearing: state.bearing,
+  pitch: state.pitch,
+  ..._commonOverlayOpts,
+});
+
+// Convenience: every helper that wants to touch all three.
+const MAPS_ALL = [map, mapBuildings, mapFg];
+
+// Camera sync — the primary fires 'move' continuously during user
+// interaction; we propagate to the overlays via jumpTo so they paint the
+// next frame from the same camera. jumpTo doesn't fire its own 'move'
+// loop on the overlay (no animation), so we don't get feedback storms.
+function _syncCameraToOverlays() {
+  const c = map.getCenter();
+  const z = map.getZoom();
+  const b = map.getBearing();
+  const p = map.getPitch();
+  mapBuildings.jumpTo({ center: [c.lng, c.lat], zoom: z, bearing: b, pitch: p });
+  mapFg.jumpTo({ center: [c.lng, c.lat], zoom: z, bearing: b, pitch: p });
+}
+map.on('move', _syncCameraToOverlays);
+// Belt-and-suspenders: also sync on the resize the primary triggers
+// when the container changes size (e.g. frame aspect change).
+map.on('resize', () => {
+  mapBuildings.resize();
+  mapFg.resize();
+  _syncCameraToOverlays();
 });
 
 // Loader hooks — show the line while tiles are in flight.
@@ -144,11 +206,18 @@ function restyle() {
   clearTimeout(restyleTimer);
   restyleTimer = setTimeout(() => {
     const c = map.getCenter(), z = map.getZoom(), b = map.getBearing(), pi = map.getPitch();
-    map.setStyle(buildStyle(state));
+    map.setStyle(buildStyle(state, 'bg'));
+    mapBuildings.setStyle(buildStyle(state, 'buildings'));
+    mapFg.setStyle(buildStyle(state, 'fg'));
     map.once('style.load', () => {
       map.jumpTo({ center: c, zoom: z, bearing: b, pitch: pi });
-      ensureGpx();
-      try { ensureCityOutline(); } catch (_) {}
+      _syncCameraToOverlays();
+      // GPX + city-outline are foreground annotations — they live on the
+      // fg map's runtime layers (added after setStyle clears them).
+      mapFg.once('style.load', () => {
+        ensureGpx();
+        try { ensureCityOutline(); } catch (_) {}
+      });
     });
   }, 80);
 }
@@ -165,11 +234,14 @@ function parseGpx(text) {
   return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } };
 }
 function ensureGpx() {
+  // GPX track is a foreground line — lives on the fg map so it composites
+  // above buildings + the foreground filter slot (where the user might
+  // want to blend roads/labels but leave the imported track sharp).
   if (!gpxData) return;
-  if (map.getLayer('gpx-line')) map.removeLayer('gpx-line');
-  if (map.getSource('gpx')) map.removeSource('gpx');
-  map.addSource('gpx', { type: 'geojson', data: gpxData });
-  map.addLayer({
+  if (mapFg.getLayer('gpx-line')) mapFg.removeLayer('gpx-line');
+  if (mapFg.getSource('gpx')) mapFg.removeSource('gpx');
+  mapFg.addSource('gpx', { type: 'geojson', data: gpxData });
+  mapFg.addLayer({
     id: 'gpx-line', type: 'line', source: 'gpx',
     paint: { 'line-color': state.palette.accent, 'line-width': 4, 'line-opacity': 0.92 },
     layout: { 'line-cap': 'round', 'line-join': 'round' },

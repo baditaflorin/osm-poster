@@ -570,9 +570,12 @@
   .subtitle-chip:hover { background: var(--accent-bg); }
   .subtitle-chips .chip-loading { color: var(--text-3); background: transparent; cursor: default; }
 
-  /* ADR-036 — vignette overlay (radial darken) */
+  /* ADR-036 — vignette overlay (radial darken).
+     z-index 11: above the 3 map canvases + per-target filters (z 1..6),
+     below target-all filters (z 20). All decoration overlays follow the
+     same convention so they composite on top of the per-layer blending. */
   .vignette {
-    position: absolute; inset: 0; pointer-events: none; z-index: 4;
+    position: absolute; inset: 0; pointer-events: none; z-index: 11;
     display: none;
   }
   .vignette.vignette-soft      { display: block; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.32) 100%); }
@@ -581,7 +584,7 @@
 
   /* ADR-039 — sprinkle of stars (decorative) */
   .stars-overlay {
-    position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    position: absolute; inset: 0; pointer-events: none; z-index: 12;
     display: none;
     background-image:
       radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.85), transparent 50%),
@@ -676,7 +679,7 @@
 
   /* ADR-044 — sketch hand-drawn frame overlay */
   .sketch-frame {
-    position: absolute; inset: 0; pointer-events: none; z-index: 6;
+    position: absolute; inset: 0; pointer-events: none; z-index: 13;
     display: none;
   }
   .sketch-frame.on { display: block; }
@@ -686,7 +689,7 @@
   /* ADR-055 — sun direction arrow (small SVG in top-left of map) */
   .sun-arrow {
     position: absolute; top: 14px; left: 14px;
-    width: 44px; height: 44px; pointer-events: none; z-index: 5;
+    width: 44px; height: 44px; pointer-events: none; z-index: 12;
     display: none;
   }
   .sun-arrow.on { display: block; }
@@ -705,14 +708,14 @@
     font-family: var(--mono); font-size: 9.5px;
     color: var(--text); padding: 3px 9px; border-radius: 999px;
     background: rgba(255,255,255,0.65); backdrop-filter: blur(6px);
-    pointer-events: none; z-index: 5; letter-spacing: 1.5px;
+    pointer-events: none; z-index: 12; letter-spacing: 1.5px;
     display: none;
   }
   .zoom-display.on { display: block; }
 
   /* ADR-057 — corner ornaments (vintage flourishes) */
   .frame-ornaments {
-    position: absolute; inset: 0; pointer-events: none; z-index: 6;
+    position: absolute; inset: 0; pointer-events: none; z-index: 13;
     display: none;
   }
   .frame-ornaments.on { display: block; }
@@ -723,6 +726,114 @@
   .frame-ornaments svg.br { bottom: 6px; right: 6px; transform: scale(-1, -1); }
   .frame-ornaments svg path { fill: none; stroke: currentColor; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .frame-ornaments svg circle { fill: currentColor; }
+
+  /* Three stacked MapLibre canvases for per-layer blending. The primary
+     #map keeps full input + the canvas background-color. The two
+     overlays render only their group's layers on a transparent canvas
+     and never receive pointer events — the primary owns the camera.
+     Explicit z-indexes are critical: filter layers slot BETWEEN them
+     and rely on mix-blend-mode finding the right backdrop. */
+  #map           { z-index: 1; }
+  /* The two overlay maps must have a transparent background so their
+     non-rendered pixels stay alpha=0 — that's what the filter masks
+     read to scope target-buildings / target-fg to the right shapes. */
+  #map-buildings { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: transparent !important; }
+  #map-fg        { position: absolute; inset: 0; pointer-events: none; z-index: 5; background: transparent !important; }
+
+  /* The filter container itself does NOT create a stacking context (no
+     z-index, no transform, no isolation, no opacity!=1). Children's
+     z-indexes therefore resolve in #map-wrap's isolation context, where
+     they slot between the maps. Each .filter-layer is a positioned
+     element with its own z-index per target. */
+  .filter-stack { position: absolute; inset: 0; pointer-events: none; }
+  .filter-layer {
+    position: absolute; inset: 0;
+    background-position: center; background-size: cover; background-repeat: no-repeat;
+  }
+  .filter-layer.target-bg        { z-index: 2; }
+  .filter-layer.target-buildings { z-index: 4; }
+  .filter-layer.target-fg        { z-index: 6; }
+  /* target-all sits above every map AND every decoration so it really
+     does blend with the whole composited image. */
+  .filter-layer.target-all       { z-index: 20; }
+
+  /* Sidebar — filter row. Each row collapses to a tiny header with
+     three controls: enabled / type / blend, plus up/down/delete buttons,
+     then a body that depends on the chosen type. */
+  .filter-list { display: flex; flex-direction: column; gap: 8px; }
+  .filter-row {
+    background: var(--bg);
+    border: 1px solid var(--separator);
+    border-radius: var(--r-2);
+    padding: 8px 10px;
+  }
+  .filter-row.disabled { opacity: 0.5; }
+  .filter-row-head {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr auto auto auto;
+    gap: 4px;
+    align-items: center;
+  }
+  .filter-row-head input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px; height: 16px; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .filter-row-head select {
+    padding: 5px 8px; border: none; border-radius: 6px;
+    font-size: 11.5px; font-family: inherit;
+    background: var(--surface); color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--input-stroke);
+    min-width: 0;
+  }
+  .filter-row-head button {
+    width: 24px; height: 24px; padding: 0; border: none;
+    background: transparent; color: var(--text-3);
+    border-radius: 5px; cursor: pointer; font-size: 12px;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .filter-row-head button:hover { background: var(--hover); color: var(--text); }
+  .filter-row-head button.filter-del:hover { background: rgba(255,59,48,0.12); color: #ff3b30; }
+  .filter-row-target select {
+    flex: 1; padding: 4px 8px; border: none; border-radius: 6px;
+    font-size: 11.5px; font-family: inherit;
+    background: var(--surface); color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--input-stroke);
+  }
+  .filter-row-body { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .filter-row-body .row { margin: 0; }
+  .filter-color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .filter-color-grid label, .filter-row-body .filter-color-block {
+    display: flex; flex-direction: column; gap: 3px;
+    font-size: 11px; color: var(--text-3);
+  }
+  .filter-row-body input[type="color"] {
+    width: 100%; height: 28px; border: none; cursor: pointer;
+    border-radius: 5px; background: transparent;
+    padding: 0;
+  }
+  .filter-row-body .filter-photo-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+  }
+  .filter-row-body .filter-photo-pick {
+    padding: 8px; border: 1.5px dashed var(--input-stroke);
+    border-radius: var(--r-2); cursor: pointer; text-align: center;
+    font-size: 11.5px; color: var(--text-3); transition: all 0.15s ease;
+  }
+  .filter-row-body .filter-photo-pick:hover {
+    border-color: var(--accent); color: var(--accent);
+  }
+  .filter-row-body .filter-photo-pick input { display: none; }
+  .filter-row-body .filter-photo-clear {
+    padding: 6px 10px; font-size: 11px; border: none; cursor: pointer;
+    background: var(--hover); border-radius: 5px; font-family: inherit;
+    color: var(--text-3);
+  }
+  .filter-row-body .filter-photo-clear:hover { color: #ff3b30; }
+  .filter-row-body .filter-photo-thumb {
+    width: 100%; height: 60px; object-fit: cover; border-radius: var(--r-2);
+    box-shadow: inset 0 0 0 1px var(--input-stroke);
+  }
 
   /* ADR-046 — confetti particle */
   .confetti-particle {
@@ -767,13 +878,17 @@
   #poster.border-bold   { border: 18px solid var(--border-color); }
 
   #poster { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; --border-color: #111; }
-  #map-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; }
+  /* isolation: isolate makes #map-wrap a self-contained blending root.
+     Filter layers' mix-blend-mode then composes with the maps inside,
+     and the result is composited over the rest of the poster (caption,
+     frame ornaments outside the wrap, etc.) using normal compositing. */
+  #map-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; isolation: isolate; }
   #map { position: absolute; inset: 0; }
 
   /* compass overlay */
   .compass {
     position: absolute; top: 14px; right: 14px; width: 56px; height: 56px;
-    pointer-events: none; opacity: 0.85; z-index: 5;
+    pointer-events: none; opacity: 0.85; z-index: 12;
   }
   .compass.hidden { display: none; }
 
@@ -781,7 +896,7 @@
   .date-stamp {
     position: absolute; bottom: 14px; left: 14px;
     font-family: var(--mono); font-size: 10px; opacity: 0.8;
-    letter-spacing: 2px; pointer-events: none; z-index: 5;
+    letter-spacing: 2px; pointer-events: none; z-index: 12;
     padding: 3px 8px; background: rgba(255,255,255,0.6);
     border-radius: 3px; backdrop-filter: blur(4px);
     display: none;
@@ -790,7 +905,7 @@
 
   /* Coord grid overlay — faint graph-paper lines */
   .coord-grid {
-    position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    position: absolute; inset: 0; pointer-events: none; z-index: 10;
     display: none;
     background-image:
       linear-gradient(to right, currentColor 0.5px, transparent 0.5px),
@@ -804,7 +919,7 @@
   .grain {
     position: absolute; inset: 0; pointer-events: none;
     mix-blend-mode: multiply; opacity: 0;
-    z-index: 4;
+    z-index: 11;
   }
   .grain.grain-on {
     opacity: 0.18;

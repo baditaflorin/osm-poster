@@ -1,8 +1,13 @@
 // =====================================================================
 // OSM Poster — export pipeline (PNG / PDF / SVG, A2/A3/A4/4K sizes)
-// withMapAtPixelRatio is a pass-through (high-DPI bump disabled — was
-// corrupting the WebGL context). skipFonts:true keeps html-to-image's
-// webfont embedder from choking on the cross-origin MapLibre stylesheet.
+// withMapAtPixelRatio temporarily bumps MapLibre's pixelRatio so the map
+// canvas is rendered at print resolution (otherwise html-to-image
+// upscales the screen-DPI canvas and the map looks soft on A2/A3). The
+// bump is capped, idle-awaited, watched for GL context loss, and falls
+// back to a native-DPI capture if anything goes wrong, so the user still
+// gets *some* export even on weak GPUs. skipFonts:true keeps
+// html-to-image's webfont embedder from choking on the cross-origin
+// MapLibre stylesheet.
 // =====================================================================
 
 // =====================================================================
@@ -30,14 +35,84 @@ function loadJsPdf() {
   return jsPdfPromise;
 }
 
-// High-DPI map render via setPixelRatio is currently disabled — across
-// some MapLibre 4.7 / WebGL contexts it dropped the GL context and broke
-// PNG/PDF/SVG exports entirely. Falling back to capturing at the screen's
-// native DPI; html-to-image's pixelRatio multiplier still upscales the
-// caption, frame and overlays correctly. Map will look slightly softer
-// on A2/A3 exports until we wire a safer high-DPI path.
-async function withMapAtPixelRatio(_targetRatio, capture) {
-  return await capture();
+// Progressive ladder of pixelRatios to try, from highest quality down.
+// We start at the requested ratio (e.g. 8 for A2), and if the WebGL
+// context bails — GL OOM, integrated-GPU limits, driver quirks — we
+// retry one rung lower, then again, all the way down to native DPI.
+// 1.0 is the floor and *cannot* fail because it's the screen's own
+// canvas pixel count, so the user always gets some export.
+//
+// On a healthy desktop GPU the first rung succeeds and the map matches
+// the html-to-image output 1:1 (sharp). On a low-VRAM laptop we degrade
+// gracefully without exploding the export.
+const MAP_RATIO_LADDER = [8, 6, 4, 2, 1];
+
+async function withMapAtPixelRatio(targetRatio, capture) {
+  // We now have THREE stacked MapLibre instances (bg / buildings / fg).
+  // Each canvas needs its own pixelRatio bump to print sharp; otherwise
+  // html-to-image upscales whichever was left at screen DPI and that
+  // canvas looks soft. The ratchet logic still walks the same ladder,
+  // but applies its choice to all three maps in lockstep.
+  const dpr = window.devicePixelRatio || 1;
+  const targets = [map, mapBuildings, mapFg].filter(m => m && typeof m.setPixelRatio === 'function');
+  if (targetRatio <= dpr || !targets.length) {
+    return await capture();
+  }
+
+  const origRatios = targets.map(m =>
+    (typeof m.getPixelRatio === 'function' ? m.getPixelRatio() : null) ?? dpr);
+  const canvases = targets.map(m => m.getCanvas());
+
+  const rungs = MAP_RATIO_LADDER.filter(r => r <= targetRatio);
+  if (!rungs.length) rungs.push(dpr);
+
+  // Wait for every map to idle (or a timeout). 'idle' may fire on each
+  // separately; await the slowest.
+  const waitAllIdle = (ms) => Promise.all(targets.map(m => new Promise(resolve => {
+    let done = false;
+    const finish = () => { if (done) return; done = true; resolve(); };
+    try { m.once('idle', finish); } catch (_) { finish(); return; }
+    setTimeout(finish, ms);
+  })));
+
+  const restoreAll = () => {
+    targets.forEach((m, i) => {
+      try { m.setPixelRatio(origRatios[i]); } catch (_) {}
+      try { m.triggerRepaint(); } catch (_) {}
+    });
+  };
+
+  try {
+    let lastError;
+    for (const ratio of rungs) {
+      const lost = new Array(targets.length).fill(false);
+      const handlers = canvases.map((c, i) => {
+        const h = () => { lost[i] = true; };
+        c.addEventListener('webglcontextlost', h);
+        return h;
+      });
+      try {
+        targets.forEach(m => m.setPixelRatio(ratio));
+        await waitAllIdle(1800);
+        if (lost.some(Boolean)) throw new Error('WebGL context lost at pixelRatio ' + ratio);
+        const result = await capture();
+        if (ratio !== rungs[0]) {
+          console.info('[export] maps captured at pixelRatio', ratio, '(below requested', targetRatio + ')');
+        }
+        return result;
+      } catch (e) {
+        lastError = e;
+        console.warn('[export] pixelRatio', ratio, 'failed; trying next rung:', e && e.message);
+        restoreAll();
+        await waitAllIdle(1500); // give GL contexts a moment to recover
+      } finally {
+        canvases.forEach((c, i) => c.removeEventListener('webglcontextlost', handlers[i]));
+      }
+    }
+    throw lastError || new Error('Could not capture map at any pixelRatio');
+  } finally {
+    restoreAll();
+  }
 }
 
 document.getElementById('export').addEventListener('click', async () => {

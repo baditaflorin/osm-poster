@@ -64,10 +64,14 @@ window.LIB = (function () {
 
   // ---- MapLibre helpers ----------------------------------------------
 
-  // Dasharray pattern for a road style preset.
+  // Dasharray pattern for a road style preset. Values are line-width
+  // multiples (MapLibre's units for line-dasharray).
   function dashFor(style) {
-    if (style === 'dashed') return [4, 1.5];
-    if (style === 'dotted') return [0.5, 2];
+    if (style === 'dashed')   return [4, 1.5];
+    if (style === 'dotted')   return [0.5, 2];
+    if (style === 'longdash') return [8, 2];        // long stretches with brief gaps
+    if (style === 'dotdash')  return [3, 1.5, 0.5, 1.5]; // morse-like ─ · ─ ·
+    if (style === 'rail')     return [1, 3];        // wide-spaced ticks, railway-like
     return null;
   }
 

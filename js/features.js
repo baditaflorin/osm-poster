@@ -348,12 +348,14 @@ async function fetchCityOutline(query) {
   return (items && items[0] && items[0].geojson) ? { type: 'Feature', properties: {}, geometry: items[0].geojson } : null;
 }
 function ensureCityOutline() {
+  // City outline is a foreground stroke — render it on the fg map so it
+  // sits above buildings and is unaffected by bg-targeted filters.
   const layerId = 'city-outline-line';
   if (state.cityOutlineGeo) {
-    if (map.getSource('cityOutline')) map.getSource('cityOutline').setData(state.cityOutlineGeo);
-    else map.addSource('cityOutline', { type: 'geojson', data: state.cityOutlineGeo });
-    if (!map.getLayer(layerId)) {
-      map.addLayer({
+    if (mapFg.getSource('cityOutline')) mapFg.getSource('cityOutline').setData(state.cityOutlineGeo);
+    else mapFg.addSource('cityOutline', { type: 'geojson', data: state.cityOutlineGeo });
+    if (!mapFg.getLayer(layerId)) {
+      mapFg.addLayer({
         id: layerId, type: 'line', source: 'cityOutline',
         paint: {
           'line-color': state.palette.accent || '#007aff',
@@ -362,9 +364,9 @@ function ensureCityOutline() {
         },
       });
     } else {
-      map.setPaintProperty(layerId, 'line-color', state.palette.accent || '#007aff');
+      mapFg.setPaintProperty(layerId, 'line-color', state.palette.accent || '#007aff');
     }
-    map.setLayoutProperty(layerId, 'visibility', state.cityOutline ? 'visible' : 'none');
+    mapFg.setLayoutProperty(layerId, 'visibility', state.cityOutline ? 'visible' : 'none');
   }
 }
 const cityOutlineCb = document.getElementById('cityOutlineToggle');

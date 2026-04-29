@@ -104,7 +104,7 @@ function syncControls() {
   setSelect('titleSize',     state.titleSize     || 'medium');
   setSelect('subtitleStyle', state.subtitleStyle || 'regular');
   setSelect('coordsStyle',   state.coordsStyle   || 'decimal');
-  setSelect('buildingShape', state.buildingShape || 'filled');
+  // buildingShape is now a chip-group — synced via syncChipGroups().
   setSelect('seed',          state.seed || '');
   // Decoration toggles (compass / scale / cityOutline / sun light / etc.)
   // live in the icon-button grid now, synced via syncDecorationGrid().
@@ -161,6 +161,10 @@ function applyState({ silent } = {}) {
   applyZoomDisplay();
   applyFrameOrnaments();
   syncDecorationGrid();
+  // The filter stack module loads after apply.js; the typeof guard keeps
+  // applyState() callable during boot before filters.js evaluates, and
+  // is a no-op once it's defined.
+  if (typeof renderFilters === 'function') renderFilters();
   restyle();
   refreshPOIs();
   renderAnnotations();

@@ -9,7 +9,32 @@
 window.STYLE = (function () {
   const { darken, lighten, haloFor, dashFor } = window.LIB;
 
-  function build(s, fallbackPalette) {
+  // For Photoshop-style per-layer blending we render the map in 3 stacked
+  // MapLibre instances ("bg" / "buildings" / "fg"). Each instance gets a
+  // partial style spec — same source, but only the layers that belong to
+  // its group. group(id) classifies a layer ID into one of these.
+  function group(id) {
+    if (id === 'bg') return 'bg';
+    if (id === 'building' || id === 'building-3d' ||
+        id === 'building-3d-fallback' || id === 'building-outline' ||
+        id === 'building-fallback') return 'buildings';
+    if (id.startsWith('road-') || id === 'rail' ||
+        id === 'path' || id === 'cycleway' || id === 'aerialway' ||
+        id === 'boundary' ||
+        id.startsWith('place-') ||
+        id === 'water-name' || id === 'park-name' ||
+        id === 'street-name' || id === 'peak') return 'fg';
+    return 'bg';
+  }
+
+  // build(s, fallbackPalette, opts?)
+  // opts.group  — optional 'bg' | 'buildings' | 'fg' filter. If set, only
+  //               that group's layers are returned. Drops the canvas
+  //               background-color layer for non-bg groups so those
+  //               instances render on a transparent canvas and stack
+  //               cleanly via CSS.
+  function build(s, fallbackPalette, opts) {
+    const filterGroup = opts && opts.group;
     const layers = [];
     const w = (typeof s.roadWeight === 'number' && s.roadWeight > 0) ? s.roadWeight : 1;
     // Defensive palette: missing/invalid keys fall back to Blueprint's value.
@@ -98,22 +123,32 @@ window.STYLE = (function () {
           } };
       } else {
         const shape = s.buildingShape || 'filled';
+        // strokeOnly: true means "fill is invisible, all the visual lives
+        // in the outline" — we push a separate line layer for those modes
+        // because MapLibre folds fill-outline-color into fill-opacity, so
+        // op:0 hides the outline along with the fill.
         const SHAPE_RECIPES = {
           filled:    { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.20, 14, 0.85, 18, 0.95], outline: darken(p.building, 0.15) },
           outlined:  { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.04, 14, 0.18, 18, 0.22], outline: p.label },
-          wireframe: { color: p.building, op: 0, outline: p.accent },
+          wireframe: { color: p.building, op: 0, outline: p.accent, strokeOnly: true, strokeWidth: 0.6, strokeOpacity: 0.85 },
           ghost:     { color: p.building, op: 0.10, outline: p.building },
           bold:      { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.5, 14, 0.95, 18, 1.0], outline: p.label },
           invert:    { color: p.bg, op: ['interpolate', ['linear'], ['zoom'], 12, 0.3, 14, 0.85, 18, 0.95], outline: p.accent },
           halftone:  { color: p.building, op: ['interpolate', ['linear'], ['zoom'], 12, 0.10, 14, 0.45, 18, 0.55], outline: darken(p.building, 0.20) },
           accent:    { color: p.accent, op: ['interpolate', ['linear'], ['zoom'], 12, 0.20, 14, 0.85, 18, 0.92], outline: darken(p.accent, 0.15) },
-          hairline:  { color: p.building, op: 0, outline: p.label },
+          hairline:  { color: p.building, op: 0, outline: p.label, strokeOnly: true, strokeWidth: 0.4, strokeOpacity: 0.9 },
         };
         const recipe = SHAPE_RECIPES[shape] || SHAPE_RECIPES.filled;
         layers.push({
           id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 12,
           paint: { 'fill-color': recipe.color, 'fill-opacity': recipe.op, 'fill-outline-color': recipe.outline },
         });
+        if (recipe.strokeOnly) {
+          layers.push({
+            id: 'building-outline', type: 'line', source: 'omt', 'source-layer': 'building', minzoom: 12,
+            paint: { 'line-color': recipe.outline, 'line-width': recipe.strokeWidth, 'line-opacity': recipe.strokeOpacity },
+          });
+        }
       }
     }
 
@@ -300,13 +335,17 @@ window.STYLE = (function () {
         paint: { 'text-color': p.label, 'text-halo-color': labelHalo, 'text-halo-width': 1.4 } });
     }
 
+    const finalLayers = filterGroup
+      ? layers.filter(l => group(l.id) === filterGroup)
+      : layers;
+
     return {
       version: 8,
       glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
       sources: { omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' } },
-      layers,
+      layers: finalLayers,
     };
   }
 
-  return { build };
+  return { build, group };
 })();

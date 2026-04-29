@@ -2854,7 +2854,14 @@ document.getElementById('export').addEventListener('click', async () => {
     // canvas matches the html-to-image pixelRatio of the surrounding
     // poster (no more pixelated map on A2/A3/A4/4K exports).
     const capture = async () => {
-      const opts = { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg };
+      // skipFonts: html-to-image otherwise tries to inline @font-face rules
+      // from every stylesheet, including the cross-origin MapLibre CSS at
+      // unpkg. That throws SecurityError on cssRules access, falls back to
+      // fetching the file, then mis-resolves its inline url("data:...")
+      // icon refs as relative paths and 403s — killing the whole export.
+      // The page's only fonts are system fonts + dynamic FontFace uploads,
+      // neither of which the webfont embedder would handle anyway.
+      const opts = { pixelRatio: mul, cacheBust: true, backgroundColor: state.palette.bg, skipFonts: true };
       if (fmt === 'svg') return await htmlToImage.toSvg(node, opts);
       return await htmlToImage.toPng(node, opts);
     };

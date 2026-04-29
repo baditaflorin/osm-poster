@@ -912,6 +912,118 @@ Reorganized to match the visual language of the Layers grid:
 
 ---
 
+## ADR-058 — Sidebar information architecture: 4 × 3-4 panels
+
+**Context.** The sidebar had grown into 3 top-level categories with
+sub-section counts of 2 / 10 / 6. The Style category alone shipped
+ten panels (Templates, Palettes, Layers, Map icons, Custom colors,
+Map style, Frame, Effects, Filter stack, Decorations). Users
+reported "too many things split across too many places, hard to
+find anything"; the Effects panel in particular was a junk drawer
+holding road effects, color filters, title typography, and mask
+shapes all in one body.
+
+**Decision.** Four top-level categories, each with 3-4 sub-panels
+grouped by *user intent* rather than by which subsystem owns the
+state. Mapping from old → new:
+
+| New panel | Pulled from |
+|---|---|
+| 📍 **Place** → Search · View · GPX route | Place + GPX moved out of Compose |
+| 🎨 **Style** → Templates · Palette · Layers · Map style | merged Palettes + Custom colors; folded road effects (casing, glow) into Map style |
+| ✨ **Effects** → Filter stack · Map filters · Decorations & mask · Map icons | split the old Effects junk drawer; kept Filter stack as its own panel because it grows unbounded |
+| 📐 **Compose** → Caption · Frame · Pins · Commemorative | merged Annotations + Polaroids → Pins; folded Aspect ratio into Frame; moved title ornament / caption divider / spacing into Caption (typography belongs with the rest of caption typography) |
+
+Two panels became unified: *Palettes + Custom colors* → **Palette**
+and *Annotations + Polaroids* → **Pins**. Three panels were
+relocated to the category whose mental model fit them: *GPX route*
+to Place, *Aspect ratio* to Frame, *title ornament/divider/spacing*
+to Caption.
+
+**Consequences.** Sub-panel count dropped from 18 to 15, but the
+real win is the cap of 4 per top-level — the eye can reliably scan
+4 in one pass. Existing IDs and JS handlers were preserved, so the
+only code touched was the HTML scaffolding plus a few `<select>`
+removals (see ADR-059).
+
+---
+
+## ADR-059 — Native `<select>` retirement for short option lists
+
+**Context.** Short dropdowns (titleWeight, titleSize, subtitleStyle,
+coordsStyle, labelFont, compassStyle, plus a few already-migrated
+ones like roadStyle and buildingShape) felt out of place next to
+the chip-groups everywhere else. A native `<select>` requires two
+clicks to change a value (open menu → pick) versus one tap on a
+chip; it also fights the visual rhythm of the modernised sidebar.
+
+**Decision.** Any option list of ~6 items or fewer migrates from
+`<select><option>...</option></select>` to a `.chip-group` with
+`data-chip-key` + `data-options='[[value, label], ...]'`. The
+`initChipGroups()` machinery in `js/dials.js` already handles
+state-write + history + persist + per-key post-apply hook (via
+`CHIP_AFTER`); the migrations just register their post-apply
+function (e.g. `titleSize → applyTypography`) and a default value
+in `_chipDefaults`. The corresponding `<select>` change listeners
+in `js/ui.js` and `setSelect(...)` calls in `js/apply.js` were
+deleted — the chip-group machinery covers both directions.
+
+Selects intentionally **kept** native:
+
+- `mapMask` (7 options including a "Custom upload" path)
+- `todTint` (7 options with long descriptive labels)
+- `exportFormat` / `exportSize` (deliberately understated, separate
+  from the styling controls)
+
+Their visual chrome got a custom chevron and a softer surface so
+they read as part of the same design system without us having to
+build a custom dropdown component.
+
+**Consequences.** One tap to change weight/size/font, no native
+dropdown chrome blinking onto the page, and one less code path
+keeping the UI in sync with state (chip-groups self-sync via
+`syncChipGroups()` from any `applyState()`). Adding a new chip-group
+elsewhere is now: *write the HTML* — that's it.
+
+---
+
+## ADR-060 — Mobile-first sidebar: 44px tap targets, no iOS zoom
+
+**Context.** The existing `@media (max-width: 800px)` rules
+collapsed the sidebar to a stacked top section, but tap targets
+varied (some buttons were 38px tall, sliders had no min-height),
+text inputs were ~14px which triggers iOS Safari's auto-zoom on
+focus, and the disclose buttons used the same metrics as desktop
+which made hierarchy hard to scan on a phone.
+
+**Decision.** Single mobile breakpoint at 800px hardens the
+responsive pass:
+
+- Every interactive control gets `min-height: 44px` (Apple HIG)
+  including sliders' parent rows, toggles, frame chips, marker
+  buttons, the export button, and selects
+- Disclose buttons are sized differently per nesting level
+  (major: 64px / sub: 52px) so the IA hierarchy stays visible
+  even when text gets larger
+- All text inputs use `font-size: 16px` — iOS Safari only
+  auto-zooms on focus when the input is **smaller** than 16px
+- Selects keep their custom chevron at 36px right padding so
+  the value text doesn't visually collide with the icon
+- Cities pills bump from 26px to 36px height to be tappable
+  without precision
+
+Plus the always-on rules: chip-groups, layer-buttons, palette
+swatches, and template cards already have 44px+ tap targets so no
+mobile-specific override is needed for them.
+
+**Consequences.** The same HTML works for desktop and mobile;
+the 800px breakpoint is the only customization point. Any new
+controls following the existing visual language (chip / layer-btn /
+toggle / select with `aside select`) automatically pick up the
+mobile metrics.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).

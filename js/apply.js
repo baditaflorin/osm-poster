@@ -35,10 +35,9 @@ function applyCompass() {
   c.classList.toggle('hidden', !state.compass);
   c.style.color = state.palette.label;
   c.innerHTML = COMPASS_VARIANTS[state.compassStyle] || COMPASS_VARIANTS.classic;
-  // Legacy compassToggle checkbox no longer exists — Decoration grid
-  // button is synced via syncDecorationGrid() instead.
-  const sel = document.getElementById('compassStyle');
-  if (sel) sel.value = state.compassStyle || 'classic';
+  // Legacy compassToggle checkbox + compassStyle <select> no longer
+  // exist — the Decoration grid button + chip-group are synced via
+  // syncDecorationGrid() and syncChipGroups() respectively.
 }
 
 function applyDateStamp() {
@@ -97,15 +96,12 @@ function syncControls() {
   // Chip-grouped dials (roadStyle, roadCaps, labelCase, parkOpacity,
   // roofTone, border, texture, cardShadow, vignette, titleOrnament,
   // captionDivider) are synced by syncChipGroups() — see syncStyleDials.
-  // Plain selects still in syncControls below.
+  // ADR-059 — labelFont / titleWeight / titleSize / subtitleStyle /
+  // coordsStyle / buildingShape are chip-groups now, synced by
+  // syncChipGroups(). Only true-text inputs and the few remaining
+  // selects (mapMask, todTint, exportFormat, exportSize) need setSelect.
   const setSelect = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  setSelect('labelFont',     state.labelFont);
-  setSelect('titleWeight',   state.titleWeight   || 'bold');
-  setSelect('titleSize',     state.titleSize     || 'medium');
-  setSelect('subtitleStyle', state.subtitleStyle || 'regular');
-  setSelect('coordsStyle',   state.coordsStyle   || 'decimal');
-  // buildingShape is now a chip-group — synced via syncChipGroups().
-  setSelect('seed',          state.seed || '');
+  setSelect('seed', state.seed || '');
   // Decoration toggles (compass / scale / cityOutline / sun light / etc.)
   // live in the icon-button grid now, synced via syncDecorationGrid().
   const bl = document.getElementById('bleedToggle');       if (bl) bl.checked = !!state.exportBleed;

@@ -273,6 +273,11 @@ function applyCardShadow() {
 
 // Per-key effect after a chip is clicked. Default = restyle the map.
 // Keys with CSS-only effects skip the map restyle entirely.
+//
+// ADR-059 — Caption typography (titleWeight/titleSize/subtitle/coords),
+// label font, and compass style migrated from <select> to chip-group;
+// each routes through here to its existing apply* function so the
+// downstream code paths are unchanged.
 const CHIP_AFTER = {
   border:         () => applyBorder(),
   texture:        () => applyTexture(),
@@ -280,6 +285,21 @@ const CHIP_AFTER = {
   vignette:       () => applyVignette(),
   titleOrnament:  () => applyTitleOrnament(),
   captionDivider: () => applyCaptionDivider(),
+  titleWeight:    () => applyTypography(),
+  titleSize:      () => applyTypography(),
+  subtitleStyle:  () => applyTypography(),
+  coordsStyle:    () => {
+    applyTypography();
+    // Coords text uses the new format immediately; recompute from the
+    // map's current center.
+    try {
+      const c = map.getCenter();
+      const el = document.getElementById('caption-coords');
+      if (el) el.textContent = formatCoords(c.lat, c.lng);
+    } catch (_) {}
+  },
+  compassStyle:   () => applyCompass(),
+  // labelFont is rendered by MapLibre — needs a full restyle (default).
 };
 
 const _chipDefaults = {
@@ -288,6 +308,10 @@ const _chipDefaults = {
   border: 'none', texture: 'none', cardShadow: 'soft',
   vignette: 'none', titleOrnament: 'none', captionDivider: 'line',
   buildingShape: 'filled',
+  titleWeight: 'bold', titleSize: 'medium',
+  subtitleStyle: 'regular', coordsStyle: 'decimal',
+  labelFont: 'Noto Sans Regular',
+  compassStyle: 'classic',
 };
 
 function initChipGroups() {

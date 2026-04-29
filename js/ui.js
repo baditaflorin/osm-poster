@@ -150,21 +150,11 @@ rw.addEventListener('input', () => {
   restyle(); persist();
 });
 
-// roadStyle, border, texture moved to chip-group machinery (initChipGroups).
-// labelFont stays as a select (4 named font options, too textual for chips).
-document.getElementById('labelFont').addEventListener('change', e => { pushHistory(); state.labelFont = e.target.value; restyle(); persist(); });
-document.getElementById('titleWeight').addEventListener('change', e => { pushHistory(); state.titleWeight = e.target.value; applyTypography(); persist(); });
-document.getElementById('titleSize').addEventListener('change', e => { pushHistory(); state.titleSize = e.target.value; applyTypography(); persist(); });
-document.getElementById('subtitleStyle').addEventListener('change', e => { pushHistory(); state.subtitleStyle = e.target.value; applyTypography(); persist(); });
-document.getElementById('coordsStyle').addEventListener('change', e => {
-  pushHistory();
-  state.coordsStyle = e.target.value;
-  applyTypography();
-  // refresh display with new format
-  const c = map.getCenter();
-  document.getElementById('caption-coords').textContent = formatCoords(c.lat, c.lng);
-  persist();
-});
+// roadStyle, border, texture, plus the new ADR-059 migrations
+// (labelFont, titleWeight, titleSize, subtitleStyle, coordsStyle,
+// compassStyle) all flow through the chip-group machinery in dials.js.
+// Per-key post-apply hooks live in CHIP_AFTER there. No native <select>
+// change listeners here anymore.
 
 // Randomize style — picks a random value for every style dial.
 const STYLE_OPTIONS = {
@@ -196,9 +186,7 @@ document.getElementById('randomizeStyleBtn').addEventListener('click', safe(() =
 // grid via DECO_HANDLERS. The legacy checkbox handlers were removed — they
 // referenced elements that no longer exist. bindEl (from LIB) makes any
 // future "missing element" no-op silently instead of throwing.
-bindEl('compassStyle', 'change', safe(e => {
-  pushHistory(); state.compassStyle = e.target.value; applyCompass(); persist();
-}, 'compassStyle'));
+// compassStyle is a chip-group now (ADR-059); see CHIP_AFTER in dials.js.
 
 // Road-mode buttons in the Place panel — Off / Simple / Detailed
 document.querySelectorAll('button[data-roads]').forEach(btn => {

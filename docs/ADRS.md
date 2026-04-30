@@ -2083,9 +2083,370 @@ Desktop users never see them.
 
 ---
 
+# Menu unification: concentrate the surface, calm the UI
+
+After 120 ADRs the sidebar holds a lot. The user's request: "make
+this a united experience — changes to the menu, unifying it, more
+concentrated but easy to read, more intuitive". These 20 ADRs are
+exclusively about the *sidebar surface itself* — no new features,
+no new map effects. The job is to reduce visual chrome, regularise
+rhythm, hide what's seldom used, and give the user a quieter,
+calmer surface to work in.
+
+---
+
+## ADR-121 — Single-open sub-panels (auto-collapse siblings)
+
+**Context.** Users open multiple `.disclose-sub` panels at once and
+end up scrolling a long, deeply-nested column. Most editing flows
+only touch one sub at a time.
+
+**Decision.** When a sub-panel opens, every other sub-panel inside
+the same `.disclose-major` auto-collapses. The major itself can hold
+exactly one open sub at a time (the "active" one). Cmd-click opens
+without auto-collapsing for power users who want side-by-side.
+
+**Consequences.** The sidebar becomes browseable in chunks rather
+than a single 2000px scroll. Click cost up by one for users who
+were juggling two panels.
+
+---
+
+## ADR-122 — Compact mode toggle
+
+**Context.** Sub-panel headers carry a `.disclose-title` + a
+`.disclose-desc` + occasionally a `.sec-hint`. For users who know
+the app, all that descriptive text is noise.
+
+**Decision.** New header toggle "▾ Compact". When on:
+hide every `.disclose-desc`, hide every `.sec-hint`, and reduce
+sub-panel header height to ~36px. Stored in localStorage so power
+users land in compact every session.
+
+**Consequences.** ~30% vertical reduction for veterans. Newcomers
+still get the full-text guidance by default.
+
+---
+
+## ADR-123 — Power-user "Advanced" disclosure
+
+**Context.** Some sub-panels are seldom-touched: Commemorative,
+GPX route, Map icons (POI), Pins, Batch render, Export profiles.
+They take vertical space alongside the daily-use panels.
+
+**Decision.** Group rarely-used subs under a single
+"⚙ Advanced" disclosure inside each major (or as a 5th major), all
+collapsed by default. Heuristic for "rarely used": low click rate
+during onboarding usability tests; documented per-sub in the source.
+A user-configurable list in localStorage lets power users pin items
+in/out of Advanced.
+
+**Consequences.** The sidebar shows ~60% less by default; the
+features stay one click away.
+
+---
+
+## ADR-124 — Caption panel split
+
+**Context.** Caption is the densest sub-panel by far: 3 text inputs
++ 6 typography chip-groups + 1 ornament + 1 divider + 1 spacing
+slider + 1 font drop-zone. Scrolling a single panel that long is
+friction.
+
+**Decision.** Split into three siblings under Compose:
+- **Caption — Text** (title / subtitle / tagline / watermark)
+- **Caption — Typography** (typography preset + 6 chip-groups + spacing)
+- **Caption — Decoration** (ornament + divider + custom font)
+
+Existing IDs and handlers unchanged; only the parent panels move.
+
+**Consequences.** Each sub-panel is 1/3 the height. Easier to
+locate.
+
+---
+
+## ADR-125 — Top action toolbar
+
+**Context.** "Randomize", "Cycle templates", and "Export" each live
+in different panels. They're the three most-frequent actions yet
+require expanding a panel each time. The mobile FAB pattern (ADR-120)
+already proved their primacy.
+
+**Decision.** A horizontal toolbar pinned just below the search box,
+visible at all viewport widths: 🎲 Randomize · 🔄 Cycle · ⬇ Export
+· ⌘K. Same handlers as the existing buttons. The mobile FABs
+duplicate it for thumb-reachability, not as a different control.
+
+**Consequences.** Three of the most-common actions are always one
+click away regardless of scroll position.
+
+---
+
+## ADR-126 — Per-panel primary action
+
+**Context.** Some panels have multiple buttons of equivalent visual
+weight (Reset preset · Randomize · Reset section in Palette).
+Newcomers don't know which one is "the action".
+
+**Decision.** Each sub-panel that has actions designates ONE as
+primary. Visual treatment: filled accent button, larger size,
+positioned at the bottom of the body. Secondary actions become
+icon-only buttons at the top-right of the body. Examples:
+- Templates → primary "Apply random template"
+- Palette → primary "Randomize palette"
+- Pins → primary "Drop a pin"
+- Batch render → primary "Render all"
+
+**Consequences.** The "main thing this panel does" is unambiguous.
+
+---
+
+## ADR-127 — Footer link consolidation
+
+**Context.** Footer carries 4 lines: author, source/license, OSM
+attribution, OpenFreeMap, version badge. That's a lot of text for
+a sidebar bottom.
+
+**Decision.** Collapse to two lines:
+- Line 1: `Florin Badita · ☕ Coffee · MIT · Source · v 7-char`
+- Line 2: `Map data © OSM · Tiles © OpenFreeMap`
+
+Hover/click any meta link expands a small popover with details
+(full version, license terms, attribution links). Pure CSS popover.
+
+**Consequences.** Footer feels "signed off" rather than chatty.
+
+---
+
+## ADR-128 — Settings vs theme separation
+
+**Context.** localStorage holds:
+- `osm-poster:last` (state — visual + behavioural mixed)
+- `osm-poster:favs` (favourites)
+- `osm-poster:profiles` (export profiles)
+- `osm-poster:visited` (onboarding flag)
+- `osm-poster:recent-templates` (recent list)
+
+Some entries are *behavioural preferences* (compactMode, scaleLocked,
+edgeFade) that the user wants always-on regardless of which theme
+is loaded. Today they're inside theme state.
+
+**Decision.** Introduce a separate `osm-poster:settings` localStorage
+key for behavioural preferences. State entries that apply
+"globally to me" (compactMode, scaleLocked, autoLegend, autoSave
+shown, geolocation prompted) move there. Theme state shrinks to
+just the visual recipe.
+
+**Consequences.** Switching themes / loading a share URL no longer
+flips your behavioural prefs. Cleaner mental model.
+
+---
+
+## ADR-129 — Iconography unification
+
+**Context.** Current sidebar mixes:
+- Apple-system emoji (🎨 🔎 🥾)
+- Text-art chars (⏐, ━, ┄, ╋)
+- Geometric symbols (◎, ⊙, ❉, ✚)
+
+The mix reads as visually noisy.
+
+**Decision.** Pick ONE family per content tier:
+- **Major panel headers**: Apple emoji (📍 🎨 ✨ 📐) — already correct
+- **Sub-panel headers**: Apple emoji (smaller, 14px) — convert ⏐ → 🚆 etc.
+- **Chip labels**: short text only, NO icon. Chips are tight; the
+  icon was decorative not informative
+- **Slider rows / toggles**: text label only
+
+Audit pass through index.html replacing chip-icons with plain text.
+
+**Consequences.** Calmer surface. Chips become legible at a glance.
+Icons reserved for headers where they signal section, not for
+controls.
+
+---
+
+## ADR-130 — Visual weight reduction
+
+**Context.** Borders are 1.5px on layer-buttons, 1px on chips, the
+shadow stack is heavy on cards. Adds up to a busy surface.
+
+**Decision.** Across the board: borders down to 1px (or 0.5px on
+high-DPI), shadow opacity ÷2 except for the central poster card,
+accent colours dimmed by 15% in the sidebar (kept at full saturation
+in the poster itself). Applied via CSS variable changes to `--sh-sm`,
+`--sh-md`, and the input-stroke / accent values.
+
+**Consequences.** Sidebar reads like a designer mood-board, not a
+form. Map preview pops more by contrast.
+
+---
+
+## ADR-131 — Section header standard
+
+**Context.** `.sub-title` styling varies: some have inline emoji,
+some have `.sec-hint`, some have help dots, some have a sub-section
+divider above them. No single rule.
+
+**Decision.** All `.sub-title` follow one shape:
+```
+[icon · 12px text] · [optional 10px sec-hint pushed right] · [(?) help]
+```
+With a 16px top margin and 6px bottom margin. Help dot always lives
+at the right edge, never inline in the title text. Codify via a
+single CSS rule and audit existing markup.
+
+**Consequences.** Predictable visual rhythm. Any new sub-title
+falls into the standard automatically.
+
+---
+
+## ADR-132 — Density rhythm via design tokens
+
+**Context.** Vertical spacing varies: 4px / 6px / 8px / 10px / 12px /
+14px appear at random in the sidebar. The eye senses inconsistency
+even if it can't name it.
+
+**Decision.** Lock vertical spacing to a 4-step rhythm:
+`--gap-xs: 4px`, `--gap-s: 8px`, `--gap-m: 12px`, `--gap-l: 16px`.
+Audit every `margin-top` / `margin-bottom` in CSS — round to the
+nearest token. Inline-styled margins in HTML get the same treatment.
+
+**Consequences.** The sidebar feels musically-tuned. Small effect
+each, big effect together.
+
+---
+
+## ADR-133 — Help drawer per major panel
+
+**Context.** ADR-103 (?) help dots are scattered through sub-titles.
+A user wanting "the full guide to Effects" has to click 5 dots.
+
+**Decision.** Each major panel header gets a `?` icon at the right.
+Click → a side drawer (or modal) showing all help entries for that
+major collected together. Existing per-section dots stay (good for
+contextual lookup).
+
+**Consequences.** Holistic explanation when needed; quick lookup
+when not.
+
+---
+
+## ADR-134 — Conditional dial visibility
+
+**Context.** Some controls only do anything when their precondition
+is met: Sun light needs Tilt > 0; Building shadow needs buildings
+visible; Sun arrow shows nothing without a real sun position. Today
+they sit fully active alongside controls that DO matter, confusing
+the user when toggling does nothing.
+
+**Decision.** Add a "preconditions" map. When a precondition isn't
+met, the control gets `class="dial-disabled"` (opacity 0.4 + a small
+"⚠ requires X" tooltip on hover). Click is still allowed; the
+control just signals that it's currently inert.
+
+**Consequences.** No more "I clicked sun light and nothing
+happened" — the UI tells you why.
+
+---
+
+## ADR-135 — Sticky sub-panel header on scroll
+
+**Context.** When a tall sub-panel (Caption, Map style) is open
+and the user scrolls inside the sidebar, the panel's title scrolls
+out of view. Users lose track of which panel they're in.
+
+**Decision.** `.disclose-sub.open > .disclose-btn` gets
+`position: sticky; top: 0` so the header stays visible as the body
+scrolls underneath. Plus a subtle backdrop blur so content
+underneath shows through.
+
+**Consequences.** Constant orientation. Free benefit: the sticky
+header doubles as a quick "close/collapse" affordance.
+
+---
+
+## ADR-136 — Onboarding progress indicator
+
+**Context.** The first-visit toast (ADR-020) is one-shot. There's
+no continued guidance for the sequence "explore the 4 categories
+in order".
+
+**Decision.** Each major panel header gets a tiny "1/4" / "2/4"
+badge during the first 5 sessions (gated by a session counter in
+localStorage). Click flips to "explored". Once all 4 are explored,
+the badges retire forever.
+
+**Consequences.** Nudges first-week users through the IA without a
+modal tutorial.
+
+---
+
+## ADR-137 — Library panel (full ADR-106 follow-through)
+
+**Context.** ADR-106 was deferred because of migration risk; ADR-108
+gave partial credit (visual unification of card patterns). Time to
+finish the structural unification.
+
+**Decision.** Single "📚 Library" sub-panel under Compose holding
+all three lists (Favourites · Profiles · Themes) with a chip-group
+filter at the top. Migration is automatic: read all three legacy LS
+keys, write a unified `osm-poster:library`. Backwards-compat by
+also re-writing the legacy keys until ADR-141.
+
+**Consequences.** One mental model for "stuff I've saved".
+
+---
+
+## ADR-138 — Mobile drawer pattern
+
+**Context.** Today's mobile breakpoint stacks the sidebar above the
+map. Both compete for vertical space, neither feels primary.
+
+**Decision.** At <800px, the sidebar becomes an off-canvas drawer
+that slides in from the left when a hamburger button is tapped. The
+map fills the viewport otherwise. Floating action buttons (ADR-120)
+stay visible. Drawer dismisses on map tap.
+
+**Consequences.** Phone gets a "real app" feel. Tablets keep the
+side-by-side because they have horizontal room.
+
+---
+
+## ADR-139 — Quiet mode
+
+**Context.** A user mid-design wants the sidebar to fade so they
+can stare at the poster. Today's only option is `F` (full-screen),
+which hides the sidebar entirely.
+
+**Decision.** A "🌫 Quiet" toggle that dims the entire sidebar to
+40% opacity, keeps it interactive on hover (hover restores 100%).
+Pure CSS opacity transition. The poster card stays full intensity.
+
+**Consequences.** Designer-flow: stare at the work, peek at the
+controls when needed.
+
+---
+
+## ADR-140 — Tab-style top categories
+
+**Context.** The 4 major panels are stacked vertically and only one
+is usually relevant at a time. Vertical accordion forces the user
+to scroll past collapsed siblings. A tab pattern would render only
+the active major.
+
+**Decision.** Replace the 4 stacked `.disclose-major` accordion
+buttons with a horizontal tab bar at the top of the sidebar:
+[📍 Place] [🎨 Style] [✨ Effects] [📐 Compose]. Below the bar,
+only the active major's body renders. Number-key shortcuts (ADR-105)
+become tab-switches.
+
+**Consequences.** ~50% less wasted vertical space. The whole IA
+feels like one app, not four loosely-grouped lists.
+
+---
 
 
-1, 2, 18 — state/persistence/quick wins (foundation).
 3, 4, 7, 14 — decorative overlays (visual upgrade).
 5, 6, 8, 9, 10 — interactive content (the soul of the app).
 11, 12, 13 — export polish.

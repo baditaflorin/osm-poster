@@ -568,8 +568,19 @@ searchEl.addEventListener('input', () => {
           const it = items[+el.dataset.i];
           pushHistory();
           if (it.boundingbox) {
+            // ADR-078 — pick a sensible visible distance from the
+            // bbox diagonal, clamped 2..20 km. Tokyo's bbox might be
+            // 25 km across (too zoomed-out for a poster); a tiny
+            // village's might be 0.4 km (too tight). The scaling
+            // factor (0.6) leaves comfortable margins around the
+            // place outline.
             const [s, n, w, e] = it.boundingbox.map(Number);
-            map.fitBounds([[w, s], [e, n]], { padding: 30 });
+            const latMid = (s + n) / 2;
+            const wKm = Math.abs((e - w) * 111.32 * Math.cos(latMid * Math.PI / 180));
+            const hKm = Math.abs((n - s) * 110.574);
+            const targetKm = Math.max(2, Math.min(20, Math.max(wKm, hKm) * 0.6));
+            const z = _zoomFromDistance(targetKm);
+            map.flyTo({ center: [+it.lon, +it.lat], zoom: z });
           } else {
             map.flyTo({ center: [+it.lon, +it.lat], zoom: 13 });
           }

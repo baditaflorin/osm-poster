@@ -55,10 +55,46 @@ document.getElementById('helpModal').addEventListener('click', e => { if (e.targ
 // used by the POI overlay above.)
 
 // =====================================================================
-// ADR-020: Onboarding hint
+// ADR-020: Onboarding hint  +  ADR-080: "Try a beautiful start"
 // =====================================================================
+// ADR-080 — first-impression flow. The starter picks a tasteful
+// template + a well-known city at a sensible scale. Each pick is
+// stable per-load so the user gets a consistent first impression
+// rather than a random throw of the dice. Cycles through 3 looks
+// so reloading shows variety.
+const _GOOD_START_LOOKS = [
+  { template: 'editorial',  city: 'PARIS',    coord: [2.3522, 48.8566],   km: 6 },
+  { template: 'watercolor', city: 'TOKYO',    coord: [139.6503, 35.6762], km: 8 },
+  { template: 'travelGuide',city: 'NEW YORK', coord: [-74.0060, 40.7128], km: 6 },
+];
+function applyGoodStart() {
+  const idx = Math.floor(Math.random() * _GOOD_START_LOOKS.length);
+  const pick = _GOOD_START_LOOKS[idx];
+  pushHistory();
+  // Apply template (palette + frame + texture etc.) — same path the
+  // template-card click handler uses.
+  state.preset = pick.template;
+  Object.assign(state, clonePreset(pick.template));
+  // Move the camera to the picked city at the picked scale.
+  const z = (typeof _zoomFromDistance === 'function')
+    ? _zoomFromDistance(pick.km) : 12;
+  map.flyTo({ center: pick.coord, zoom: z, bearing: 0, pitch: 0, duration: 1200 });
+  state.caption.title = pick.city;
+  document.getElementById('title').value = pick.city;
+  document.getElementById('caption-title').textContent = pick.city;
+  applyState();
+  persist();
+}
+
 window.addEventListener('load', () => {
   try {
+    const goodBtn = document.getElementById('goodStartBtn');
+    if (goodBtn) goodBtn.addEventListener('click', () => {
+      applyGoodStart();
+      const t = document.getElementById('onboardToast');
+      if (t) t.classList.remove('show');
+      try { localStorage.setItem(LS_VISITED, '1'); } catch (_) {}
+    });
     if (!localStorage.getItem(LS_VISITED)) {
       const t = document.getElementById('onboardToast');
       t.classList.add('show');

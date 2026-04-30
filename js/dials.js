@@ -137,9 +137,34 @@ applyMapFilters = function() {
   if (h !== 0)   parts.push(`hue-rotate(${h}deg)`);
   let tod = state.tod;
   if (tod === 'auto') {
-    const lng = (state.view && state.view.center && state.view.center[0]) || 0;
-    const hour = ((new Date().getUTCHours() + (lng / 15)) % 24 + 24) % 24;
-    tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
+    // ADR-069 — pick the band from real solar altitude rather than
+    // local-time hour brackets. SunCalc is already loaded for sun
+    // lighting; reuse it for an astronomically-accurate auto TOD.
+    // Falls back to hour-bracket math if SunCalc isn't available.
+    const center = (state.view && state.view.center) || [0, 0];
+    if (window.SunCalc) {
+      try {
+        const pos = SunCalc.getPosition(new Date(), center[1], center[0]);
+        const alt = pos.altitude * 180 / Math.PI;
+        if      (alt < -6)  tod = 'night';
+        else if (alt < 0)   tod = 'dusk';   // also covers dawn — civil twilight is symmetric, palette differs by minimum minute-distance to dawn vs dusk
+        else if (alt < 8)   tod = 'golden';
+        else if (alt < 30)  tod = 'day';
+        else                tod = 'day';
+        // Disambiguate dusk vs dawn: dawn = altitude rising, dusk =
+        // altitude falling. Sample +5 min ahead and compare.
+        if (tod === 'dusk') {
+          const future = SunCalc.getPosition(new Date(Date.now() + 5 * 60 * 1000), center[1], center[0]);
+          if (future.altitude > pos.altitude) tod = 'dawn';
+        }
+      } catch (_) {
+        const hour = ((new Date().getUTCHours() + (center[0] / 15)) % 24 + 24) % 24;
+        tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
+      }
+    } else {
+      const hour = ((new Date().getUTCHours() + (center[0] / 15)) % 24 + 24) % 24;
+      tod = hour >= 5 && hour < 7 ? 'dawn' : hour < 17 ? 'day' : hour < 19 ? 'golden' : hour < 21 ? 'dusk' : 'night';
+    }
   }
   if (TOD_FILTERS[tod]) parts.unshift(TOD_FILTERS[tod]);
   // SVG filter chain — applied LAST so the saturation/contrast/hue

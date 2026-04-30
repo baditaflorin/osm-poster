@@ -220,6 +220,39 @@ if (bleedToggleEl) bleedToggleEl.addEventListener('change', e => {
   state.exportBleed = e.target.checked; persist();
 });
 
+// ADR-071 — Tile prefetch / cache warming. On click, briefly bump every
+// map's pixelRatio to the configured export ratio, wait for them to
+// idle (so all tiles for that resolution land in MapLibre's cache),
+// then restore. The next Download click captures from the warm cache
+// → no tile-loss flicker, faster export. Wrapped in safeAsync so a
+// flaky GL context doesn't take the button out.
+const warmBtn = document.getElementById('warmCacheBtn');
+if (warmBtn) warmBtn.addEventListener('click', safe(async () => {
+  const original = warmBtn.textContent;
+  warmBtn.textContent = '⏳ Warming…';
+  warmBtn.disabled = true;
+  try {
+    const sz = document.getElementById('exportSize').value;
+    const baseMul = SIZE_PRESETS[sz]?.mul || 4;
+    const dpi = state.exportDpi || 'auto';
+    const targetRatio = (dpi === 'auto' || !Number.isFinite(+dpi))
+      ? baseMul
+      : Math.max(1, Math.min(8, (+dpi) / 96));
+    // Re-use the same ladder; pass a no-op capture that just gives every
+    // map a chance to render a frame at the target resolution.
+    await withMapAtPixelRatio(targetRatio, async () => {
+      await new Promise(r => setTimeout(r, 300));
+      return null;
+    });
+    warmBtn.textContent = '✓ Warmed';
+    setTimeout(() => { warmBtn.textContent = original; warmBtn.disabled = false; }, 1200);
+  } catch (e) {
+    console.warn('[warm] failed', e);
+    warmBtn.textContent = original;
+    warmBtn.disabled = false;
+  }
+}, 'warmCache'));
+
 // htmlToImage.toSvg returns a data URL whose payload is URI-encoded
 // (data:image/svg+xml;charset=utf-8,<percent-encoded-svg>). The earlier
 // download() blindly called atob() on the payload — which only works for

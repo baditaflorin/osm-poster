@@ -53,6 +53,19 @@ function cyclePreset(dir) {
   const next = PRESET_KEYS[(i + dir + PRESET_KEYS.length) % PRESET_KEYS.length];
   selectPreset(next);
 }
+// ADR-067 — "Cycle templates" button. Walks ONLY the full templates
+// (skipping plain palette presets) so each click is a meaningful
+// look-change, not a tiny color shift. Same code path as the [/]
+// keyboard shortcuts but constrained to the template subset.
+function cycleTemplate(dir) {
+  const tplKeys = PRESET_KEYS.filter(k => PRESETS[k].isTemplate);
+  if (!tplKeys.length) return;
+  const i = tplKeys.indexOf(state.preset);
+  // If currently on a non-template preset, start at the beginning.
+  const next = i < 0 ? tplKeys[0] : tplKeys[(i + (dir || 1) + tplKeys.length) % tplKeys.length];
+  selectPreset(next);
+}
+bindEl('cycleTemplatesBtn', 'click', safe(() => cycleTemplate(1), 'cycleTemplate'));
 
 const citiesEl = document.getElementById('cities');
 CITIES.forEach(c => {
@@ -311,6 +324,34 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
     refreshPOIs();
     persist();
   }, 'iconDensity'));
+
+  // ADR-070 — per-category density panel. Renders one row per
+  // ICON_CATEGORY with a 0..50 slider; -1 (the leftmost) means "use the
+  // global Max". State at state.icons.densities[key] = number | undefined.
+  const densHost = document.getElementById('iconCatDensities');
+  if (densHost) {
+    if (!state.icons.densities) state.icons.densities = {};
+    densHost.innerHTML = ICON_CATEGORIES.map(cat => `
+      <div class="row" style="margin-bottom: 4px;">
+        <label style="font-size: 11.5px; min-width: 64px;">${cat.icon} ${cat.label}</label>
+        <input type="range" data-poi-cat="${cat.key}" min="0" max="50" step="1" value="${state.icons.densities[cat.key] ?? 0}">
+        <span class="val" data-poi-cat-val="${cat.key}">${state.icons.densities[cat.key] == null ? 'auto' : state.icons.densities[cat.key]}</span>
+      </div>
+    `).join('');
+    densHost.addEventListener('input', safe(e => {
+      const slider = e.target.closest('input[data-poi-cat]');
+      if (!slider) return;
+      const key = slider.dataset.poiCat;
+      const v = parseInt(slider.value, 10);
+      // 0 = "auto / fall back to global cap"; >0 = explicit per-cat cap.
+      if (v === 0) delete state.icons.densities[key];
+      else         state.icons.densities[key] = v;
+      const valEl = densHost.querySelector(`span[data-poi-cat-val="${key}"]`);
+      if (valEl) valEl.textContent = (v === 0) ? 'auto' : v;
+      refreshPOIs();
+      persist();
+    }, 'iconCatDensity'));
+  }
 
   // Master on/off — flip every category at once. Each click pushes a single
   // history entry, syncs every category button's .active class, then re-runs

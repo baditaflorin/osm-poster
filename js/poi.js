@@ -116,6 +116,16 @@ function refreshPOIs() {
     const cats = state.icons.categories;
     const cap  = state.icons.density || 25;
     const size = state.icons.size    || 30;
+    // ADR-070 — per-category density override. perCatCaps[key] = how many
+    // POIs of that category are allowed before we skip the rest. Missing
+    // keys (or 'auto') fall back to the global cap so old saved posters
+    // still respect the original single-slider behaviour.
+    const densities = (state.icons.densities) || {};
+    const catCap = (key) => {
+      const v = densities[key];
+      return (typeof v === 'number' && v >= 0) ? v : cap;
+    };
+    const perCatPicked = {};
     const inner = Math.round(size * 0.6);
 
     // Theme-aware marker chip — derive from active palette so the icons
@@ -142,8 +152,13 @@ function refreshPOIs() {
       const key = name + '|' + coord.join(',');
       if (seen.has(key)) continue;
       seen.add(key);
+      // Honour per-category cap first (ADR-070), then total cap as a
+      // safety net so a generous per-cat dial can't run away.
+      const seenCat = perCatPicked[cat.key] || 0;
+      if (seenCat >= catCap(cat.key)) continue;
+      perCatPicked[cat.key] = seenCat + 1;
       picks.push({ name, coord, props: f.properties, cat });
-      if (picks.length >= cap) break;
+      if (picks.length >= cap * 4) break;   // hard ceiling at 4x global cap
     }
 
     for (const f of picks) {

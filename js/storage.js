@@ -218,3 +218,123 @@ if (themeImportInput) themeImportInput.addEventListener('change', e => {
   if (f) themeImport(f);
   e.target.value = ''; // allow re-importing the same file
 });
+
+// --- ADR-075 — URL batch export ------------------------------------
+// Paste a list of share URLs, render each at the current export
+// settings, bundle into a ZIP. Lazy-loads JSZip the first time.
+let _jszipPromise;
+function _loadJsZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  if (_jszipPromise) return _jszipPromise;
+  _jszipPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js';
+    s.onload  = () => resolve(window.JSZip);
+    s.onerror = () => reject(new Error('Could not load JSZip'));
+    document.head.appendChild(s);
+  });
+  return _jszipPromise;
+}
+
+function _decodeShareHash(url) {
+  // Accept full URLs, just the #hash, or just the base64 payload.
+  const m = url.match(/#([A-Za-z0-9+/=_-]+)/);
+  const b64 = m ? m[1] : url.replace(/^.*[#?]/, '');
+  try {
+    const json = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json);
+  } catch (_) { return null; }
+}
+
+async function _waitAllMapsIdle(ms) {
+  const maps = [];
+  if (typeof map !== 'undefined') maps.push(map);
+  if (typeof mapBuildings !== 'undefined') maps.push(mapBuildings);
+  if (typeof mapFg !== 'undefined') maps.push(mapFg);
+  await Promise.all(maps.map(m => new Promise(resolve => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
+    try { m.once('idle', finish); } catch (_) { finish(); return; }
+    setTimeout(finish, ms);
+  })));
+}
+
+async function batchRender() {
+  const urlsEl  = document.getElementById('batchUrls');
+  const statusEl = document.getElementById('batchStatus');
+  const renderBtn = document.getElementById('batchRenderBtn');
+  if (!urlsEl || !statusEl) return;
+  const urls = urlsEl.value.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (!urls.length) { statusEl.textContent = 'No URLs.'; return; }
+
+  renderBtn.disabled = true;
+  const originalLabel = renderBtn.textContent;
+  // Stash the current state so we can restore after the batch.
+  const savedHash = location.hash;
+  const node = document.getElementById('poster');
+
+  try {
+    const JSZip = await _loadJsZip();
+    const zip = new JSZip();
+    let ok = 0, fail = 0;
+    for (let i = 0; i < urls.length; i++) {
+      statusEl.textContent = `Rendering ${i + 1}/${urls.length}…`;
+      renderBtn.textContent = `${i + 1}/${urls.length}`;
+      const decoded = _decodeShareHash(urls[i]);
+      if (!decoded) { fail++; continue; }
+      try {
+        // Hydrate state from the URL — same path the hashchange listener uses.
+        state = mergeState(decoded);
+        if (state.view && state.view.center) {
+          map.jumpTo({ center: state.view.center, zoom: state.view.zoom || 12, bearing: state.bearing || 0, pitch: state.pitch || 0 });
+        }
+        applyState();
+        await _waitAllMapsIdle(2500);
+        // Direct toPng (skip the high-DPI ladder for speed; batch users
+        // are usually doing previews of many things, not single fine art).
+        const dataUrl = await htmlToImage.toPng(node, {
+          pixelRatio: 2, cacheBust: true, backgroundColor: state.palette.bg, skipFonts: true,
+        });
+        const slug = (state.caption.title || `poster-${i + 1}`).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || `poster-${i + 1}`;
+        // strip data:image/png;base64, and add to zip
+        zip.file(`${i + 1}-${slug}.png`, dataUrl.split(',')[1], { base64: true });
+        ok++;
+      } catch (e) {
+        console.warn('[batch] failed for url', i, e);
+        fail++;
+      }
+    }
+    statusEl.textContent = `Building ZIP… (${ok} ok, ${fail} failed)`;
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.download = 'osm-posters.zip';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+    statusEl.textContent = `Done — ${ok} rendered, ${fail} failed.`;
+  } catch (e) {
+    statusEl.textContent = 'Batch failed: ' + (e && e.message ? e.message : e);
+    console.error('[batch]', e);
+  } finally {
+    // Restore the user's pre-batch state by replaying the original hash.
+    if (savedHash && savedHash !== location.hash) {
+      location.hash = savedHash;
+    } else {
+      // Same hash — manually re-hydrate from it so applyState lands
+      // current values back on screen (they may have drifted during render).
+      const restored = _decodeShareHash(savedHash);
+      if (restored) {
+        state = mergeState(restored);
+        applyState();
+      }
+    }
+    renderBtn.disabled = false;
+    renderBtn.textContent = originalLabel;
+  }
+}
+
+bindEl('batchRenderBtn', 'click', safe(batchRender, 'batchRender'));
+bindEl('batchClearBtn', 'click', () => {
+  const u = document.getElementById('batchUrls'); if (u) u.value = '';
+  const s = document.getElementById('batchStatus'); if (s) s.textContent = '';
+});

@@ -31,6 +31,10 @@ function defaultState() {
         religious: false, activity: false, outdoors: true, transit: false,
         lodging: false, services: false,
       },
+      // ADR-070 — per-category density override. Missing key = use the
+      // global `density` field above. Only populated when user touches
+      // a per-category slider, so existing posters carry no overrides.
+      densities: {},
     },
     // ADR-023 atmospheric tint: none | auto | dawn | day | golden | dusk | night
     tod: 'none',

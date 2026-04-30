@@ -92,7 +92,7 @@ function defaultState() {
     titleSize: 'medium',
     subtitleStyle: 'regular',
     coordsStyle: 'decimal',
-    caption: { title: 'PARIS', subtitle: 'The City of Light', anniversary: false, date: '' },
+    caption: { title: 'PARIS', subtitle: 'The City of Light', tagline: '', anniversary: false, date: '' },
     view: { center: [2.3522, 48.8566], zoom: 12 },
     seed: '',
     // Photoshop-style filter stack: each entry is one full-bleed overlay

@@ -1066,6 +1066,15 @@
   #caption-subtitle { font-size: 13px; color: #666; margin-top: 8px; letter-spacing: 1px; }
   #caption-subtitle.ss-italic { font-style: italic; }
   #caption-subtitle.ss-hidden { display: none; }
+  /* ADR-076 — optional small italic tagline below subtitle, above
+     coords. Hidden when state.caption.tagline is empty. */
+  #caption-tagline {
+    font-size: 11.5px; color: #888; margin-top: 4px;
+    font-style: italic; letter-spacing: 0.5px;
+    line-height: 1.3;
+  }
+  #caption-tagline:empty { display: none; }
+
   #caption-coords {
     font-size: 11px; color: #999; margin-top: 11px;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;

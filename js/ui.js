@@ -438,6 +438,16 @@ titleInput.addEventListener('input', () => {
   persist();
 });
 subtitleInput.addEventListener('input', () => { state.caption.subtitle = subtitleInput.value; document.getElementById('caption-subtitle').textContent = subtitleInput.value || 'The City of Light'; persist(); });
+// ADR-076 — Tagline (optional, italic small). Empty string -> empty
+// element which CSS hides via :empty.
+const taglineInput = document.getElementById('tagline');
+if (taglineInput) {
+  taglineInput.addEventListener('input', () => {
+    state.caption.tagline = taglineInput.value;
+    document.getElementById('caption-tagline').textContent = taglineInput.value || '';
+    persist();
+  });
+}
 
 const annivCheck = document.getElementById('anniversary');
 const dateInput = document.getElementById('commemDate');

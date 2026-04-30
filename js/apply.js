@@ -112,6 +112,12 @@ function syncControls() {
   const sl = document.getElementById('scaleLockToggle');   if (sl) sl.checked = !!state.scaleLocked;
   document.getElementById('title').value = state.caption.title || '';
   document.getElementById('subtitle').value = state.caption.subtitle || '';
+  // ADR-076 — Tagline element + input. Empty string keeps the
+  // element :empty so the CSS rule hides it.
+  const taglineEl = document.getElementById('tagline');
+  if (taglineEl) taglineEl.value = state.caption.tagline || '';
+  const captionTaglineEl = document.getElementById('caption-tagline');
+  if (captionTaglineEl) captionTaglineEl.textContent = state.caption.tagline || '';
   annivCheck.checked = state.caption.anniversary;
   dateInput.style.display = state.caption.anniversary ? 'block' : 'none';
   dateInput.value = state.caption.date || '';

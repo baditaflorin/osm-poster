@@ -21,6 +21,8 @@
       <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener" class="gh-link">GitHub</a>
     </div>
   </div>
+  <!-- ADR-110 — Diff-from-template badge. Hidden when zero changes. -->
+  <button type="button" id="diffBadge" class="diff-badge" style="display: none;"></button>
 
   <!-- ADR-101 — Sidebar search. Filters every chip / toggle / slider /
        sub-panel by query as the user types. Empty restores everything. -->
@@ -120,6 +122,9 @@
           <div class="actions" style="margin-bottom: 8px;">
             <button id="cycleTemplatesBtn" title="Apply the next template — keep clicking to flip through all 32 looks">🔄 Cycle templates</button>
           </div>
+          <!-- ADR-118 — Recently-applied templates strip. Hidden until
+               the user has clicked at least one template card. -->
+          <div class="chip-group recent-templates" id="recentTemplates" style="display: none; margin-bottom: 8px;"></div>
           <div class="templates" id="templates"></div>
           <div class="sub-title" style="margin: 14px 0 6px;">🗃 Theme file</div>
           <div class="actions">
@@ -706,11 +711,20 @@
         <kbd>F</kbd><span>Toggle fullscreen preview</span>
         <kbd>[</kbd><span>Previous style preset</span>
         <kbd>]</kbd><span>Next style preset</span>
+        <kbd>1</kbd><span>Open Place panel</span>
+        <kbd>2</kbd><span>Open Style panel</span>
+        <kbd>3</kbd><span>Open Effects panel</span>
+        <kbd>4</kbd><span>Open Compose panel</span>
+        <kbd>0</kbd><span>Collapse all panels</span>
+        <kbd>⌘ K</kbd><span>Command palette</span>
         <kbd>?</kbd><span>This dialog</span>
         <kbd>⌘ Z</kbd><span>Undo</span>
         <kbd>⌘ ⇧ Z</kbd><span>Redo</span>
         <kbd>Esc</kbd><span>Close dialog / clear search</span>
       </div>
+
+      <h4>Recent actions <span style="font-size:10px; font-weight:400; color:#999; margin-left:6px;">(undo stack)</span></h4>
+      <div class="undo-stack" id="undoStack"><div class="undo-empty">No actions yet.</div></div>
 
       <h4>Sharing</h4>
       <p style="font-size:13px; line-height:1.55; color:#444;">Every change updates the URL hash. Copy the URL to share your exact design — palette, layers, view, caption, marker, even the random seed.</p>
@@ -793,6 +807,7 @@
 <script src="./js/cleanliness.js"></script>
 <script src="./js/storage.js"></script>
 <script src="./js/cohesion.js"></script>
+<script src="./js/visibility.js"></script>
 <script src="./js/boot.js"></script>
 </body>
 </html>

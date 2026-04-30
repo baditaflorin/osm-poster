@@ -201,6 +201,10 @@ function applyState({ silent } = {}) {
     ds.value = (typeof state.density === 'number') ? state.density : 100;
     dv.textContent = ds.value + '%';
   }
+  // ADR-109/110/118 — recompute the diff badges and recent-templates
+  // strip whenever the state changes.
+  if (typeof applyActiveBadges === 'function') applyActiveBadges();
+  if (typeof renderRecentTemplates === 'function') renderRecentTemplates();
   // The filter stack module loads after apply.js; the typeof guard keeps
   // applyState() callable during boot before filters.js evaluates, and
   // is a no-op once it's defined.

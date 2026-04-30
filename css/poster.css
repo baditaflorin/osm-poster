@@ -706,6 +706,91 @@
   .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
 
+  /* ADR-109 — Active-dial badge on disclose-sub headers. Small dot
+     in the chevron column showing the count of dials that differ from
+     the active template. Pure CSS pseudo-element with content from
+     data-changes attribute. */
+  .disclose-sub.has-changes > .disclose-btn { position: relative; }
+  .disclose-sub.has-changes > .disclose-btn::after {
+    content: attr(data-changes);
+    position: absolute; top: 50%; right: 26px;
+    transform: translateY(-50%);
+    width: 18px; height: 18px; line-height: 18px;
+    border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 600; text-align: center;
+    font-family: var(--mono);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .disclose-sub.has-changes[data-changes] {
+    position: relative;
+  }
+  /* The actual count comes from .disclose-sub[data-changes] hopping into
+     the parent's pseudo-element via attr() — but that doesn't traverse
+     up. So set data-changes on the .disclose-btn itself when needed. */
+  .disclose-sub.has-changes > .disclose-btn::after {
+    content: attr(data-changes);
+  }
+
+  /* Workaround: copy data-changes onto the .disclose-btn via CSS
+     custom-property fallback — since attr() doesn't traverse, the JS
+     sets data-changes on the SUB and we need it on the BTN. The
+     visibility.js code handles this. */
+
+  /* ADR-110 — Top-of-sidebar diff badge. Pill with click affordance. */
+  .diff-badge {
+    width: 100%; padding: 6px 12px; border: none; cursor: pointer;
+    border-radius: var(--r-pill);
+    background: var(--accent-bg); color: var(--accent);
+    font-family: inherit; font-size: 11.5px; font-weight: 600;
+    margin-bottom: 12px;
+    transition: background 0.12s ease;
+  }
+  .diff-badge:hover { background: var(--accent); color: #fff; }
+  /* Diff modal contents */
+  .diff-list { max-height: 50vh; overflow-y: auto; margin-top: 8px; }
+  .diff-row {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 8px 4px; border-bottom: 1px solid var(--separator);
+    gap: 6px; font-size: 12.5px;
+  }
+  .diff-where { color: var(--text); }
+  .diff-key { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); margin-left: 6px; }
+  .diff-vals { grid-column: 1 / -1; font-size: 11px; color: var(--text-2); font-family: var(--mono); }
+  .diff-cur  { color: var(--warn); }
+  .diff-want { color: var(--ok); }
+  .diff-revert {
+    border: none; background: var(--bg); padding: 4px 10px;
+    border-radius: var(--r-2); cursor: pointer; font-family: inherit;
+    font-size: 11px; color: var(--text-2);
+    box-shadow: inset 0 0 0 1px var(--separator);
+  }
+  .diff-revert:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-stroke); }
+
+  /* ADR-113 — "↺ Reset section" link inside each disclose-sub body. */
+  .reset-section-link {
+    display: block; margin: 14px auto 0; padding: 6px 12px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text-3); font-family: inherit; font-size: 11px;
+    border-radius: var(--r-2);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .reset-section-link:hover { background: var(--hover); color: var(--text-2); }
+
+  /* ADR-114 — Visible undo stack inside the help modal. */
+  .undo-stack { max-height: 40vh; overflow-y: auto; font-size: 12.5px; }
+  .undo-empty { color: var(--text-3); font-size: 12px; padding: 6px 0; }
+  .undo-row {
+    padding: 4px 8px; border-bottom: 1px dashed var(--separator);
+    color: var(--text-2);
+  }
+  .undo-row:last-child { border-bottom: none; }
+  .undo-time { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); margin-right: 8px; }
+
+  /* ADR-118 — Recently-applied templates strip. Same chip style but
+     marked with .recent-tpl for any future styling differentiation. */
+  .recent-templates { padding: 4px 0; }
+  .recent-tpl { font-size: 11.5px; padding: 6px 10px; min-height: 30px; }
+
   /* ADR-101 — Sidebar search input. Pinned just below the header. */
   #sidebarSearch {
     width: 100%; padding: 9px 12px; border: 1px solid transparent;

@@ -298,6 +298,8 @@ const CHIP_AFTER = {
   titleOrnament:  () => applyTitleOrnament(),
   captionDivider: () => applyCaptionDivider(),
   fxMode:         () => applyMapFilters(),
+  // ADR-079 — Background pattern is purely a CSS class on #poster.
+  bgPattern:      () => applyBgPattern(),
   titleWeight:    () => applyTypography(),
   titleSize:      () => applyTypography(),
   subtitleStyle:  () => applyTypography(),
@@ -326,7 +328,72 @@ const _chipDefaults = {
   labelFont: 'Noto Sans Regular',
   compassStyle: 'classic',
   fxMode: 'none',
+  bgPattern: 'none',
 };
+
+// ADR-079 — Background pattern under the poster. Toggled via .bg-X
+// class on #poster; CSS handles the actual pattern. None = no class.
+function applyBgPattern() {
+  const el = document.getElementById('poster');
+  if (!el) return;
+  ['none', 'rings', 'stripes', 'dotgrid', 'isobars'].forEach(c => el.classList.remove('bg-' + c));
+  if (state.bgPattern && state.bgPattern !== 'none') el.classList.add('bg-' + state.bgPattern);
+}
+
+// ADR-073 — Trim-guide overlay toggle (3 mm dashed inset on #poster).
+function applyTrimGuides() {
+  const el = document.getElementById('poster');
+  if (!el) return;
+  el.classList.toggle('trim-on', !!state.showTrimGuides);
+}
+const trimToggleEl = document.getElementById('trimGuidesToggle');
+if (trimToggleEl) trimToggleEl.addEventListener('change', safe(e => {
+  pushHistory(); state.showTrimGuides = e.target.checked; applyTrimGuides(); persist();
+}, 'trimGuides'));
+
+// ADR-066 — Scale lock: disable scroll-zoom so pan can be done without
+// accidental zoom drift. Visual indicator handled by toggling the
+// checkbox + a data attribute on #map-wrap for any future styling.
+function applyScaleLock() {
+  const wrap = document.getElementById('map-wrap');
+  if (wrap) wrap.dataset.scaleLocked = state.scaleLocked ? '1' : '0';
+  if (typeof map === 'undefined' || !map || !map.scrollZoom) return;
+  if (state.scaleLocked) map.scrollZoom.disable();
+  else map.scrollZoom.enable();
+}
+const scaleLockEl = document.getElementById('scaleLockToggle');
+if (scaleLockEl) scaleLockEl.addEventListener('change', safe(e => {
+  pushHistory(); state.scaleLocked = e.target.checked; applyScaleLock(); persist();
+}, 'scaleLock'));
+
+// ADR-077 — Visible distance readout. Updates on every map move with
+// the current bounds in km (or mi if locale uses imperial). Pure
+// derived data — no state key.
+function _formatDistance(km) {
+  // Browser locale heuristic: en-US, en-GB-SCT use mi, everything else km.
+  const useMi = /^(en-US|en-GB|en-LR|en-MM|my-MM)/i.test(navigator.language || '');
+  if (useMi) return (km * 0.621371).toFixed(1) + ' mi';
+  return km.toFixed(1) + ' km';
+}
+function updateDistanceReadout() {
+  const el = document.getElementById('distanceReadout');
+  if (!el) return;
+  if (typeof map === 'undefined' || !map) return;
+  try {
+    const b = map.getBounds();
+    const ne = b.getNorthEast(), sw = b.getSouthWest();
+    // Equirectangular distance approximation — good enough for posters.
+    const latMid = (ne.lat + sw.lat) / 2;
+    const wKm = (ne.lng - sw.lng) * 111.32 * Math.cos(latMid * Math.PI / 180);
+    const hKm = (ne.lat - sw.lat) * 110.574;
+    el.textContent = _formatDistance(Math.abs(wKm)) + ' × ' + _formatDistance(Math.abs(hKm));
+  } catch (_) {}
+}
+if (typeof map !== 'undefined' && map) {
+  map.on('move', updateDistanceReadout);
+  map.on('load', updateDistanceReadout);
+  updateDistanceReadout();
+}
 
 function initChipGroups() {
   document.querySelectorAll('.chip-group[data-chip-key]').forEach(group => {

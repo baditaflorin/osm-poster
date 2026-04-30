@@ -106,6 +106,10 @@ function syncControls() {
   // live in the icon-button grid now, synced via syncDecorationGrid().
   const bl = document.getElementById('bleedToggle');       if (bl) bl.checked = !!state.exportBleed;
   const td = document.getElementById('todTint');           if (td) td.value = state.tod || 'none';
+  // ADR-073 / ADR-066 — toggle inputs need explicit sync since they
+  // aren't chip-groups (only one boolean each, plain checkboxes).
+  const tg = document.getElementById('trimGuidesToggle');  if (tg) tg.checked = !!state.showTrimGuides;
+  const sl = document.getElementById('scaleLockToggle');   if (sl) sl.checked = !!state.scaleLocked;
   document.getElementById('title').value = state.caption.title || '';
   document.getElementById('subtitle').value = state.caption.subtitle || '';
   annivCheck.checked = state.caption.anniversary;
@@ -157,6 +161,15 @@ function applyState({ silent } = {}) {
   applyZoomDisplay();
   applyFrameOrnaments();
   syncDecorationGrid();
+  // ADR-079 / ADR-073 / ADR-066 — pull the latest state into the new
+  // CSS-driven dials. Wrapped in typeof guards so applyState() stays
+  // callable during boot before dials.js evaluates these functions.
+  if (typeof applyBgPattern   === 'function') applyBgPattern();
+  if (typeof applyTrimGuides  === 'function') applyTrimGuides();
+  if (typeof applyScaleLock   === 'function') applyScaleLock();
+  // ADR-077 — distance readout updates on map move; trigger one now
+  // so a hash-load with a freshly-restored center shows the right value.
+  if (typeof updateDistanceReadout === 'function') updateDistanceReadout();
   // The filter stack module loads after apply.js; the typeof guard keeps
   // applyState() callable during boot before filters.js evaluates, and
   // is a no-op once it's defined.

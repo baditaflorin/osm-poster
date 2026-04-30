@@ -73,6 +73,14 @@ function defaultState() {
     frameOrnaments: false,    // vintage corner flourishes on the poster
     mapHue: 0,                // 0..360° global hue rotation
     fxMode: 'none',           // none | glitch | halftone | melt | bloom | posterize (SVG filter on #map-wrap)
+    // ADR-079 — Background pattern under the poster, behind the map.
+    // Pure CSS — applied via .bg-{value} class on #poster.
+    bgPattern: 'none',        // none | rings | stripes | dotgrid | isobars
+    // ADR-073 — show trim guides in the live preview when bleed export is on.
+    showTrimGuides: false,
+    // ADR-066 — disable scroll-zoom while panning so the user can fine-tune
+    // composition without accidental zoom drift.
+    scaleLocked: false,
     mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
     sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
     watermark: '',            // user-typed line shown in caption corner

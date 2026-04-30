@@ -399,6 +399,23 @@
     position: absolute; inset: 0; opacity: 0; cursor: pointer; border: none;
   }
 
+  /* ADR-074 — Session palette history strip. Rendered immediately
+     under .palette-row when the user has changed at least one colour.
+     Click a chip to apply that hex to the most recently edited swatch. */
+  .palette-history {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-top: 6px;
+    min-height: 0;
+  }
+  .palette-history:empty { display: none; }
+  .palette-history-chip {
+    width: 18px; height: 18px; border: none; padding: 0;
+    border-radius: 4px; cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+    transition: transform 0.1s ease;
+  }
+  .palette-history-chip:hover { transform: scale(1.18); }
+
   /* ADR-059 — Modern select polish.
      Native dropdown chrome is hidden behind a custom chevron + soft
      surface. Used by the few remaining selects (mapMask, todTint,
@@ -949,6 +966,27 @@
   #poster.border-bold   { border: 18px solid var(--border-color); }
 
   #poster { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; --border-color: #111; }
+
+  /* ADR-079 — Background pattern library. Each .bg-X paints a subtle
+     pattern *behind* the map area (the patterns aren't visible while a
+     full-bleed map covers them, but show through trim guides / mask
+     shapes / gaps). Pure CSS so the export captures them faithfully. */
+  #poster.bg-rings    { background-image: repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.04) 0 1px, transparent 1px 14px); background-size: 100% 100%; }
+  #poster.bg-stripes  { background-image: repeating-linear-gradient(135deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 8px); }
+  #poster.bg-dotgrid  { background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.10) 0 1px, transparent 1.5px); background-size: 14px 14px; }
+  #poster.bg-isobars  { background-image:
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(0,0,0,0.045) 22px 23px),
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(0,0,0,0.045) 22px 23px); }
+
+  /* ADR-073 — Trim guides for print bleed. Renders a dashed inset
+     frame over the poster matching where the trim line will land
+     (3 mm at the export size). Pure CSS overlay, hidden in export
+     by toggling the .trim-on class right before html-to-image runs. */
+  #poster.trim-on::after {
+    content: ''; position: absolute; inset: calc(3mm); pointer-events: none;
+    border: 1px dashed rgba(255, 90, 90, 0.7); z-index: 30;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.4);
+  }
   /* isolation: isolate makes #map-wrap a self-contained blending root.
      Filter layers' mix-blend-mode then composes with the maps inside,
      and the result is composited over the rest of the poster (caption,

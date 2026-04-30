@@ -72,6 +72,8 @@
           <div style="font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.4;">
             Heights multiplies 3D buildings — only visible when Tilt &gt; 0.
           </div>
+          <label class="toggle" style="margin-top: 10px;"><input type="checkbox" id="scaleLockToggle"> 🔒 Lock zoom (pan only)</label>
+          <div id="distanceReadout" style="font-size: 11px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); letter-spacing: 0.3px;">…</div>
         </div></div>
       </div>
 
@@ -370,6 +372,10 @@
           <div class="sub-title" style="margin: 14px 0 6px;">Card shadow</div>
           <div class="chip-group" data-chip-key="cardShadow"
                data-options='[["none","🚫 None"],["soft","🌫 Soft"],["hard","🔲 Hard"],["float","☁ Float"]]'></div>
+          <div class="sub-title" style="margin: 14px 0 6px;">Background pattern <span class="sec-hint">behind the map</span></div>
+          <div class="chip-group" data-chip-key="bgPattern"
+               data-options='[["none","∅ None"],["rings","◎ Rings"],["stripes","╱╱ Stripes"],["dotgrid","· Dot grid"],["isobars","⌗ Isobars"]]'></div>
+          <label class="toggle" style="margin-top: 10px;"><input type="checkbox" id="trimGuidesToggle"> Show trim guides (3 mm)</label>
         </div></div>
       </div>
 

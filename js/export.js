@@ -132,6 +132,11 @@ document.getElementById('export').addEventListener('click', async () => {
     const mul = SIZE_PRESETS[sz]?.mul || 4;
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
 
+    // ADR-073 — trim guides are a preview-only aid, never burned into
+    // the export. Strip the class for the duration of capture and put
+    // it back after, regardless of whether capture succeeds or throws.
+    const trimWasOn = node.classList.contains('trim-on');
+    if (trimWasOn) node.classList.remove('trim-on');
     // Capture wrapped in a high-DPI map render so the embedded map
     // canvas matches the html-to-image pixelRatio of the surrounding
     // poster (no more pixelated map on A2/A3/A4/4K exports).
@@ -195,6 +200,11 @@ document.getElementById('export').addEventListener('click', async () => {
   } finally {
     btn.textContent = originalText;
     btn.disabled = false;
+    // Restore trim guides if they were on before capture (ADR-073).
+    if (state.showTrimGuides) {
+      const node = document.getElementById('poster');
+      if (node) node.classList.add('trim-on');
+    }
   }
 });
 

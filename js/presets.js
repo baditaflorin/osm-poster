@@ -381,6 +381,21 @@ window.PRESET_DATA = (function () {
       cardShadow: 'soft', labelCase: 'asis',
       titleSize: 'medium', titleWeight: 'regular', subtitleStyle: 'regular',
     },
+
+    // ADR-072 — Ultra-minimal "lines only" template inspired by the
+    // poster aesthetic of MapToPoster. Strips every overlay so the
+    // graphic is just water + roads on a clean background.
+    minimal: {
+      name: 'Minimal',
+      isTemplate: true,
+      palette: { bg: '#fafafa', water: '#dde6ec', green: '#fafafa', urban: '#fafafa', building: '#fafafa', roof: '#fafafa', road: '#1a1a1a', rail: '#1a1a1a', label: '#1a1a1a', accent: '#1a1a1a' },
+      layers: { water: true, rivers: true, parks: false, greenery: false, buildings: false, industrial: false, roads: true, railways: false, paths: false, airports: false, boundaries: false, cities: false, neighborhoods: false, countries: false, water_names: false, park_names: false, streets: false, pois: false },
+      roadWeight: 0.5, roadStyle: 'solid', labelFont: 'Noto Sans Regular',
+      frame: 'portrait', border: 'none', texture: 'none', compass: false, scale: false,
+      cardShadow: 'none', labelCase: 'asis',
+      titleSize: 'large', titleWeight: 'regular', subtitleStyle: 'regular',
+      vignette: 'none', mapSaturation: 100, mapContrast: 100,
+    },
   };
   // Short marketing copy for each full template
   const TEMPLATE_BLURBS = {
@@ -412,6 +427,7 @@ window.PRESET_DATA = (function () {
     acid:        'Toxic green/pink with glitch FX',
     memphis:     '80s pastel geometric, posterized',
     monoDark:    'Pure black, white roads, nothing else',
+    minimal:     'Lines-only minimalist, water + roads',
   };
   return { PRESETS, TEMPLATE_BLURBS };
 })();

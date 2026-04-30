@@ -281,6 +281,7 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
 
 // Palette
 const paletteEl = document.getElementById('palette');
+let _lastEditedPaletteKey = null; // ADR-074 — for history replay-into-last
 PALETTE_KEYS.forEach(k => {
   const lbl = document.createElement('label');
   lbl.innerHTML = `<div class="swatch-btn" data-key="${k}"><input type="color" data-key="${k}"></div><span>${PALETTE_LABELS[k]}</span>`;
@@ -288,6 +289,7 @@ PALETTE_KEYS.forEach(k => {
   const input = lbl.querySelector('input');
   input.addEventListener('input', safe(e => {
     state.palette[k] = e.target.value;
+    _lastEditedPaletteKey = k;
     syncSwatches();
     restyle();
     // Marker chip background, ring and icon are all derived from the
@@ -295,8 +297,57 @@ PALETTE_KEYS.forEach(k => {
     if (['accent', 'bg', 'label'].includes(k)) refreshPOIs();
     persist();
   }, 'palettePicker'));
-  input.addEventListener('change', () => pushHistory());
+  input.addEventListener('change', e => {
+    pushHistory();
+    paletteHistoryAdd(e.target.value);
+  });
 });
+
+// ADR-074 — Session palette history. The last 10 colours used (across
+// any swatch) live in sessionStorage so the strip survives within a
+// tab session but doesn't leak across tabs / browser restarts.
+const PALETTE_HISTORY_KEY = 'osm-poster:palette-history';
+const PALETTE_HISTORY_MAX = 10;
+function paletteHistoryGet() {
+  try { return JSON.parse(sessionStorage.getItem(PALETTE_HISTORY_KEY) || '[]'); }
+  catch (_) { return []; }
+}
+function paletteHistoryAdd(hex) {
+  if (typeof hex !== 'string' || !/^#[0-9a-f]{3,8}$/i.test(hex)) return;
+  let h = paletteHistoryGet();
+  // Dedupe: move existing entry to the front rather than push duplicates.
+  h = h.filter(x => x.toLowerCase() !== hex.toLowerCase());
+  h.unshift(hex);
+  if (h.length > PALETTE_HISTORY_MAX) h = h.slice(0, PALETTE_HISTORY_MAX);
+  try { sessionStorage.setItem(PALETTE_HISTORY_KEY, JSON.stringify(h)); } catch (_) {}
+  paletteHistoryRender();
+}
+function paletteHistoryRender() {
+  let strip = document.getElementById('paletteHistory');
+  if (!strip) {
+    strip = document.createElement('div');
+    strip.id = 'paletteHistory';
+    strip.className = 'palette-history';
+    paletteEl.parentNode.insertBefore(strip, paletteEl.nextSibling);
+  }
+  const history = paletteHistoryGet();
+  strip.innerHTML = history.length
+    ? history.map(c => `<button type="button" class="palette-history-chip" data-color="${c}" title="${c}" style="background:${c}"></button>`).join('')
+    : '';
+}
+paletteEl.parentNode && paletteEl.parentNode.addEventListener('click', safe(e => {
+  const chip = e.target.closest('.palette-history-chip');
+  if (!chip) return;
+  const color = chip.dataset.color;
+  const targetKey = _lastEditedPaletteKey || PALETTE_KEYS[0];
+  pushHistory();
+  state.palette[targetKey] = color;
+  syncSwatches();
+  restyle();
+  if (['accent', 'bg', 'label'].includes(targetKey)) refreshPOIs();
+  persist();
+}, 'paletteHistoryClick'));
+paletteHistoryRender();
 
 document.getElementById('seed').addEventListener('input', e => { state.seed = e.target.value; persist(); });
 

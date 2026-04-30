@@ -329,6 +329,7 @@ const _chipDefaults = {
   compassStyle: 'classic',
   fxMode: 'none',
   bgPattern: 'none',
+  exportDpi: 'auto',
 };
 
 // ADR-079 — Background pattern under the poster. Toggled via .bg-X

@@ -129,7 +129,14 @@ document.getElementById('export').addEventListener('click', async () => {
     const node = document.getElementById('poster');
     const fmt = document.getElementById('exportFormat').value;
     const sz = document.getElementById('exportSize').value;
-    const mul = SIZE_PRESETS[sz]?.mul || 4;
+    // ADR-063 — explicit DPI override on top of the size preset.
+    // dpi 96 ≈ web baseline, so mul = dpi/96 ≈ 1 at 96, 3.125 at 300.
+    // 'auto' falls back to the size preset's hard-coded mul.
+    const baseMul = SIZE_PRESETS[sz]?.mul || 4;
+    const dpi = state.exportDpi || 'auto';
+    const mul = (dpi === 'auto' || !Number.isFinite(+dpi))
+      ? baseMul
+      : Math.max(1, Math.min(8, (+dpi) / 96));
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
 
     // ADR-073 — trim guides are a preview-only aid, never burned into

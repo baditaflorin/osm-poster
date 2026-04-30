@@ -69,8 +69,10 @@
           <div class="row"><label>Tilt</label><input type="range" id="pitch" min="0" max="60" step="1" value="0"><span class="val" id="pitchVal">0°</span></div>
           <div class="row"><label>Weight</label><input type="range" id="roadWeight" min="0.3" max="3" step="0.1" value="1"><span class="val" id="roadWeightVal">1.0×</span></div>
           <div class="row"><label>Heights</label><input type="range" id="buildingHeight" min="0.5" max="8" step="0.5" value="1"><span class="val" id="buildingHeightVal">1.0×</span></div>
+          <div class="row"><label>Frame km</label><input type="range" id="frameDistance" min="1" max="50" step="0.5" value="6"><span class="val" id="frameDistanceVal">6 km</span></div>
           <div style="font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.4;">
-            Heights multiplies 3D buildings — only visible when Tilt &gt; 0.
+            Heights multiplies 3D buildings — only visible when Tilt &gt; 0.<br>
+            Frame km picks zoom by visible east-west distance — 4 km for dense city, 20 km for metro.
           </div>
           <label class="toggle" style="margin-top: 10px;"><input type="checkbox" id="scaleLockToggle"> 🔒 Lock zoom (pan only)</label>
           <div id="distanceReadout" style="font-size: 11px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); letter-spacing: 0.3px;">…</div>
@@ -429,6 +431,13 @@
         <option value="4k">4K</option>
       </select>
     </div>
+    <!-- ADR-063 — explicit DPI in addition to size preset. Multiplies
+         the size preset's base pixelRatio: e.g. A2 'auto' = mul 8;
+         picking 150 keeps mul 8 for previews; 300 raises to print
+         density; 600 doubles again for fine art. 'auto' lets the size
+         picker decide (current behaviour). -->
+    <div class="chip-group" data-chip-key="exportDpi" style="margin-top:6px;"
+         data-options='[["auto","🖥 Auto"],["72","72 web"],["150","150 preview"],["300","300 print"],["600","600 fine"]]'></div>
     <label class="toggle" style="margin-top:8px;"><input type="checkbox" id="bleedToggle"> 3 mm bleed + crop marks (PDF only)</label>
     <button id="export">Download</button>
   </div>

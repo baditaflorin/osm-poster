@@ -150,6 +150,55 @@ rw.addEventListener('input', () => {
   restyle(); persist();
 });
 
+// ADR-061 — Distance-based framing dial. Converts a "show me N km
+// wide" intent into a MapLibre zoom level using the standard tile
+// math: zoom = log2(40075 * cos(lat) / distance_km) - 1 (the -1
+// accounts for the map container being roughly 256-512px wide rather
+// than a full tile). Re-derives on the fly from the current centre
+// latitude so the slider stays accurate when panning across latitudes.
+const frameDistanceEl = document.getElementById('frameDistance');
+const frameDistanceVal = document.getElementById('frameDistanceVal');
+function _zoomFromDistance(km) {
+  const lat = (state.view && state.view.center && state.view.center[1]) || 0;
+  // 40075 km is Earth circumference at equator; cos(lat) corrects for
+  // the meridian convergence; -1 is an empirical adjustment so the slider
+  // value matches the visible east-west extent in the typical poster
+  // container size (~600 CSS px wide).
+  const z = Math.log2((40075 * Math.cos(lat * Math.PI / 180)) / km) - 1;
+  return Math.max(0.5, Math.min(20, z));
+}
+function _distanceFromZoom() {
+  if (typeof map === 'undefined' || !map) return 6;
+  try {
+    const b = map.getBounds();
+    const ne = b.getNorthEast(), sw = b.getSouthWest();
+    const latMid = (ne.lat + sw.lat) / 2;
+    return Math.abs((ne.lng - sw.lng) * 111.32 * Math.cos(latMid * Math.PI / 180));
+  } catch (_) { return 6; }
+}
+if (frameDistanceEl && frameDistanceVal) {
+  // Apply on commit (change), not while dragging — flying mid-drag is
+  // jittery and burns tile fetches. Track value text live for feedback.
+  frameDistanceEl.addEventListener('input', () => {
+    frameDistanceVal.textContent = (+frameDistanceEl.value).toFixed(1) + ' km';
+  });
+  frameDistanceEl.addEventListener('change', safe(() => {
+    pushHistory();
+    const km = parseFloat(frameDistanceEl.value);
+    const z = _zoomFromDistance(km);
+    map.easeTo({ zoom: z, duration: 300 });
+    persist();
+  }, 'frameDistance'));
+  // Keep the slider in sync as the user pans/zooms by other means.
+  if (typeof map !== 'undefined' && map) {
+    map.on('zoomend', () => {
+      const km = _distanceFromZoom();
+      frameDistanceEl.value = Math.max(1, Math.min(50, km));
+      frameDistanceVal.textContent = km.toFixed(1) + ' km';
+    });
+  }
+}
+
 // roadStyle, border, texture, plus the new ADR-059 migrations
 // (labelFont, titleWeight, titleSize, subtitleStyle, coordsStyle,
 // compassStyle) all flow through the chip-group machinery in dials.js.
@@ -443,6 +492,50 @@ main.addEventListener('drop', async e => {
   if (geo) loadGpx(geo, true);
 });
 
+// ADR-065 — Direct coordinate input. Detect "lat, lng" or DMS-style
+// strings before falling through to Nominatim. Returns null when no
+// valid pair is found so the caller knows to do a normal text search.
+function parseCoordPair(s) {
+  if (!s) return null;
+  const trim = s.trim();
+  // Decimal: "48.8566, 2.3522" or "48.8566 2.3522" with optional N/S/E/W.
+  let m = trim.match(/^\s*(-?\d+(?:\.\d+)?)\s*([NSns])?\s*[,\s]\s*(-?\d+(?:\.\d+)?)\s*([EWew])?\s*$/);
+  if (m) {
+    let lat = parseFloat(m[1]);
+    let lng = parseFloat(m[3]);
+    if (m[2] && /[Ss]/.test(m[2])) lat = -Math.abs(lat);
+    if (m[4] && /[Ww]/.test(m[4])) lng = -Math.abs(lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      return { lat, lng };
+    }
+  }
+  // DMS: 48° 51' 24" N, 2° 21' 8" E (any combination of degree / minute /
+  // second separators; unicode primes accepted).
+  const dms = /(-?\d+)\s*[°dD\s]+\s*(\d+)?\s*['′mM\s]*\s*(\d+(?:\.\d+)?)?\s*["″sS]?\s*([NSEWnsew])?/g;
+  const matches = [];
+  let mm;
+  while ((mm = dms.exec(trim)) && matches.length < 2) {
+    let v = parseInt(mm[1], 10);
+    const min = mm[2] ? parseInt(mm[2], 10) : 0;
+    const sec = mm[3] ? parseFloat(mm[3]) : 0;
+    let dec = Math.abs(v) + min / 60 + sec / 3600;
+    if (v < 0) dec = -dec;
+    if (mm[4] && /[Ss]/.test(mm[4])) dec = -Math.abs(dec);
+    if (mm[4] && /[Ww]/.test(mm[4])) dec = -Math.abs(dec);
+    matches.push({ value: dec, hint: mm[4] });
+  }
+  if (matches.length === 2) {
+    // First with N/S hint or with abs <= 90 = lat. Second = lng.
+    const [a, b] = matches;
+    let lat, lng;
+    if (a.hint && /[NSns]/.test(a.hint)) { lat = a.value; lng = b.value; }
+    else if (b.hint && /[NSns]/.test(b.hint)) { lat = b.value; lng = a.value; }
+    else { lat = a.value; lng = b.value; }
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+  }
+  return null;
+}
+
 // Search
 const searchEl = document.getElementById('search');
 const resultsEl = document.getElementById('results');
@@ -451,6 +544,20 @@ searchEl.addEventListener('input', () => {
   clearTimeout(searchTimer);
   const q = searchEl.value.trim();
   if (!q) { resultsEl.innerHTML = ''; return; }
+  // ADR-065 — coord short-circuit: if the input parses as a lat/lng
+  // pair, render a single "Go to (lat, lng)" result that flies the
+  // map there directly without hitting Nominatim.
+  const coord = parseCoordPair(q);
+  if (coord) {
+    resultsEl.innerHTML = `<div class="result" data-coord="1">📍 Go to ${coord.lat.toFixed(4)}°, ${coord.lng.toFixed(4)}°</div>`;
+    resultsEl.querySelector('.result').addEventListener('click', () => {
+      pushHistory();
+      map.flyTo({ center: [coord.lng, coord.lat], zoom: Math.max(12, map.getZoom()) });
+      resultsEl.innerHTML = ''; searchEl.value = '';
+      persist();
+    });
+    return;
+  }
   searchTimer = setTimeout(async () => {
     try {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });

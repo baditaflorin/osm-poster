@@ -39,6 +39,9 @@ function defaultState() {
     cityOutlineGeo: null,   // cached GeoJSON (filled on place selection)
     // ADR-026 print bleed in PDF export
     exportBleed: false,
+    // ADR-063 explicit DPI override on top of the export-size preset.
+    // 'auto' = use the size preset's base multiplier; numeric = override.
+    exportDpi: 'auto',
     // ADR-024 click-placed text annotations: [{ lng, lat, text }]
     annotations: [],
     // ADR-028 photo polaroids: [{ lng, lat, dataUrl, caption, rot }]

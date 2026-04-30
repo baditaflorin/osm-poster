@@ -706,6 +706,64 @@
   .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
 
+  /* ADR-112 — Auto-save indicator in the footer. Empty by default,
+     fills in after the first persist() throttle fires. .flash plays a
+     brief opacity pulse so the user notices the save event. */
+  .auto-save-tick {
+    display: inline-block;
+    font-size: 10.5px;
+    color: var(--ok);
+    font-family: var(--mono);
+    margin-right: 8px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .auto-save-tick:not(:empty) { opacity: 0.7; }
+  .auto-save-tick.flash       { opacity: 1; transition: opacity 0.12s ease; }
+
+  /* ADR-117 — Breadcrumbs. When a sub-panel is open, its body shows a
+     small "Major › Sub" trail at the top, computed from the
+     data-crumb attribute on the closest .disclose-major and the
+     sub-panel's own title. Pure CSS pseudo-element + JS-set
+     CSS variable. */
+  .disclose-sub.open > .body > div::before {
+    content: "› " attr(data-trail);
+    display: block;
+    font-size: 10.5px;
+    color: var(--text-3);
+    font-family: var(--mono);
+    letter-spacing: 0.3px;
+    margin: -2px 0 8px;
+    padding: 4px 8px;
+    border-bottom: 1px dashed var(--separator);
+    opacity: 0.85;
+  }
+  .disclose-sub.open > .body > div:not([data-trail])::before { content: none; }
+
+  /* ADR-120 — Mobile floating action buttons. Hidden by default; only
+     visible at <800px. Three pill buttons stacked vertically in the
+     bottom-right of the viewport. Tap targets meet 56px Apple HIG. */
+  .mobile-fabs {
+    position: fixed; right: 16px; bottom: 16px; z-index: 50;
+    display: none; flex-direction: column; gap: 10px;
+  }
+  .mobile-fabs .fab {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: none; cursor: pointer; font-size: 22px;
+    background: var(--surface);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10);
+    color: var(--text);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .mobile-fabs .fab:active { transform: scale(0.92); }
+  .mobile-fabs .fab.fab-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 6px 18px rgba(0,122,255,0.45), 0 2px 6px rgba(0,122,255,0.20);
+  }
+  @media (max-width: 800px) {
+    .mobile-fabs { display: flex; }
+  }
+
   /* ===== Chip group — cute, touch-friendly replacement for short selects */
   .chip-group {
     display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
@@ -724,7 +782,22 @@
   }
   .chip:hover { background: rgba(0,0,0,0.10); color: var(--text); }
   .chip:active { transform: scale(0.96); }
-  .chip.active { background: var(--accent); color: #fff; }
+  .chip.active { background: var(--accent); color: #fff; animation: chipPop 240ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+  /* ADR-116 — Chip activation pop. Spring curve gives a hand-tuned
+     "click felt right" feel. Only animates on transition INTO active,
+     not while sustained. */
+  @keyframes chipPop {
+    0%   { transform: scale(0.94); }
+    60%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+  /* Layer-button activation — subtle colour fade + tiny lift. */
+  .layer-btn.active { animation: layerPop 200ms ease; }
+  @keyframes layerPop {
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-2px); }
+    100% { transform: translateY(0); }
+  }
   .chip-group.chip-half .chip { flex: 0 1 calc(50% - 3px); }
 
   /* Inside disclose-sub bodies — give sub-sections clear breathing room */

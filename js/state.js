@@ -204,6 +204,21 @@ function persist() {
       try { window.history.replaceState(null, '', '#' + enc); } catch (e) { location.hash = enc; }
       try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
     }
+    // ADR-112 — Auto-save tick: small "Saved at HH:MM" indicator in the
+    // footer so users know their work is sticking. Updated only after
+    // the throttled save actually runs (not on every keystroke), so the
+    // timestamp reflects the real save event.
+    try {
+      const tick = document.getElementById('autoSaveTick');
+      if (tick) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        tick.textContent = `✓ Saved ${hh}:${mm}`;
+        tick.classList.add('flash');
+        setTimeout(() => tick.classList.remove('flash'), 500);
+      }
+    } catch (_) {}
   }, 250);
 }
 function loadFromUrlOrStorage() {

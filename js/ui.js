@@ -465,7 +465,19 @@ document.querySelectorAll('button[data-frame]').forEach(btn => {
 // Disclosure toggling
 document.querySelectorAll('.disclose-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    btn.parentElement.classList.toggle('open');
+    const panel = btn.parentElement;
+    panel.classList.toggle('open');
+    // ADR-117 — When a sub-panel opens, stamp its body with the
+    // breadcrumb path so the CSS pseudo-element renders "Major › Sub".
+    // The trail is derived from the closest disclose-major's
+    // data-crumb attribute + the sub's own title text.
+    if (panel.classList.contains('disclose-sub') && panel.classList.contains('open')) {
+      const major = panel.closest('.disclose-major');
+      const majorName = major && major.dataset.crumb ? major.dataset.crumb : '';
+      const subName = panel.querySelector('.disclose-title')?.textContent || '';
+      const inner = panel.querySelector('.body > div');
+      if (inner && majorName) inner.setAttribute('data-trail', `${majorName} › ${subName}`);
+    }
   });
 });
 

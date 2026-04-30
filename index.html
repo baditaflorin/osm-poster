@@ -31,7 +31,7 @@
        ===================================================================== -->
 
   <!-- ============================ 1 · 📍 PLACE ============================ -->
-  <div class="disclose disclose-major">
+  <div class="disclose disclose-major" data-crumb="Place">
     <button class="disclose-btn">
       <span class="ico">📍</span>
       <span class="disclose-label">
@@ -99,7 +99,7 @@
   </div>
 
   <!-- ============================ 2 · 🎨 STYLE ============================ -->
-  <div class="disclose disclose-major">
+  <div class="disclose disclose-major" data-crumb="Style">
     <button class="disclose-btn">
       <span class="ico">🎨</span>
       <span class="disclose-label">
@@ -201,7 +201,7 @@
   </div>
 
   <!-- ============================ 3 · ✨ EFFECTS ============================ -->
-  <div class="disclose disclose-major">
+  <div class="disclose disclose-major" data-crumb="Effects">
     <button class="disclose-btn">
       <span class="ico">✨</span>
       <span class="disclose-label">
@@ -334,7 +334,7 @@
   </div>
 
   <!-- ============================ 4 · 📐 COMPOSE ============================ -->
-  <div class="disclose disclose-major">
+  <div class="disclose disclose-major" data-crumb="Compose">
     <button class="disclose-btn">
       <span class="ico">📐</span>
       <span class="disclose-label">
@@ -512,6 +512,7 @@
   </div>
 
   <div class="footer-note">
+    <span id="autoSaveTick" class="auto-save-tick" title="Your work is auto-saved to the URL hash and localStorage"></span>
     Made by <a href="https://www.linkedin.com/in/baditaflorin/" target="_blank" rel="noopener">Florin Badita</a> ·
     <a href="https://www.paypal.com/paypalme/florinbadita/" target="_blank" rel="noopener" class="coffee-link" title="If this saved you an afternoon, buy me a coffee 🙂">☕ Buy me a coffee</a><br>
     <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source</a> ·
@@ -722,6 +723,15 @@
 <div class="toast" id="errorToast" style="background:#c93400;">
   <span class="msg"></span>
   <button onclick="document.getElementById('errorToast').classList.remove('show')">Dismiss</button>
+</div>
+
+<!-- ADR-120 — Mobile floating action buttons. Visible only on <800px
+     via CSS media query. Tap targets are 56px (Apple HIG +). The
+     handlers re-use the existing buttons rather than re-implement. -->
+<div class="mobile-fabs" aria-hidden="true">
+  <button type="button" id="fabRandomize" class="fab" title="Randomize palette">🎲</button>
+  <button type="button" id="fabCycle" class="fab" title="Cycle templates">🔄</button>
+  <button type="button" id="fabExport" class="fab fab-primary" title="Export poster">⬇</button>
 </div>
 
 <!-- First-visit toast -->

@@ -24,6 +24,21 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.body.classList.toggle('fullscreen-preview'); document.querySelector('aside').style.display = document.body.classList.contains('fullscreen-preview') ? 'none' : ''; setTimeout(() => map.resize(), 200); }
   else if (e.key === '[') { e.preventDefault(); cyclePreset(-1); }
   else if (e.key === ']') { e.preventDefault(); cyclePreset(1); }
+  // ADR-105 — Number-key panel shortcuts. 1=Place 2=Style 3=Effects
+  // 4=Compose · 0=collapse all. The 4 disclose-major elements are
+  // queried fresh each press so dynamic IA changes are picked up.
+  else if (/^[0-4]$/.test(e.key)) {
+    e.preventDefault();
+    const majors = document.querySelectorAll('aside > .disclose.disclose-major');
+    if (e.key === '0') {
+      majors.forEach(m => m.classList.remove('open'));
+      return;
+    }
+    const idx = parseInt(e.key, 10) - 1;
+    majors.forEach((m, i) => m.classList.toggle('open', i === idx));
+    // Scroll the picked panel into view smoothly so it lands at the top.
+    if (majors[idx]) majors[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 });
 
 // =====================================================================
@@ -49,6 +64,12 @@ bindEl('resetAllBtn', 'click', () => {
 });
 document.getElementById('closeHelp').addEventListener('click', closeHelp);
 document.getElementById('helpModal').addEventListener('click', e => { if (e.target.id === 'helpModal') closeHelp(); });
+
+// ADR-120 — Mobile floating action buttons. Reuse the existing button
+// handlers rather than duplicating their logic.
+bindEl('fabRandomize', 'click', () => document.getElementById('randomize').click());
+bindEl('fabCycle',     'click', () => { const b = document.getElementById('cycleTemplatesBtn'); if (b) b.click(); });
+bindEl('fabExport',    'click', () => document.getElementById('export').click());
 
 // (Pinhead manual-picker modal removed — icons now render automatically
 // from OSM POIs via the Map icons disclosure. loadPinhead() is kept and

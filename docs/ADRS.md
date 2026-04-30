@@ -1727,13 +1727,384 @@ workflow.
 
 ---
 
-## Implementation order
+---
+
+# Cohesion: making 100 features feel like one product
+
+After ADR-001..100 the app has every feature it needs and is missing
+none. What it's missing is *cohesion* — the way that good products
+feel like one thing instead of a buffet. These 20 ADRs are about the
+seams: discoverability, consistency, state visibility, forgiveness,
+polish, personalisation. None of them add a new capability the app
+doesn't already have. All of them make the existing capabilities
+feel like they were designed together.
+
+---
+
+## ADR-101 — Sidebar search / instant-filter
+
+**Context.** With 100 features across 4 main panels and ~16 sub-panels,
+finding "where's the building shadow toggle again?" requires
+clicking through. There's no discovery aid.
+
+**Decision.** A small search field at the top of the sidebar (above
+the 4 disclose-major buttons). As the user types, every chip /
+toggle / slider / select label is matched against the query; matches
+get a subtle highlight; non-matching panels collapse and dim. Empty
+search restores everything. Pure DOM filter — no fuzzy matching
+library; just `String.prototype.includes` on lowercased text content.
+
+**Consequences.** Onboarding gets dramatically faster ("type
+'shadow' → see it"). Power users still navigate via panels.
+
+---
+
+## ADR-102 — Command palette (Cmd-K / Ctrl-K)
+
+**Context.** Heavy users rebuild the same posters across cities and
+do the same 5 actions (apply template, set preset, randomize,
+export). Going through the sidebar each time is friction.
+
+**Decision.** Cmd-K (or Ctrl-K) opens a centred palette with fuzzy
+matching across all template names, all sub-panel names, all chip
+options ("multiply", "extreme", "watercolor"). Enter applies. Esc
+closes. The palette is built from the same metadata the chip-groups
+already declare (data-options) plus a static action list (Randomize,
+Export, Reset).
+
+**Consequences.** Pro-user flow. Reuses existing data-attributes —
+no new state. Compact modal scoped to the keyboard.
+
+---
+
+## ADR-103 — Inline (?) help dots
+
+**Context.** Sub-panels have tiny `<span class="sec-hint">` taglines
+but most controls are unexplained. "What does Halftone vignette mean?
+What's the difference between Soft and Hard card shadow?" The help
+modal only covers shortcuts.
+
+**Decision.** Add a `(?)` icon next to each `.sub-title` in the
+sidebar. Click → small popover with a 1-2 sentence explainer.
+Content lives in a single dictionary `HELP_TEXT[panelKey] = string`
+in `js/lifecycle.js`. Editorial content, not generated.
+
+**Consequences.** Discoverability for the dial-shy. Zero impact on
+power users who'll never click the dots.
+
+---
+
+## ADR-104 — Tooltips on every interactive control
+
+**Context.** Some chips have title attributes ("Click to enable" etc),
+most don't. The user has no fast way to know what `★ Accent` does to
+buildings without clicking it and seeing the change.
+
+**Decision.** Audit every chip, toggle, slider, button — all get a
+`title` attribute with a 1-line description. For chip-groups, the
+description is added per-option via the existing `data-options`
+schema (extend from `[value, label]` to `[value, label, tooltip?]`).
+Browser-native tooltips — no custom popover library.
+
+**Consequences.** Hover-discovery. Native browser tooltips are
+ugly-but-universal; trade-off accepted.
+
+---
+
+## ADR-105 — Number-key panel shortcuts (1/2/3/4)
+
+**Context.** Power-users navigate by keyboard. We have R/E/F/[/]
+shortcuts but no way to jump panels. The 4 main categories are
+exactly the kind of thing a number-row shortcut serves.
+
+**Decision.** `1` opens & scrolls to Place, `2` Style, `3` Effects,
+`4` Compose. `0` collapses all. Tucked into the existing
+keyboard-shortcuts handler in `js/lifecycle.js`. Help modal updated.
+
+**Consequences.** Two-keystroke navigation to any feature. Tiny
+code change.
+
+---
+
+## ADR-106 — "Library" panel unifying saved items
+
+**Context.** Three different "saved things" live in three different
+places: Favourites (Place > Search), Profiles (Compose > Frame),
+Themes (Style > Templates). Users have to remember which is where.
+All three are essentially "named snapshots of (some subset of)
+state".
+
+**Decision.** New top-level **Library** panel that consolidates
+Favourites, Profiles, and Themes into one view, with a chip-group at
+the top to filter by type (`All / Favourites / Profiles / Themes`).
+Each entry uses the same `.lib-item` card pattern. Existing
+storage.js stays — only the rendering target changes.
+
+**Consequences.** One mental model: Library = saved things. Fewer
+"where did I save that" moments.
+
+---
+
+## ADR-107 — Consolidate Filter Stack + Map Filters + FX into Effects superpanel
+
+**Context.** "Filter stack", "Map filters", and "FX mode" are three
+adjacent panels that all do "modify how the rendered map looks".
+They're conceptually one thing the user thinks of as "filters".
+
+**Decision.** Effects panel is restructured into a single nested
+hierarchy:
+- **Filters** (the umbrella)
+  - **Per-layer blends** (was Filter stack)
+  - **Color adjustments** (was Map filters: saturation/contrast/hue)
+  - **FX modes** (was FX mode chip-group)
+  - **Time of day** (TOD select)
+- **Decorations & mask** (unchanged)
+- **Map icons** (unchanged)
+
+**Consequences.** Three sub-panels become one. The user finds "all
+the filter-y things" in one place.
+
+---
+
+## ADR-108 — Standard "saved item" card
+
+**Context.** Right now `.fav-row`, `.preset` card, `.template` card,
+`.filter-row` are four different card patterns for similar
+"selectable saved thing" concepts. Visual rhythm suffers.
+
+**Decision.** Introduce a single `.lib-card` CSS pattern (icon +
+title + meta-line + optional thumbnail + delete button) and apply it
+to all four. Existing classes alias to `.lib-card` for backward
+compatibility during migration.
+
+**Consequences.** Sidebar reads more rhythmic. Less custom CSS to
+maintain. New saved-thing types automatically get the pattern.
+
+---
+
+## ADR-109 — Active-dial badge on panel headers
+
+**Context.** Panels show no indication of whether they contain
+non-default values. The user has to expand each one to see "yes I
+changed something here". For 16 panels that's a lot of clicks.
+
+**Decision.** Each `.disclose-sub`'s header gets a small dot or
+counter when at least one of its dials differs from the active
+template's value. Dot is theme-coloured. Pure CSS class
+`.has-changes` toggled in `applyState()` after diffing the panel's
+dials against the template snapshot.
+
+**Consequences.** "Where did I change things?" answered in one
+glance. Free benefit: a poster with all panels clean = "you haven't
+deviated from the template" mental confirmation.
+
+---
+
+## ADR-110 — Diff-against-template badge
+
+**Context.** Templates set ~20 dials. When the user fiddles, they
+lose track of what they've moved away from baseline. "Reset preset"
+exists but is all-or-nothing.
+
+**Decision.** Header badge near the title showing
+`Watercolor (5 changes)`. Click → modal listing each changed dial,
+with a per-dial "↺ revert" button. Useful for "I tweaked too much,
+let me revert just the two I regret".
+
+**Consequences.** Forgiveness mechanic without losing work.
+Surfaces the diff so users don't accumulate cruft they can't
+identify.
+
+---
+
+## ADR-111 — "What's hidden" tooltip on Density slider
+
+**Context.** ADR-081 strips detail at low density but doesn't say
+*what* it stripped. User pulls slider to 30, doesn't see buildings
+anymore, isn't sure if they were turned off or hidden.
+
+**Decision.** Density slider's val-pill (currently shows `30%`)
+becomes a small tooltip on hover listing the layers currently
+hidden by density at that value: "Hiding: POIs, street labels,
+neighborhoods, industrial, parking, military, buildings, paths,
+cycleways". Calculated from the same `DENSITY_MIN` table that drives
+the gate.
+
+**Consequences.** Density goes from "magic value" to "transparent
+recipe". Reduces surprise.
+
+---
+
+## ADR-112 — Auto-save indicator
+
+**Context.** Persistence is silent (state to URL hash, LS, both).
+Users coming from apps with explicit Save buttons may not realise
+their work is sticking. A small "Saved" tick reassures.
+
+**Decision.** Subtle "Saved at HH:MM" in the footer-note, updates
+each time `persist()` fires. Throttled so rapid edits don't
+hammer-update the timestamp. Pure cosmetic — no schema change.
+
+**Consequences.** Confidence. Free.
+
+---
+
+## ADR-113 — Per-panel "Reset section" button
+
+**Context.** The header `↺` button resets EVERYTHING. Users often
+want to reset just the section they've been fiddling with (e.g.,
+"my Map style is too cluttered, undo just that").
+
+**Decision.** Each `.disclose-sub` body grows a small "↺ Reset
+section" link in its footer. Resets every dial in that sub-panel
+to the active template's value. Per-panel resets push their own
+history entry so undo can recover.
+
+**Consequences.** Surgical reset. Keeps the rest of your work.
+
+---
+
+## ADR-114 — Persistent action log (visible undo stack)
+
+**Context.** Undo via Cmd-Z exists but the user has no idea what's
+on the stack. They press Cmd-Z and either over-undo or stop too
+early.
+
+**Decision.** Help modal grows a "Recent actions" tab showing the
+last 20 history entries with timestamps and a one-line description
+("Toggled buildings off", "Set vignette: heavy"). Clicking a row
+jumps the state machine back to that point.
+
+**Consequences.** History becomes navigable, not opaque. Generated
+descriptions need a small dictionary (`pushHistory(label)`); the
+existing `pushHistory()` callers update to pass labels.
+
+---
+
+## ADR-115 — Real template thumbnails (rendered at user's location)
+
+**Context.** Template cards show CSS-faked previews (a generic road
++ water mock). Two issues: they don't represent the actual template
+output, and they don't match the user's current location. Picking
+templates is guesswork.
+
+**Decision.** When the Templates panel opens, render each template
+in turn against the user's current map view at low resolution
+(pixelRatio 1.0, ~120×80 px) and use those as the card thumbnails.
+Cached per (template × location), invalidated on location change.
+
+**Consequences.** Picking a template becomes "pick the picture you
+like". One-time cost ~5 seconds on first open per location.
+
+---
+
+## ADR-116 — Animation micro-interactions
+
+**Context.** Chip toggles snap. Disclose panels animate but most
+state changes don't. The app feels "instant" but also "stiff".
+Designer apps polish micro-interactions.
+
+**Decision.** Add subtle transitions to:
+- Chip activation: 80ms scale-up bounce
+- Layer button activation: 120ms colour fade
+- Slider drag: a small live "+1" / "-1" floater near the thumb
+- Toast appearance: spring-bounce in
+- Panel header chevron rotation (already animated; tighter timing)
+
+CSS-only (transitions + transforms). No JS changes.
+
+**Consequences.** App feels polished without becoming slow. Easy to
+revert if performance regresses.
+
+---
+
+## ADR-117 — Section breadcrumbs
+
+**Context.** When a deep sub-panel is open, the user can't see
+where they are in the IA without scrolling up. "Am I in Style or
+Effects right now?"
+
+**Decision.** When a sub-panel is open, a subtle breadcrumb appears
+at the top of its body: `Style › Map style`. Clicking the parent
+collapses back to it. Pure CSS pseudo-element with content from
+data-attributes; no JS.
+
+**Consequences.** Navigation feedback. Implicit hierarchy reminder.
+
+---
+
+## ADR-118 — Recently-used templates row
+
+**Context.** Power users cycle through 3-4 favourite templates.
+Finding them in a 28-card grid each time is friction.
+
+**Decision.** Top of Templates panel shows a "Recently applied"
+strip with the 5 most-recently-clicked templates as horizontal
+chips. Stored in localStorage `osm-poster:recent-templates` as a
+moving window.
+
+**Consequences.** Common path is now one click. Doesn't disrupt
+the gallery for new users.
+
+---
+
+## ADR-119 — Default location from geolocation
+
+**Context.** First-time users land on Paris. Most users don't live in
+Paris. The "wow moment" of seeing your own city as a poster is
+diluted.
+
+**Decision.** On first visit only, prompt for geolocation via
+`navigator.geolocation.getCurrentPosition`. If granted, default the
+map there at distance 6 km with the user's geocoded city name as
+title. If denied / unavailable, fall back to Paris. Stored as
+"first-visit complete" so we never prompt again.
+
+**Consequences.** Stronger first-impression for non-Parisians.
+Polite (single prompt, never re-asked).
+
+---
+
+## ADR-120 — Mobile floating action buttons
+
+**Context.** Mobile users have to scroll past the entire sidebar to
+reach the Export button. The 3 most-common actions (Randomize /
+Export / Cycle templates) deserve always-visible shortcuts on
+narrow screens.
+
+**Decision.** At `<800px`, three floating buttons appear in the
+bottom-right of the viewport (overlapping the map preview):
+🎲 Randomize, 🔄 Cycle, ⬇ Export. Pure CSS positioning + show only
+in mobile breakpoint. They mirror the existing handlers — no new
+behaviour.
+
+**Consequences.** One-tap to the most-used actions on mobile.
+Desktop users never see them.
+
+---
+
+
 
 1, 2, 18 — state/persistence/quick wins (foundation).
 3, 4, 7, 14 — decorative overlays (visual upgrade).
 5, 6, 8, 9, 10 — interactive content (the soul of the app).
 11, 12, 13 — export polish.
 15, 16, 17, 19, 20 — UX polish.
+
+ADR-101..120 — cohesion pass (after 100 ADRs of feature shipping, the
+   work that ties everything into one product):
+   Discoverability:    101 search · 102 ⌘K palette · 103 (?) dots ·
+                       104 tooltips · 105 number-key panels
+   Consistency:        106 Library panel (favs+profiles+themes) ·
+                       107 Effects superpanel · 108 .lib-card pattern
+   State visibility:   109 active-dial badges · 110 diff-from-template
+                       badge · 111 Density what's-hidden tooltip ·
+                       112 auto-save tick
+   Forgiveness:        113 per-panel reset · 114 visible undo stack
+   Polish:             115 real template thumbnails · 116 micro-
+                       animations · 117 breadcrumbs
+   Personalisation:    118 recent templates · 119 geolocation default ·
+                       120 mobile FABs
 
 ADR-058..060 — sidebar IA + control modernization + mobile pass.
 ADR-081..100 — output-cleanliness pass (the rendered POSTER quality

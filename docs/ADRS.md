@@ -1024,6 +1024,346 @@ mobile metrics.
 
 ---
 
+# Inspiration: MapToPoster (Python CLI tool)
+
+A Python CLI by @originalankur that produces print-ready minimalist
+maps (3630×4830 @ 300 DPI) from OpenStreetMap. It's the spiritual
+sibling of this project but lives on the command line. Reading
+through their workflow — `--distance` in metres, themes as files in
+a `/themes/` folder, `--dpi` for fast vs print-quality renders —
+surfaced 20 improvements we can pull into the web-native tool. The
+ADRs below capture them as future work, ranked roughly by impact.
+
+---
+
+## ADR-061 — Distance-based framing dial (km/mi)
+
+**Context.** Users describe what they want to map in real-world units
+("show me ~5 km around the centre"), not logarithmic zoom levels.
+MapToPoster's `--distance` flag is intuitive — 4 km for dense city,
+20 km for metropolitan area, 2 km for a small town.
+
+**Decision.** Add a "Frame distance" slider in **Place → View** that
+shows the visible diameter in km (or mi by locale). It computes the
+target zoom from `Math.log2(40075 / distance_km / cos(lat))`. The
+existing zoom slider stays as the power-user control. State key
+`state.frameDistance` (number, km).
+
+**Consequences.** A second-screen way to set zoom that matches how
+people think about maps. Doesn't replace anything — additive UI.
+
+---
+
+## ADR-062 — Export profile bookmarks
+
+**Context.** Templates set the *visual* recipe; the user often also
+wants to save the export-time recipe (size + format + bleed + DPI +
+crop guides) as a separate concern. Recreating "my A2 print
+settings" each time is friction.
+
+**Decision.** New "Profiles" sub-panel in Compose. Each profile is a
+named snapshot of the export-related state (size, format, bleed, DPI
+bump, mask, frame, watermark). Save / load via dropdown. Stored in
+localStorage under `osm-poster:profiles`. State key
+`state.exportProfile` (string).
+
+**Consequences.** Templates remain about looks; profiles are about
+deliverables. Cleanly separated mental models.
+
+---
+
+## ADR-063 — Custom DPI selector (real numbers)
+
+**Context.** Today's "size" picker (screen 4× / A2 / A3 / A4 / 4k) is a
+multiplier abstraction. Print shops talk in DPI. MapToPoster has
+explicit `--dpi 150` for previews and 300 for print.
+
+**Decision.** Add a DPI segment to the Export panel: 72 (web), 150
+(preview), 300 (print), 600 (fine-art print). Compute the
+`html-to-image` `pixelRatio` from `dpi / 96`. The size picker stays
+as the trim-area selector; DPI determines pixel density.
+
+**Consequences.** Users pick "A2 @ 300 DPI" instead of "A2 print"
+and know exactly what file they'll get. Pricing-conversation parity
+with print shops.
+
+---
+
+## ADR-064 — JSON theme import / export
+
+**Context.** MapToPoster's `/themes/` folder lets users share themes
+as files. Our templates live in JS source — not user-shareable.
+
+**Decision.** Two buttons in the Templates panel: **Export current as
+JSON** (download `<state>.osmposter.json` containing palette + layers
++ all dial state) and **Import** (file picker that hydrates state).
+Schema version-stamped (`v: 1`) so future format changes can migrate.
+
+**Consequences.** Themes become first-class shareable artefacts. A
+Discord/community gallery of themes becomes possible. Existing URL
+hash sharing is great for one-shot share; JSON file is great for
+collections + Git.
+
+---
+
+## ADR-065 — Direct coordinate input
+
+**Context.** Power users sometimes want to jump to exact coordinates
+(a hike's start point, a birthplace) without typing a place name and
+hoping Nominatim returns the right result.
+
+**Decision.** Search field accepts coordinate strings — "48.8566,
+2.3522", "48° 51' 24" N 2° 21' 8" E", or geohash. Detected via regex
+before falling through to Nominatim. Existing search UI is
+unchanged; the parser is just smarter.
+
+**Consequences.** Power-user shortcut, zero new UI. Reduces
+geocoding round-trips.
+
+---
+
+## ADR-066 — Map scale lock
+
+**Context.** Easy to accidentally scroll-zoom while panning to fine-
+tune the centre. Locking the zoom decouples those two intents.
+
+**Decision.** Toggle in Place → View: "🔒 Lock scale". When on,
+`map.scrollZoom.disable()` / wheel-zoom is intercepted; pan still
+works freely. Visual indicator in the corner of the map.
+
+**Consequences.** Tight composition workflow without trial-and-error
+zoom drift. Off by default.
+
+---
+
+## ADR-067 — Side-by-side template comparison
+
+**Context.** With 28 templates it's hard to choose without trying
+each. A comparison view lets the user pick 2–4, render the same
+location in each, and decide.
+
+**Decision.** "Compare" button on the Templates panel opens an
+overlay with up to 4 thumbnails of the current map under different
+templates, rendered via small map instances at low pixelRatio for
+speed. Click a thumbnail to apply.
+
+**Consequences.** Decision quality up; clicks-to-pick down. Cost: 4
+extra map instances during the compare overlay (cheap because
+sub-resolution and ephemeral).
+
+---
+
+## ADR-068 — Favourite locations bookmarks
+
+**Context.** Users often work on a series of posters for the same
+city or for places they care about. Each time they have to search +
+zoom + frame.
+
+**Decision.** Star icon next to the search box adds the current
+view (centre + zoom + bearing + pitch) to a Favourites list shown
+underneath. Each entry has a thumbnail (rendered once via
+`html-to-image` and cached as data URL) + a delete button. Stored
+in localStorage at `osm-poster:favs`.
+
+**Consequences.** First-class "places I care about" UX. Thumbnail
+generation is a one-time cost per save.
+
+---
+
+## ADR-069 — Auto TOD from real solar elevation
+
+**Context.** Current `tod: 'auto'` brackets by hour-of-day. SunCalc
+is already loaded for 3D building lighting — we can use the actual
+solar altitude to pick TOD instead of clock time.
+
+**Decision.** When `state.tod === 'auto'`, look up SunCalc's altitude
+at the current map centre + local time. Map altitude bands to TOD:
+< -6° = night, -6° to 0° = dusk/dawn (golden), 0° to 30° = morning
+or evening (sepia), > 30° = day. Replaces the hour-bracket logic.
+
+**Consequences.** Tropical city at noon = bright daylight; the same
+city at 6 PM = golden hour automatically. More physically correct.
+
+---
+
+## ADR-070 — Per-category POI density slider
+
+**Context.** Today one global density slider caps total POIs. Users
+often want "lots of restaurants, only a couple of museums" — the
+global cap is too coarse.
+
+**Decision.** Each `ICON_CATEGORY` gets its own density 0..max in the
+Map icons panel, hidden behind a per-row "⋯" expand. Defaults match
+today's global. State shape: `state.icons.categories = { food: { on,
+density } }`.
+
+**Consequences.** Fine-grained POI density. Mild migration: existing
+saved states get backfilled to the global density.
+
+---
+
+## ADR-071 — Tile prefetch warming before export
+
+**Context.** Export at high pixelRatio sometimes captures a partially-
+loaded map if the user hits Export quickly after navigating. Tiles
+for the export resolution may not be cached.
+
+**Decision.** When the Export panel opens, start a background "warm"
+pass that calls `map.setPixelRatio(targetRatio)` briefly to trigger
+tile fetches for that resolution, then restores. Show a "warming
+print cache…" indicator. By the time user clicks Download, the
+tiles are in cache.
+
+**Consequences.** Faster, more reliable exports. Costs a few seconds
+of background tile fetches + GPU cycles. Easy to disable behind a
+preference.
+
+---
+
+## ADR-072 — "Ultra minimal" template
+
+**Context.** The aesthetic in the MapToPoster article is bare lines
+on a clean background — no labels, no overlays, no decorations. We
+don't have a template that goes that far.
+
+**Decision.** New `minimal` template: solid bg, water + roads only,
+no buildings/labels/parks/decorations, hairline road weight, no
+border/texture/shadow. Pairs with a `Strip everything` quick action
+that turns off all overlays in one click.
+
+**Consequences.** A built-in answer for "I want THE minimalist look".
+Easy starting point for users.
+
+---
+
+## ADR-073 — Print-margin / trim guides in preview
+
+**Context.** With bleed enabled, users can't see in the preview
+where the trim line will fall. They cut blind based on the export.
+
+**Decision.** Toggle in Compose → Frame: "Show trim guides". Renders
+a dashed frame inside `#poster` at the trim line (3 mm in from edge
+when bleed is on). Hidden in the export but visible during editing.
+CSS-only — no canvas changes.
+
+**Consequences.** Compose for the trim, not the bleed. WYSIWYG-ish
+for print.
+
+---
+
+## ADR-074 — Session palette history
+
+**Context.** Users iterate on colors. After picking 8 colors over an
+hour they sometimes want to go back to one they tried 20 minutes
+ago. Browser's color picker doesn't remember.
+
+**Decision.** Sidebar palette panel grows a thin "Recent" strip
+showing the last 10 colors used (across any swatch). Click a chip
+to apply to the most-recently-edited swatch. Store in
+sessionStorage so refresh keeps history; clears on tab close.
+
+**Consequences.** Lightweight color memory. No state schema change.
+
+---
+
+## ADR-075 — Headless URL-batch export
+
+**Context.** Users making poster series (a city's neighbourhoods, a
+trip's stops) currently re-edit per location. URLs already encode
+full state; what's missing is the "render N URLs at once" step.
+
+**Decision.** A "Batch" panel under Compose: textarea accepts one
+URL per line (or filenames + URLs for naming). Click "Render all"
+→ for each URL, hydrate state, render at the current export
+settings, push to a ZIP. Download as `posters.zip`. Uses JSZip from
+CDN (already small enough).
+
+**Consequences.** Series-of-posters workflow without leaving the
+browser. Batch is bounded by browser memory; works fine for ~25
+posters at A3.
+
+---
+
+## ADR-076 — Smart label fields (city + region/country)
+
+**Context.** Title is one freeform string today. MapToPoster
+decouples city + country which lets it apply different sizing
+rules per field.
+
+**Decision.** Replace single title input with two: **Title** (large)
+and **Subtitle** (medium). Today's `subtitle` becomes a third
+optional **Tagline** (small italic). Existing single `title` migrates
+to the new Title and the existing subtitle to Subtitle.
+
+**Consequences.** Caption editing becomes more structured; templates
+can theme each field's typography independently.
+
+---
+
+## ADR-077 — Visible distance scale next to the map
+
+**Context.** The Scale Bar overlay shows distance, but it's
+decorative on the map area. A more prominent "Showing 4.2 km × 6.3
+km" readout helps composition.
+
+**Decision.** A small text readout above the map (or inside the
+Place → View panel) showing the current visible width × height in
+the locale's preferred unit. Updates live with pan/zoom. No state
+key needed — pure derived data from `map.getBounds()`.
+
+**Consequences.** Composition feedback without staring at a slider.
+
+---
+
+## ADR-078 — Auto-suggest framing distance per city
+
+**Context.** Picking a good distance for a city is a learned skill
+(Tokyo at 4 km vs Tokyo at 30 km are very different posters). The
+article hints at this: "decent maps of tiny towns by setting the
+--distance flag to 2000 or lower".
+
+**Decision.** When the user selects a place from search, peek at the
+result's `boundingbox` from Nominatim and set the initial frame to
+`min(20 km, max(2 km, area_diameter * 0.6))`. User can still
+override; this is just the default landing.
+
+**Consequences.** First-impression posters for new cities are
+properly framed. Power users untouched.
+
+---
+
+## ADR-079 — Background pattern library
+
+**Context.** Beyond grain and halftone, posters often use subtle
+backgrounds — concentric rings (atlas vibe), pinstripes (newspaper),
+dot grids (engineering paper), isobars (weather map).
+
+**Decision.** New chip-group in Compose → Frame → Background:
+`None / Grain / Halftone / Rings / Stripes / Grid / Isobars`. Each
+is a CSS background-image (gradients or base64 SVG). Stacks with
+the texture overlay if both are on.
+
+**Consequences.** Visual variety without map data. Pure CSS, free
+to ship.
+
+---
+
+## ADR-080 — One-click "good defaults" starter
+
+**Context.** First-time users land on Blueprint over Paris zoomed in
+on a random spot. New users need a 5-second-to-impressive flow.
+
+**Decision.** A prominent "✨ Try a beautiful start" button on first
+visit that picks: a tasteful template (rotates through Editorial /
+Watercolor / Travel Guide), a famous city (Paris / Tokyo / NYC),
+sensible distance (~6 km), bearing 0, pitch 0, all overlays off.
+Dismissed forever after first click. Stored in localStorage.
+
+**Consequences.** "Wow" moment on first visit without a tutorial.
+Returning users don't see it.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).
@@ -1031,5 +1371,20 @@ mobile metrics.
 5, 6, 8, 9, 10 — interactive content (the soul of the app).
 11, 12, 13 — export polish.
 15, 16, 17, 19, 20 — UX polish.
+
+ADR-058..060 — sidebar IA + control modernization + mobile pass.
+ADR-061..080 — MapToPoster-inspired roadmap (not yet shipped):
+   065 + 061 + 077 — input ergonomics first (paste coords, frame in
+   km, see real distance).
+   072 + 080 + 078 — first-impression flow ("good start" + minimal
+   template + auto-frame on city pick).
+   064 + 062 + 075 — sharing & batch (theme files, profiles, URL
+   batch render).
+   067 + 074 + 068 + 070 — power-user comfort (compare, history,
+   favourites, per-category POI).
+   063 + 071 + 073 — print-quality plumbing (DPI, prefetch, trim
+   guides).
+   066 + 069 + 076 + 079 — refinements (lock, smart TOD, structured
+   caption, background patterns).
 
 All shipped in a single index.html file. No build step.

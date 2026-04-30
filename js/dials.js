@@ -325,6 +325,23 @@ const CHIP_AFTER = {
   fxMode:         () => applyMapFilters(),
   // ADR-079 — Background pattern is purely a CSS class on #poster.
   bgPattern:      () => applyBgPattern(),
+  // ADR-082/086/093 — chip-group keys whose effect lives in CSS classes
+  // on #poster (or in style.js for roadHierarchy). The default chip
+  // hook calls restyle() which is correct for hierarchy; the others
+  // need a CSS class swap, handled by applyClassyDials().
+  roadHierarchy:  () => restyle(),
+  mapPadding:     () => applyClassyDials(),
+  buildingShadow: () => applyClassyDials(),
+  // ADR-098 — typography preset is atomic: it sets weight/size/etc.
+  // in one go via applyTypographyPreset(), then we re-sync the chip
+  // groups so the per-field chips reflect the new values.
+  typographyPreset: () => {
+    if (typeof applyTypographyPreset === 'function') applyTypographyPreset();
+    if (typeof syncChipGroups === 'function') syncChipGroups();
+    if (typeof applyTypography === 'function') applyTypography();
+    if (typeof applyTitleOrnament === 'function') applyTitleOrnament();
+    if (typeof applyCaptionDivider === 'function') applyCaptionDivider();
+  },
   titleWeight:    () => applyTypography(),
   titleSize:      () => applyTypography(),
   subtitleStyle:  () => applyTypography(),
@@ -355,7 +372,78 @@ const _chipDefaults = {
   fxMode: 'none',
   bgPattern: 'none',
   exportDpi: 'auto',
+  // ADR-082/086/093/098 — chip defaults for the cleanliness pass.
+  roadHierarchy: 'firm',
+  mapPadding: 'none',
+  buildingShadow: 'none',
+  typographyPreset: 'default',
 };
+
+// ADR-086/087/093/094/100 — toggle a set of CSS classes on #poster
+// that drive the cleanliness flags. One function so adding another
+// CSS-flag toggle is a one-line addition.
+function applyClassyDials() {
+  const el = document.getElementById('poster');
+  if (!el) return;
+  // padding-X
+  ['none', 'cozy', 'breathing', 'loose'].forEach(c => el.classList.remove('padding-' + c));
+  if (state.mapPadding && state.mapPadding !== 'none') el.classList.add('padding-' + state.mapPadding);
+  // bldg-shadow-X
+  ['none', 'subtle', 'lifted'].forEach(c => el.classList.remove('bldg-shadow-' + c));
+  if (state.buildingShadow && state.buildingShadow !== 'none') el.classList.add('bldg-shadow-' + state.buildingShadow);
+  // boolean classes
+  el.classList.toggle('caption-compact', !!state.captionCompact);
+  el.classList.toggle('edge-fade',        !!state.edgeFade);
+  el.classList.toggle('cmyk-preview',     !!state.cmykPreview);
+  // After CSS-level resize, give MapLibre a chance to read its new
+  // container size — otherwise the WebGL canvas keeps the old dimensions
+  // until the next pan.
+  if (typeof map !== 'undefined' && map && map.resize) setTimeout(() => map.resize(), 50);
+  if (typeof mapBuildings !== 'undefined' && mapBuildings) setTimeout(() => mapBuildings.resize(), 50);
+  if (typeof mapFg !== 'undefined' && mapFg) setTimeout(() => mapFg.resize(), 50);
+}
+
+// ADR-081 — Density slider. Single 0..100 dial that progressively
+// strips detail by re-styling the map. The actual filtering happens
+// inside style.js (densityAllows + the road-class subset filter); this
+// just owns the input event and triggers restyle.
+const densitySlider = document.getElementById('densitySlider');
+const densityVal    = document.getElementById('densityVal');
+if (densitySlider && densityVal) {
+  densitySlider.addEventListener('input', safe(() => {
+    state.density = parseInt(densitySlider.value, 10);
+    densityVal.textContent = state.density + '%';
+    restyle();
+    persist();
+  }, 'density'));
+  densitySlider.addEventListener('change', () => pushHistory());
+}
+
+// ADR-089/092/094/095/096/100/087/090 — boolean toggles. Each writes
+// a single state flag, then routes to the appropriate apply function.
+function _bindCleanlinessToggle(id, key, applyFn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', safe(e => {
+    pushHistory();
+    state[key] = e.target.checked;
+    if (applyFn) applyFn();
+    persist();
+  }, id));
+}
+_bindCleanlinessToggle('coastLineToggle',     'coastLine',     restyle);
+_bindCleanlinessToggle('parkSoftenToggle',    'parkSoften',    restyle);
+_bindCleanlinessToggle('centerRoundelToggle', 'centerRoundel', () => typeof applyCenterRoundel === 'function' && applyCenterRoundel());
+_bindCleanlinessToggle('autoLegendToggle',    'autoLegend',    () => typeof applyLegend === 'function' && applyLegend());
+_bindCleanlinessToggle('edgeFadeToggle',      'edgeFade',      applyClassyDials);
+_bindCleanlinessToggle('captionCompactToggle','captionCompact',applyClassyDials);
+_bindCleanlinessToggle('cmykPreviewToggle',   'cmykPreview',   applyClassyDials);
+// ADR-090 — Monotone lock. Apply derives the rest of the palette from bg.
+_bindCleanlinessToggle('monotoneToggle',      'monotone',      () => {
+  if (typeof applyMonotone === 'function') applyMonotone();
+  if (typeof syncSwatches === 'function') syncSwatches();
+  restyle();
+});
 
 // ADR-079 — Background pattern under the poster. Toggled via .bg-X
 // class on #poster; CSS handles the actual pattern. None = no class.

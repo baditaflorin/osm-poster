@@ -476,6 +476,8 @@ titleInput.addEventListener('input', () => {
   state.caption.title = titleInput.value;
   if (typeof applyTitleOrnament === 'function') applyTitleOrnament();
   else document.getElementById('caption-title').textContent = titleInput.value || 'PARIS';
+  // ADR-088 — re-apply title kerning curve every keystroke.
+  if (typeof applyTitleKerning === 'function') applyTitleKerning();
   persist();
 });
 subtitleInput.addEventListener('input', () => { state.caption.subtitle = subtitleInput.value; document.getElementById('caption-subtitle').textContent = subtitleInput.value || 'The City of Light'; persist(); });

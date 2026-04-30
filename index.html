@@ -134,6 +134,7 @@
           <div class="sub-title" style="margin: 4px 0 6px;">Themed presets</div>
           <div class="presets" id="presets"></div>
           <div class="sub-title" style="margin: 14px 0 6px;">Custom colors</div>
+          <label class="toggle" style="margin-bottom: 6px;"><input type="checkbox" id="monotoneToggle"> 🎨 Monotone lock <span class="sec-hint" style="margin-left: auto;">derive all from bg</span></label>
           <div class="palette-row" id="palette"></div>
           <div class="seed-row">
             <input type="text" id="seed" placeholder="Seed (optional)" maxlength="32">
@@ -160,11 +161,16 @@
         <button class="disclose-btn"><span class="ico">🎨</span><span class="disclose-label"><span class="disclose-title">Map style</span><span class="disclose-desc">Roads · buildings · parks · labels</span></span><span class="chev">›</span></button>
         <div class="body"><div>
 
-          <div class="sub-title" style="margin: 4px 0 6px;">🛣 Roads</div>
+          <div class="sub-title" style="margin: 4px 0 6px;">✨ Density <span class="sec-hint">strip detail progressively</span></div>
+          <div class="row"><label>Density</label><input type="range" id="densitySlider" min="0" max="100" step="5" value="100"><span class="val" id="densityVal">100%</span></div>
+
+          <div class="sub-title" style="margin: 14px 0 6px;">🛣 Roads</div>
           <div class="chip-group" data-chip-key="roadStyle"
                data-options='[["solid","━ Solid"],["dashed","┄ Dashed"],["dotted","┈ Dotted"],["longdash","━━ Long"],["dotdash","━·━ Mix"],["rail","⏐ ⏐ Rail"]]'></div>
           <div class="chip-group" data-chip-key="roadCaps" style="margin-top: 4px;"
                data-options='[["round","⏺ Round"],["butt","▮ Butt"],["square","▢ Square"]]'></div>
+          <div class="chip-group" data-chip-key="roadHierarchy" style="margin-top: 4px;"
+               data-options='[["flat","≡ Flat"],["soft","≣ Soft"],["firm","━ Firm"],["strong","╋ Strong"],["extreme","✚ Extreme"]]'></div>
           <div class="effects-toggles" style="margin-top: 6px;">
             <label class="toggle"><input type="checkbox" id="roadCasingToggle"> Road casing</label>
             <label class="toggle"><input type="checkbox" id="roadGlowToggle"> Road glow</label>
@@ -267,6 +273,11 @@
           <div class="effects-toggles" style="margin-top: 8px;">
             <label class="toggle"><input type="checkbox" id="starsToggle"> Sprinkle stars</label>
             <label class="toggle"><input type="checkbox" id="sketchFrameToggle"> Sketch frame</label>
+            <label class="toggle"><input type="checkbox" id="coastLineToggle"> 🌊 Coastline</label>
+            <label class="toggle"><input type="checkbox" id="parkSoftenToggle"> 🌿 Soft parks</label>
+            <label class="toggle"><input type="checkbox" id="centerRoundelToggle"> ⊙ Center roundel</label>
+            <label class="toggle"><input type="checkbox" id="autoLegendToggle"> ☱ Legend</label>
+            <label class="toggle"><input type="checkbox" id="edgeFadeToggle"> ▦ Edge fade</label>
           </div>
 
           <div class="sub-title" style="margin: 14px 0 6px;">Compass style</div>
@@ -344,6 +355,10 @@
           <input type="text" id="watermark" placeholder="Custom watermark (optional, replaces URL)" maxlength="60">
           <div class="subtitle-chips" id="subtitleChips"></div>
 
+          <div class="sub-title" style="margin: 12px 0 6px;">✨ Typography preset <span class="sec-hint">designer pairings</span></div>
+          <div class="chip-group" data-chip-key="typographyPreset"
+               data-options='[["default","Default"],["editorial","Editorial"],["modern","Modern"],["vintage","Vintage"],["brutalist","Brutalist"],["quiet","Quiet"]]'></div>
+
           <div class="sub-title" style="margin: 12px 0 6px;">Title weight</div>
           <div class="chip-group" data-chip-key="titleWeight"
                data-options='[["regular","Reg"],["medium","Med"],["bold","Bold"],["heavy","Heavy"]]'></div>
@@ -398,7 +413,17 @@
           <div class="sub-title" style="margin: 14px 0 6px;">Background pattern <span class="sec-hint">behind the map</span></div>
           <div class="chip-group" data-chip-key="bgPattern"
                data-options='[["none","∅ None"],["rings","◎ Rings"],["stripes","╱╱ Stripes"],["dotgrid","· Dot grid"],["isobars","⌗ Isobars"]]'></div>
-          <label class="toggle" style="margin-top: 10px;"><input type="checkbox" id="trimGuidesToggle"> Show trim guides (3 mm)</label>
+          <div class="sub-title" style="margin: 14px 0 6px;">Map padding</div>
+          <div class="chip-group" data-chip-key="mapPadding"
+               data-options='[["none","∅ None"],["cozy","▫ Cozy"],["breathing","◫ Breathing"],["loose","⬛ Loose"]]'></div>
+          <div class="sub-title" style="margin: 14px 0 6px;">Building depth</div>
+          <div class="chip-group" data-chip-key="buildingShadow"
+               data-options='[["none","∅ Flat"],["subtle","🭽 Subtle"],["lifted","🭺 Lifted"]]'></div>
+          <div class="effects-toggles" style="margin-top: 10px;">
+            <label class="toggle"><input type="checkbox" id="trimGuidesToggle"> Trim guides (3 mm)</label>
+            <label class="toggle"><input type="checkbox" id="captionCompactToggle"> Compact caption</label>
+            <label class="toggle"><input type="checkbox" id="cmykPreviewToggle"> 🖨 CMYK preview</label>
+          </div>
           <div class="sub-title" style="margin: 14px 0 6px;">📦 Export profiles <span class="sec-hint">save current setup</span></div>
           <div class="actions" style="margin-bottom: 6px;">
             <button id="saveProfileBtn" title="Save the current size / format / DPI / bleed setup as a named profile">📦 Save profile</button>
@@ -740,6 +765,7 @@
 <script src="./js/features.js"></script>
 <script src="./js/dials.js"></script>
 <script src="./js/filters.js"></script>
+<script src="./js/cleanliness.js"></script>
 <script src="./js/storage.js"></script>
 <script src="./js/boot.js"></script>
 </body>

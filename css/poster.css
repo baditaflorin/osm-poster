@@ -950,6 +950,35 @@
     box-shadow: inset 0 0 0 1px var(--input-stroke);
   }
 
+  /* ADR-095 — Centre roundel: small filled dot + outer ring at the
+     poster's named coordinate. Uses currentColor so it inherits the
+     palette colour assigned by JS. */
+  .center-roundel {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: currentColor;
+    box-shadow:
+      0 0 0 3px rgba(255,255,255,0.6),
+      0 0 0 5px currentColor;
+    pointer-events: none;
+  }
+
+  /* ADR-096 — Auto-legend: small SVG-styled legend in the bottom-left
+     of the map. Pure CSS list of swatch+label rows. Backdrop-blur for
+     readability over busy maps. */
+  .legend-box {
+    position: absolute; left: 12px; bottom: 12px; z-index: 14;
+    padding: 6px 10px; border-radius: var(--r-2);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.5px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    pointer-events: none;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .legend-row { display: flex; align-items: center; gap: 6px; line-height: 1.3; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15); }
+
   /* ADR-046 — confetti particle */
   .confetti-particle {
     position: absolute; left: 50%; top: 50%;
@@ -993,6 +1022,50 @@
   #poster.border-bold   { border: 18px solid var(--border-color); }
 
   #poster { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; --border-color: #111; }
+
+  /* ADR-086 — Inner map padding. Adds margin around #map-wrap so the
+     poster card has a "stage" of bg colour. The map shrinks; the
+     surrounding bg fills the gap. Caption stays put — only the map's
+     box gets the inset. */
+  #poster.padding-cozy       #map-wrap { margin: 8px; }
+  #poster.padding-breathing  #map-wrap { margin: 16px; }
+  #poster.padding-loose      #map-wrap { margin: 24px; }
+
+  /* ADR-087 — Caption height cap. Hard-clamp the caption block to a
+     fraction of poster height so a long subtitle/tagline can't push
+     the map up. compact pulls it tighter (~12% — for the truly
+     minimal MapToPoster look). */
+  #caption           { max-height: 18%; overflow: hidden; }
+  #poster.caption-compact #caption { max-height: 12%; }
+
+  /* ADR-093 — Building drop-shadow. Targets only the #map-buildings
+     overlay canvas (the dedicated buildings render in the multi-map
+     architecture), so other map content is unaffected. Subtle and
+     lifted are two preset depths. */
+  #poster.bldg-shadow-subtle #map-buildings { filter: drop-shadow(1px 1.5px 0 rgba(0,0,0,0.18)); }
+  #poster.bldg-shadow-lifted #map-buildings { filter: drop-shadow(2px 3px 0 rgba(0,0,0,0.28)); }
+
+  /* ADR-094 — Edge fade. Soft alpha mask near the trim so labels and
+     roads don't visually continue off the poster. Toggleable per-poster.
+     Works with html-to-image (mask-image is captured via foreignObject). */
+  #poster.edge-fade #map-wrap {
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.06) 0%, #000 6%, #000 94%, rgba(0,0,0,0.06) 100%),
+                        linear-gradient(to right,  rgba(0,0,0,0.06) 0%, #000 6%, #000 94%, rgba(0,0,0,0.06) 100%);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.06) 0%, #000 6%, #000 94%, rgba(0,0,0,0.06) 100%),
+                        linear-gradient(to right,  rgba(0,0,0,0.06) 0%, #000 6%, #000 94%, rgba(0,0,0,0.06) 100%);
+    -webkit-mask-composite: source-in;
+            mask-composite: intersect;
+  }
+
+  /* ADR-100 — CMYK preview. Approximate the gamut shift print would
+     introduce: bright sRGB cyans/magentas/yellows desaturate, hues
+     drift slightly. Not a true ICC profile (browsers don't expose
+     them) but good enough for a "what will it look like printed"
+     sanity check. */
+  #poster.cmyk-preview #map-wrap,
+  #poster.cmyk-preview #caption {
+    filter: saturate(0.82) contrast(0.94) hue-rotate(-2deg) brightness(0.97);
+  }
 
   /* ADR-079 — Background pattern library. Each .bg-X paints a subtle
      pattern *behind* the map area (the patterns aren't visible while a

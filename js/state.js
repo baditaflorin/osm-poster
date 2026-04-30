@@ -80,6 +80,20 @@ function defaultState() {
     frameOrnaments: false,    // vintage corner flourishes on the poster
     mapHue: 0,                // 0..360° global hue rotation
     fxMode: 'none',           // none | glitch | halftone | melt | bloom | posterize (SVG filter on #map-wrap)
+    // ===== ADR-081..100: output-cleanliness pass =====
+    density: 100,             // ADR-081 — 0..100, strips detail as it drops
+    roadHierarchy: 'firm',    // ADR-082 — flat | soft | firm | strong | extreme
+    coastLine: false,         // ADR-089 — extra line on water/land edge
+    parkSoften: false,        // ADR-092 — blurred halo around park polygons
+    buildingShadow: 'none',   // ADR-093 — none | subtle | lifted (CSS drop-shadow)
+    mapPadding: 'none',       // ADR-086 — none | cozy | breathing | loose
+    captionCompact: false,    // ADR-087 — force caption to <12% (vs default 18%)
+    edgeFade: false,          // ADR-094 — soft mask-image fade on map edges
+    monotone: false,          // ADR-090 — derive every palette colour from bg
+    centerRoundel: false,     // ADR-095 — explicit dot at state.view.center
+    autoLegend: false,        // ADR-096 — small SVG legend in bottom-left
+    cmykPreview: false,       // ADR-100 — CSS approximation of CMYK gamut shift
+    typographyPreset: 'default', // ADR-098 — default|editorial|modern|vintage|brutalist|quiet
     // ADR-079 — Background pattern under the poster, behind the map.
     // Pure CSS — applied via .bg-{value} class on #poster.
     bgPattern: 'none',        // none | rings | stripes | dotgrid | isobars

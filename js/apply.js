@@ -170,12 +170,37 @@ function applyState({ silent } = {}) {
   // ADR-079 / ADR-073 / ADR-066 — pull the latest state into the new
   // CSS-driven dials. Wrapped in typeof guards so applyState() stays
   // callable during boot before dials.js evaluates these functions.
-  if (typeof applyBgPattern   === 'function') applyBgPattern();
-  if (typeof applyTrimGuides  === 'function') applyTrimGuides();
-  if (typeof applyScaleLock   === 'function') applyScaleLock();
+  if (typeof applyBgPattern    === 'function') applyBgPattern();
+  if (typeof applyTrimGuides   === 'function') applyTrimGuides();
+  if (typeof applyScaleLock    === 'function') applyScaleLock();
+  // ADR-086/087/093/094/100 — CSS classes on #poster.
+  if (typeof applyClassyDials  === 'function') applyClassyDials();
+  // ADR-088 — title kerning curve.
+  if (typeof applyTitleKerning === 'function') applyTitleKerning();
+  // ADR-090 — monotone lock derives palette from bg if enabled.
+  if (typeof applyMonotone     === 'function') applyMonotone();
+  // ADR-095 — centre roundel marker on the named coordinate.
+  if (typeof applyCenterRoundel === 'function') applyCenterRoundel();
+  // ADR-096 — auto-legend in corner of the map.
+  if (typeof applyLegend       === 'function') applyLegend();
   // ADR-077 — distance readout updates on map move; trigger one now
   // so a hash-load with a freshly-restored center shows the right value.
   if (typeof updateDistanceReadout === 'function') updateDistanceReadout();
+  // Sync new boolean toggles (cleanliness pass).
+  ['coastLineToggle:coastLine', 'parkSoftenToggle:parkSoften', 'centerRoundelToggle:centerRoundel',
+   'autoLegendToggle:autoLegend', 'edgeFadeToggle:edgeFade', 'captionCompactToggle:captionCompact',
+   'cmykPreviewToggle:cmykPreview', 'monotoneToggle:monotone'].forEach(pair => {
+    const [id, key] = pair.split(':');
+    const cb = document.getElementById(id);
+    if (cb) cb.checked = !!state[key];
+  });
+  // Sync density slider value
+  const ds = document.getElementById('densitySlider');
+  const dv = document.getElementById('densityVal');
+  if (ds && dv) {
+    ds.value = (typeof state.density === 'number') ? state.density : 100;
+    dv.textContent = ds.value + '%';
+  }
   // The filter stack module loads after apply.js; the typeof guard keeps
   // applyState() callable during boot before filters.js evaluates, and
   // is a no-op once it's defined.

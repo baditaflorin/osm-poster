@@ -124,6 +124,11 @@ document.getElementById('export').addEventListener('click', async () => {
     // ADR-029 — bump edition counter and stamp it on the poster
     setEditionDisplay(nextEdition());
 
+    // ADR-097 — snap zoom to the nearest integer (or half) before
+    // capture so labels render crisp at the high pixelRatio. No-op if
+    // the user is already at a clean zoom level.
+    if (typeof snapZoomForExport === 'function') snapZoomForExport();
+
     map.triggerRepaint();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const node = document.getElementById('poster');

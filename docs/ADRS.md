@@ -1364,6 +1364,369 @@ Returning users don't see it.
 
 ---
 
+---
+
+# Output cleanliness: making the rendered poster look more like a designer made it
+
+A second pass after ADR-061..080. The first round was inspired by what
+MapToPoster lets the user *do*; this round is inspired by what their
+output *looks like*. Comparing a typical MapToPoster export to ours:
+they default to less (no labels, single-tone water, deliberate road
+hierarchy, no 3D buildings, generous margins, calm caption). Ours
+defaults to more (every layer toggleable, every label class on, busy
+defaults). The 20 ADRs below close that gap by making "designer-clean"
+either the default or one click away.
+
+---
+
+## ADR-081 — Anti-clutter dial (single 0..100 slider)
+
+**Context.** A user who wants a clean poster currently has to disable
+~12 layers + tweak ~6 dials by hand. There's no fast path from "show
+me everything" to "show me almost nothing".
+
+**Decision.** Single slider in **Style → Map style** labelled "Density"
+that progressively strips detail as it goes left:
+- 100: today's full-detail render
+- 80:  hide POI markers, hide street labels
+- 60:  hide neighborhoods, hide industrial, parking, military
+- 40:  hide buildings, hide cycleways, hide paths
+- 20:  hide rivers (keep main water), thin roads to motorway+primary
+- 0:   only the bg color + water polygon + motorway lines
+
+State key `state.density` (number 0..100). Doesn't replace the per-
+layer toggles; it overrides them at render time and the toggles snap
+back to today's values when density is 100.
+
+**Consequences.** One slider gets the user to MapToPoster-clean in
+seconds. Existing template values are kept; the dial layers on top.
+
+---
+
+## ADR-082 — Road hierarchy weight ramp
+
+**Context.** Today every road class draws with a fixed width-multiple
+(`base * roadWeight`). At small print sizes this means a minor lane
+and a motorway are nearly indistinguishable, which reads as cluttered
+because every road is shouting equally loud.
+
+**Decision.** Replace flat multiples with an exponential ramp keyed off
+zoom and class: motorway 4× the visual weight of minor, with the
+ratio holding across zooms. New chip-group `roadHierarchy` with
+options `flat / soft (1:1.5) / firm (1:3 — current default behaviour)
+/ strong (1:4) / extreme (1:8)`. Strong is the MapToPoster default
+look — clear arterials against a hairline grid of lanes.
+
+**Consequences.** Posters look intentional rather than uniform.
+Motorways read as "the spine of the city", minor roads as texture.
+
+---
+
+## ADR-083 — Zoom-driven layer LOD
+
+**Context.** Some layers are too dense to be useful at certain zooms
+(every street label at z 11 is illegible; every POI at z 18 is
+overlap soup). MapLibre supports `minzoom`/`maxzoom` per layer; we
+use it sporadically.
+
+**Decision.** Audit every layer in `style.js` and add deliberate
+`minzoom`/`maxzoom` so each one only paints in the range where it's
+readable. Codify as a small constant `LOD_RANGES` keyed by layer id
+so the rules are visible in one place rather than scattered.
+
+**Consequences.** Posters at low zoom auto-strip, posters at high
+zoom auto-add detail without user intervention. No new dial.
+
+---
+
+## ADR-084 — Label collision avoidance
+
+**Context.** With cities + neighborhoods + streets + water names +
+park names all on, labels stack on top of each other and become
+unreadable mush. MapLibre supports `text-allow-overlap: false` and
+`symbol-sort-key` for collision priority; we don't use them.
+
+**Decision.** All `symbol` layers in `style.js` get
+`text-allow-overlap: false` and a `symbol-sort-key` based on a
+priority table (cities > countries > neighborhoods > streets > water
+names > park names > POIs). Collisions resolve high-priority-first.
+
+**Consequences.** Crowded areas show fewer but readable labels rather
+than illegible overlap. No setting to expose; it's just better.
+
+---
+
+## ADR-085 — Halo width proportional to text size
+
+**Context.** Halo (the colour stroke around label text) is fixed at
+~2 px regardless of text size. At title sizes it looks anaemic; at
+street-label sizes it looks heavy.
+
+**Decision.** Compute halo as a proportional value:
+`text-halo-width: max(1.2, text-size * 0.18)`. MapLibre supports
+expressions in paint properties so this drops in.
+
+**Consequences.** Cleaner contrast at every label size; no dial.
+
+---
+
+## ADR-086 — Inner map padding
+
+**Context.** Today the map fills the poster card edge-to-edge inside
+the frame. Labels and roads can render right at the trim, which
+reads as cramped vs MapToPoster's typical generous margin.
+
+**Decision.** New chip-group `mapPadding` in **Compose → Frame**:
+`none (current) / cozy (8px) / breathing (16px) / loose (24px)`.
+Inset uses `padding` on `#map-wrap` so the map is a smaller box
+inside the poster card. Caption stays where it is.
+
+**Consequences.** Critical features can't kiss the trim line. Tighter
+visual hierarchy: poster has a clear "stage" with a frame of bg
+colour around the map.
+
+---
+
+## ADR-087 — Caption / map height ratio cap
+
+**Context.** A long subtitle + tagline + commemorative date can push
+the caption block to ~25% of poster height, leaving the map crammed
+above. MapToPoster keeps captions at <10% of height religiously.
+
+**Decision.** Cap caption block at 18% of poster height via CSS
+`max-height: 18%; overflow: hidden;` on `#caption`. If text doesn't
+fit it ellipsises rather than steals map space. A "compact caption"
+chip in Compose → Caption forces 12% for the truly minimalist look.
+
+**Consequences.** The map always wins, and that's correct: it IS the
+poster.
+
+---
+
+## ADR-088 — Title kerning curve by length
+
+**Context.** Letter-spacing is a fixed value per `titleSize`. Short
+titles ("NYC") look weak; long titles ("CONSTANTINOPLE") look
+crammed. Designer typography always tunes letter-spacing to length.
+
+**Decision.** Compute letter-spacing dynamically from title length:
+`letter-spacing = max(2, 14 - title.length * 0.5)`. Falls between
+2px (tight, for long titles) and 14px (airy, for 3-letter titles).
+Applied via CSS variable set in JS on title input change.
+
+**Consequences.** Posters look hand-tuned typography rather than
+mechanical. No dial.
+
+---
+
+## ADR-089 — Coastline emphasis
+
+**Context.** Water and land share an edge that MapLibre paints as
+the boundary between two fills. With similar luminance values
+(common in pastel themes) the coast disappears.
+
+**Decision.** Optional `coastLine` toggle in Effects → Decorations.
+When on, push an extra `line` layer for water polygon edges with
+the bg-darken-15 colour at 0.6 weight. Templates can preset it
+(Nautical, Riviera, Coral, Glacier all benefit).
+
+**Consequences.** Coastlines read as deliberate graphic edges. Off
+by default to keep the busy-detail count low; on for nautical
+templates.
+
+---
+
+## ADR-090 — Monotone lock
+
+**Context.** Some of the cleanest posters use one hue across every
+element (Mono, Mono Dark) — water, land, roads, buildings all
+versions of the same colour. Achieving this manually means dragging
+9 colour pickers to similar values.
+
+**Decision.** Toggle "Monotone lock" in Style → Palette. When on,
+all palette entries auto-derive from a single `state.palette.bg`:
+water = darken(bg, 0.15), green = darken(bg, 0.06), road = bg's
+contrast colour (white on dark, black on light), etc. The user
+edits ONE colour and the rest follow.
+
+**Consequences.** One-colour posters become a 2-second job. Off by
+default (user can still pick all 9 colours independently).
+
+---
+
+## ADR-091 — POI cap by zoom
+
+**Context.** Today's POI cap is global. At z 18 the same cap of 25
+crowds the screen because each POI is a 30 px chip and there's only
+~600px to fit them.
+
+**Decision.** Cap at render-time scales with zoom:
+`effectiveCap = state.icons.density * (zoom < 14 ? 0.4 : zoom < 16 ? 0.7 : 1.0)`.
+Low-zoom views show fewer POIs (more readable); high-zoom views
+show more (there's room). Per-category densities (ADR-070) layer
+on top.
+
+**Consequences.** Auto-tunes density to canvas room. No dial.
+
+---
+
+## ADR-092 — Park polygon edge softening
+
+**Context.** Park polygons render with hard fill-opacity edges that
+clip cleanly against water/buildings. Looks digital. Designer maps
+soften the edge so a park gradually fades into surrounding land.
+
+**Decision.** Add an outer `line` layer for parks with a wide blur
+(`line-blur: 8`, `line-color: park`, `line-opacity: 0.3`). The
+existing fill stays sharp; the new blurred line gives a soft halo
+around it. Off by default; on via a `parkSoften` toggle in
+Effects → Decorations.
+
+**Consequences.** Parks look painted rather than vector-clipped.
+
+---
+
+## ADR-093 — Subtle building drop shadow
+
+**Context.** Without 3D pitch, buildings render as flat polygons.
+With 3D pitch, the WebGL extrusions are heavy. Designer middle-ground:
+flat shapes + a subtle drop shadow for depth.
+
+**Decision.** Optional CSS `filter: drop-shadow(2px 2px 0 ...)` on
+the building layer (achievable via a separate building-shadow line
+layer in MapLibre at offset). New `buildingShadow` chip:
+`none / subtle (1.5px) / lifted (3px)`. Subtle lifts buildings
+slightly without the GPU cost of 3D.
+
+**Consequences.** Posters get depth without 3D mode complexity.
+
+---
+
+## ADR-094 — Edge fade for roads / labels
+
+**Context.** Roads and labels rendered right at the trim look like
+they continue off-poster (which they do, but it visually disturbs
+the framing). Designer maps fade them gently as they approach the
+edge.
+
+**Decision.** Add a CSS `mask-image: linear-gradient` overlay on
+`#map-wrap` with opaque centre and 6 % alpha at every edge,
+toggleable via `state.edgeFade`. Pure CSS; works in export.
+
+**Consequences.** Posters feel framed rather than cropped.
+
+---
+
+## ADR-095 — Roundel city marker
+
+**Context.** When the user puts a city's name as title, there's no
+explicit "this is the city centre" mark on the map — the title
+points generally, the map points exactly. Many posters use a small
+filled circle at the geographic centre of the named place.
+
+**Decision.** Toggle `centerRoundel` in Place → Search. When on,
+draw a small filled circle (~6 px) + ring at the saved
+`state.view.center` coordinate. Optional label text directly under
+the roundel using the title text.
+
+**Consequences.** "This poster is about THIS spot" is unambiguous.
+Off by default; users who want the abstract minimalist look can keep
+it that way.
+
+---
+
+## ADR-096 — Auto legend in corner
+
+**Context.** With many road styles, building shapes, layer toggles
+all visible, a viewer might want to know what dashed/dotted means.
+A small legend in a corner solves this and gives the poster an
+"informational" gravitas.
+
+**Decision.** Toggle `legend` in Effects → Decorations. When on,
+draw a small SVG legend in the bottom-left of the map showing only
+the layers currently visible (water, roads, paths, buildings…)
+with their colour. Auto-updates as toggles change. Uses no real
+estate when empty.
+
+**Consequences.** Posters feel reference-quality. Off by default.
+
+---
+
+## ADR-097 — Snap zoom to integer (or half) levels
+
+**Context.** Fractional zoom levels (e.g. 13.4) cause MapLibre to
+render labels at scaled-not-snapped positions, which can look
+slightly fuzzy on a high-DPI export. Round-number zooms render
+crisper.
+
+**Decision.** Already partly done — there's a snap-to-half on
+zoomend. Extend: when about to export, snap to the nearest integer
+zoom (or half if integer would change the framing too much). Apply
+as part of the export click handler before capture.
+
+**Consequences.** Exports come out a touch sharper; no user-visible
+behaviour change for live editing.
+
+---
+
+## ADR-098 — Designer typography pairings
+
+**Context.** The Caption panel exposes weight/size/subtitle/coords as
+4 independent dropdowns. A new user has to find the right pairing
+themselves; a designer would already know "heavy title + italic
+subtitle + caps + decimal" hangs together but "heavy + italic + caps
++ DMS" reads cluttered.
+
+**Decision.** New chip-group `typographyPreset` in Caption: 6 curated
+pairings — `Default`, `Editorial`, `Modern`, `Vintage`, `Brutalist`,
+`Quiet`. Each sets all 4 fields atomically. State key
+`state.typographyPreset`; templates can preset it.
+
+**Consequences.** One click to "this caption looks like a designer
+laid it out" instead of fiddling with four dropdowns.
+
+---
+
+## ADR-099 — Smart label size ramp by place class
+
+**Context.** All cities show at the same size; all neighborhoods
+show at the same size. Real designer maps scale by population: NYC
+should render bigger than a small village, even on the same map.
+OMT exposes a `rank` property (1-10ish) for places.
+
+**Decision.** Replace fixed `text-size: 14` per class with an
+expression keyed on `rank`:
+`['interpolate', ['linear'], ['get', 'rank'], 1, 22, 6, 14, 10, 9]`.
+High-rank places (capitals) render large; low-rank places (small
+towns) render small. Holds within and across classes.
+
+**Consequences.** Labels feel hierarchically meaningful rather than
+class-uniform.
+
+---
+
+## ADR-100 — Print color profile preview
+
+**Context.** Posters look one way on a calibrated screen and a
+different way printed. Vibrant sRGB blues become muted in CMYK; bright
+yellows lose saturation. Most users find out only when the print
+arrives. MapToPoster outputs at a known DPI but doesn't help with
+this either.
+
+**Decision.** A toggle in **Compose → Frame**: "Preview as CMYK".
+Applies a CSS `filter` chain that approximates the gamut shift —
+slight desaturation, hue rotation toward green for cyan-ish colours,
+etc. Not a true ICC profile (browsers don't expose that), but a good
+empirical approximation that gives users a "what will it look like
+printed" preview before they pay for the print.
+
+**Consequences.** Fewer "but it looked great on screen" surprises.
+Off by default; on as a sanity check before export. Works in
+combination with the ADR-063 DPI selector for the full print-prep
+workflow.
+
+---
+
 ## Implementation order
 
 1, 2, 18 — state/persistence/quick wins (foundation).
@@ -1373,6 +1736,23 @@ Returning users don't see it.
 15, 16, 17, 19, 20 — UX polish.
 
 ADR-058..060 — sidebar IA + control modernization + mobile pass.
+ADR-081..100 — output-cleanliness pass (the rendered POSTER quality
+   itself, vs ADR-061..080 which were about input ergonomics):
+   081 + 082 + 083 — first ship: density dial + road hierarchy +
+      zoom LOD give the biggest "designer cleaned this up" jump for
+      the smallest amount of code.
+   084 + 085 + 099 — label discipline: collision avoidance,
+      proportional halo, rank-based size.
+   086 + 087 + 094 — framing & breathing: inner padding,
+      caption-height cap, edge fade.
+   088 + 098 — typography polish: per-length kerning + designer
+      pairings.
+   089 + 092 + 093 + 095 — graphic richness: coastline, park
+      softening, building drop-shadow, city roundel.
+   090 + 091 + 096 + 097 + 100 — power-user / print: monotone lock,
+      zoom-aware POI cap, auto-legend, integer-zoom snap on export,
+      CMYK preview.
+
 ADR-061..080 — MapToPoster-inspired roadmap (not yet shipped):
    065 + 061 + 077 — input ergonomics first (paste coords, frame in
    km, see real distance).

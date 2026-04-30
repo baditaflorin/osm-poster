@@ -22,6 +22,10 @@
     </div>
   </div>
 
+  <!-- ADR-101 — Sidebar search. Filters every chip / toggle / slider /
+       sub-panel by query as the user types. Empty restores everything. -->
+  <input type="search" id="sidebarSearch" placeholder="🔎 Search any control… (try 'shadow', 'glitch', 'A2')" autocomplete="off" style="margin-bottom: 14px;">
+
   <!-- =====================================================================
        Sidebar IA (ADR-058): four top-level categories. Each holds 3-4 sub
        panels grouped by user intent rather than implementation detail.
@@ -161,7 +165,7 @@
         <button class="disclose-btn"><span class="ico">🎨</span><span class="disclose-label"><span class="disclose-title">Map style</span><span class="disclose-desc">Roads · buildings · parks · labels</span></span><span class="chev">›</span></button>
         <div class="body"><div>
 
-          <div class="sub-title" style="margin: 4px 0 6px;">✨ Density <span class="sec-hint">strip detail progressively</span></div>
+          <div class="sub-title" data-help="density" style="margin: 4px 0 6px;">✨ Density <span class="sec-hint">strip detail progressively</span></div>
           <div class="row"><label>Density</label><input type="range" id="densitySlider" min="0" max="100" step="5" value="100"><span class="val" id="densityVal">100%</span></div>
 
           <div class="sub-title" style="margin: 14px 0 6px;">🛣 Roads</div>
@@ -169,7 +173,8 @@
                data-options='[["solid","━ Solid"],["dashed","┄ Dashed"],["dotted","┈ Dotted"],["longdash","━━ Long"],["dotdash","━·━ Mix"],["rail","⏐ ⏐ Rail"]]'></div>
           <div class="chip-group" data-chip-key="roadCaps" style="margin-top: 4px;"
                data-options='[["round","⏺ Round"],["butt","▮ Butt"],["square","▢ Square"]]'></div>
-          <div class="chip-group" data-chip-key="roadHierarchy" style="margin-top: 4px;"
+          <div class="sub-title" data-help="road_hierarchy" style="margin: 8px 0 4px; font-size: 11px;">Road hierarchy</div>
+          <div class="chip-group" data-chip-key="roadHierarchy"
                data-options='[["flat","≡ Flat"],["soft","≣ Soft"],["firm","━ Firm"],["strong","╋ Strong"],["extreme","✚ Extreme"]]'></div>
           <div class="effects-toggles" style="margin-top: 6px;">
             <label class="toggle"><input type="checkbox" id="roadCasingToggle"> Road casing</label>
@@ -234,7 +239,7 @@
           <div class="row"><label>Contrast</label><input type="range" id="mapContrast" min="50" max="150" step="2" value="100"><span class="val" id="mapContrastVal">100%</span></div>
           <div class="row"><label>Hue</label><input type="range" id="mapHue" min="0" max="360" step="5" value="0"><span class="val" id="mapHueVal">0°</span></div>
 
-          <div class="sub-title" style="margin: 14px 0 6px;">FX mode <span class="sec-hint">SVG filter — transformative</span></div>
+          <div class="sub-title" data-help="fx_mode" style="margin: 14px 0 6px;">FX mode <span class="sec-hint">SVG filter — transformative</span></div>
           <div class="chip-group" data-chip-key="fxMode"
                data-options='[["none","∅ None"],["glitch","📺 Glitch"],["halftone","⠿ Halftone"],["melt","🌊 Melt"],["bloom","✨ Bloom"],["posterize","🎨 Poster"]]'></div>
 
@@ -725,6 +730,16 @@
   <button onclick="document.getElementById('errorToast').classList.remove('show')">Dismiss</button>
 </div>
 
+<!-- ADR-102 — Command palette. Cmd-K / Ctrl-K opens it. Indexed against
+     every chip option, every sub-panel, and a small static action list. -->
+<div class="cmd-palette-overlay" id="cmdPalette">
+  <div class="cmd-palette">
+    <input type="text" id="cmdPaletteInput" placeholder="Search any setting or action…" autocomplete="off">
+    <div class="cmd-palette-results" id="cmdPaletteResults"></div>
+    <div class="cmd-palette-hint">↑↓ navigate · ↵ apply · esc close · ⌘K toggle</div>
+  </div>
+</div>
+
 <!-- ADR-120 — Mobile floating action buttons. Visible only on <800px
      via CSS media query. Tap targets are 56px (Apple HIG +). The
      handlers re-use the existing buttons rather than re-implement. -->
@@ -777,6 +792,7 @@
 <script src="./js/filters.js"></script>
 <script src="./js/cleanliness.js"></script>
 <script src="./js/storage.js"></script>
+<script src="./js/cohesion.js"></script>
 <script src="./js/boot.js"></script>
 </body>
 </html>

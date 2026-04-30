@@ -706,6 +706,77 @@
   .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
 
+  /* ADR-101 — Sidebar search input. Pinned just below the header. */
+  #sidebarSearch {
+    width: 100%; padding: 9px 12px; border: 1px solid transparent;
+    border-radius: 8px; font-size: 13px; font-family: inherit;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--input-stroke);
+    -webkit-appearance: none; appearance: none;
+  }
+  #sidebarSearch:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+  /* When search-active, dim non-matches and lift matches. .search-miss
+     gets opacity 0.18 so the user still sees structure. */
+  aside.search-active .disclose-sub.search-miss { opacity: 0.18; }
+  aside.search-active .disclose-sub.search-hit  { box-shadow: inset 3px 0 0 var(--accent); }
+
+  /* ADR-102 — Command palette overlay. Centred dialog, dark backdrop. */
+  .cmd-palette-overlay {
+    position: fixed; inset: 0; background: rgba(15,15,20,0.45);
+    display: none; align-items: flex-start; justify-content: center;
+    padding-top: 14vh; z-index: 2000; backdrop-filter: blur(6px);
+  }
+  .cmd-palette-overlay.open { display: flex; }
+  .cmd-palette {
+    width: min(560px, 92vw);
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.30), 0 8px 20px rgba(0,0,0,0.10);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .cmd-palette input {
+    width: 100%; padding: 16px 20px; border: none; outline: none;
+    font-size: 15px; font-family: inherit; background: transparent;
+    color: var(--text);
+    border-bottom: 1px solid var(--separator);
+  }
+  .cmd-palette-results { max-height: 50vh; overflow-y: auto; padding: 6px 0; }
+  .cmd-palette-results .cmd-row {
+    padding: 8px 20px; cursor: pointer; font-size: 13.5px;
+    color: var(--text-2);
+    transition: background 0.08s ease, color 0.08s ease;
+  }
+  .cmd-palette-results .cmd-row.active,
+  .cmd-palette-results .cmd-row:hover {
+    background: var(--accent-bg); color: var(--accent);
+  }
+  .cmd-palette-results .cmd-empty { padding: 12px 20px; color: var(--text-3); font-size: 12.5px; }
+  .cmd-palette-hint {
+    padding: 10px 20px; font-size: 11px; color: var(--text-3);
+    border-top: 1px solid var(--separator);
+    font-family: var(--mono); letter-spacing: 0.3px;
+  }
+
+  /* ADR-103 — (?) help dots. Inline button next to .sub-title with
+     a small popover containing editorial explainer text. */
+  .help-dot {
+    margin-left: 6px;
+    width: 16px; height: 16px; padding: 0; border: none; cursor: pointer;
+    border-radius: 50%; background: var(--separator); color: var(--text-3);
+    font-size: 10.5px; line-height: 16px; text-align: center; font-weight: 600;
+    font-family: inherit;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .help-dot:hover { background: var(--accent-stroke); color: var(--accent); }
+  .help-pop {
+    margin-top: 6px; padding: 10px 12px; border-radius: 8px;
+    font-size: 11.5px; line-height: 1.45; color: var(--text-2);
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--separator);
+    white-space: pre-wrap;
+  }
+
   /* ADR-112 — Auto-save indicator in the footer. Empty by default,
      fills in after the first persist() throttle fires. .flash plays a
      brief opacity pulse so the user notices the save event. */

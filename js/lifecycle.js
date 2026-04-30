@@ -107,6 +107,49 @@ function applyGoodStart() {
   persist();
 }
 
+// ADR-119 — Geolocation default. On first visit, ask once for
+// geolocation. If granted, fly the map to the user's coordinates and
+// reverse-geocode for the title. If denied or errored, fall through
+// to the existing Paris default. The prompt only fires once ever
+// (gated by LS_VISITED), so the UX cost is "one prompt, ever".
+async function tryGeolocationFirstVisit() {
+  if (!navigator.geolocation || !navigator.geolocation.getCurrentPosition) return;
+  // Skip if state was loaded from URL hash (user is following a share link).
+  if (location.hash && location.hash.length > 5) return;
+  // Skip if state was loaded from localStorage (returning user).
+  try { if (localStorage.getItem(LS_KEY)) return; } catch {}
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 4000, maximumAge: 60 * 60 * 1000,
+      });
+    });
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    // Reverse-geocode to a name via Nominatim.
+    let cityName = '';
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`, { headers: { 'Accept': 'application/json' } });
+      const j = await r.json();
+      cityName = (j && j.address && (j.address.city || j.address.town || j.address.village || j.address.county)) || '';
+    } catch {}
+    pushHistory('first-visit geolocation');
+    map.flyTo({ center: [lng, lat], zoom: 12, duration: 1200 });
+    state.view.center = [lng, lat];
+    state.view.zoom = 12;
+    if (cityName) {
+      state.caption.title = cityName.toUpperCase();
+      const titleEl = document.getElementById('title');
+      if (titleEl) titleEl.value = state.caption.title;
+      const ctEl = document.getElementById('caption-title');
+      if (ctEl) ctEl.textContent = state.caption.title;
+    }
+    persist();
+  } catch (e) {
+    // Denial / timeout / no-position — fall through silently.
+  }
+}
+
 window.addEventListener('load', () => {
   try {
     const goodBtn = document.getElementById('goodStartBtn');
@@ -123,6 +166,9 @@ window.addEventListener('load', () => {
         t.classList.remove('show');
         try { localStorage.setItem(LS_VISITED, '1'); } catch (e) {}
       });
+      // ADR-119 — first-visit-only geolocation. Falls through silently
+      // on denial; the existing Paris default stays in place.
+      tryGeolocationFirstVisit();
     }
   } catch (e) {}
 });

@@ -233,6 +233,13 @@
     background: var(--tpl-accent, #007aff);
     box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
   }
+  /* ADR-115 — real thumbnails replace the CSS-mocked preview.
+     Hide the synthetic gradient + accent dot when a real render
+     is showing. */
+  .template-preview.has-real-thumb::before,
+  .template-preview.has-real-thumb::after {
+    display: none;
+  }
   .template-info { padding: 8px 10px 10px; }
   .template-name {
     font-size: 13px; font-weight: 600; color: #1d1d1f;
@@ -706,6 +713,44 @@
   .effects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .effects-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 6px; }
 
+  /* ADR-107 — Effects superpanel grouping. The four Effects subs
+     (Filter stack, Map filters, Decorations & mask, Map icons) all
+     fall under the same conceptual umbrella — give them a tiny visual
+     "Filters" header shared by the first three (color/blend/decor) so
+     the user perceives them as one family.
+     Implemented via :nth-child + ::before so no HTML change is
+     needed beyond the existing IA. */
+  .disclose-major[data-crumb="Effects"] > .body > div > .disclose-sub:nth-child(1)::before {
+    content: '— Filters —';
+    display: block; padding: 6px 4px 2px;
+    font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px;
+    color: var(--text-3); text-transform: uppercase;
+    font-family: var(--mono);
+  }
+  .disclose-major[data-crumb="Effects"] > .body > div > .disclose-sub:nth-child(4)::before {
+    content: '— Overlays & icons —';
+    display: block; padding: 12px 4px 2px;
+    font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px;
+    color: var(--text-3); text-transform: uppercase;
+    font-family: var(--mono);
+  }
+
+  /* ADR-108 — .lib-card unified pattern for any "saved item" row.
+     Existing classes (.fav-row, .filter-row, .preset, .template) keep
+     their specifics; this base style makes the visual rhythm consistent
+     across them. Apply by adding the class alongside the existing one. */
+  .lib-card {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 6px; padding: 8px 10px;
+    border-radius: var(--r-2);
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--separator);
+    transition: background 0.12s ease, box-shadow 0.12s ease;
+  }
+  .lib-card:hover { background: var(--hover); box-shadow: inset 0 0 0 1px var(--accent-stroke); }
+  .lib-card .lib-card-title { font-size: 12.5px; font-weight: 500; color: var(--text); }
+  .lib-card .lib-card-meta  { font-size: 10.5px; color: var(--text-3); font-family: var(--mono); }
+
   /* ADR-109 — Active-dial badge on disclose-sub headers. Small dot
      in the chevron column showing the count of dials that differ from
      the active template. Pure CSS pseudo-element with content from
@@ -1077,8 +1122,11 @@
   /* ADR-068 / ADR-062 — favourites + profiles list rows. Same shape:
      a labelled button on the left ("name + meta line"), a small × on the
      right to delete. Used by both #favouritesList and #profilesList. */
+  /* ADR-108 — fav-row aliases lib-card so they share the same
+     visual rhythm. Existing fav-pick + fav-del internals untouched. */
   .fav-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-  .fav-row {
+  .fav-row, .filter-row {
+    /* Inherit the lib-card base — this is the unifying step. */
     display: grid; grid-template-columns: 1fr auto; gap: 4px; align-items: stretch;
     border-radius: var(--r-2);
   }

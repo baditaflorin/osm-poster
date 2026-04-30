@@ -313,6 +313,72 @@ function renderRecentTemplates() {
   renderRecentTemplates();
 })();
 
+// =====================================================================
+// ADR-115 — Real template thumbnails (on-demand cache)
+// =====================================================================
+// CSS-mocked template-card previews don't represent the actual
+// rendered output. Replacing them with html-to-image renders is
+// expensive (28 templates × ~1s each), so we do it on-demand and
+// cache: the FIRST time a user clicks a template, we render the
+// resulting poster as a tiny PNG and overlay it on the card. From
+// then on the card shows the real preview.
+//
+// Cached in sessionStorage keyed by `${templateKey}|${centerHash}`
+// so the cache invalidates when the user pans to a new place.
+const TPL_CACHE_PREFIX = 'osm-poster:tpl-thumb:';
+function _centerHash() {
+  const c = (state.view && state.view.center) || [0, 0];
+  return c.map(n => Math.round(n * 100) / 100).join(',');
+}
+function _tplCacheKey(key) {
+  return TPL_CACHE_PREFIX + key + '|' + _centerHash();
+}
+async function captureTemplateThumb(templateKey) {
+  const node = document.getElementById('poster');
+  if (!node) return null;
+  // Render at low DPI for speed. ~120×80 final size is plenty for a
+  // sidebar card; pixelRatio 0.5 is fine.
+  try {
+    if (typeof htmlToImage === 'undefined') return null;
+    const dataUrl = await htmlToImage.toPng(node, {
+      pixelRatio: 0.5, cacheBust: false, skipFonts: true,
+      backgroundColor: state.palette.bg,
+    });
+    try { sessionStorage.setItem(_tplCacheKey(templateKey), dataUrl); } catch {}
+    return dataUrl;
+  } catch (e) {
+    console.warn('[tpl-thumb] failed', e);
+    return null;
+  }
+}
+function applyCachedThumb(card, templateKey) {
+  const cached = sessionStorage.getItem(_tplCacheKey(templateKey));
+  if (!cached) return;
+  const preview = card.querySelector('.template-preview');
+  if (!preview) return;
+  preview.style.backgroundImage = `url("${cached}")`;
+  preview.style.backgroundSize = 'cover';
+  preview.style.backgroundPosition = 'center';
+  preview.classList.add('has-real-thumb');
+}
+(function wireTemplateThumbs() {
+  // On boot, paint any thumbnails that are already cached.
+  document.querySelectorAll('aside .templates .template').forEach(card => {
+    if (card.dataset.key) applyCachedThumb(card, card.dataset.key);
+  });
+  // After a click + applyState lands, capture and cache. The click
+  // handler already changes state.preset and applies; we just hook
+  // in after via a small delay so the render has stabilised.
+  document.addEventListener('click', e => {
+    const card = e.target.closest('aside .templates .template');
+    if (!card || !card.dataset.key) return;
+    setTimeout(async () => {
+      const url = await captureTemplateThumb(card.dataset.key);
+      if (url) applyCachedThumb(card, card.dataset.key);
+    }, 1500); // wait for restyle + tile load
+  });
+})();
+
 // Run badges + recent on first paint, then again any time applyState
 // fires (hash load, undo/redo, etc). The applyState hook in apply.js
 // already calls a typeof-guarded family — we rely on that.

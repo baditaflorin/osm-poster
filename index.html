@@ -45,9 +45,14 @@
       <div class="disclose disclose-sub">
         <button class="disclose-btn"><span class="ico">🔎</span><span class="disclose-label"><span class="disclose-title">Search</span><span class="disclose-desc">Type or pick a quick city</span></span><span class="chev">›</span></button>
         <div class="body"><div>
-          <input type="text" id="search" placeholder="City, address, landmark…" autocomplete="off">
+          <input type="text" id="search" placeholder="City, address, landmark, or 48.85, 2.34…" autocomplete="off">
           <div id="results"></div>
           <div class="cities" id="cities" style="margin-top: 8px;"></div>
+          <div class="sub-title" style="margin: 14px 0 6px;">⭐ Favourites <span class="sec-hint">saved views</span></div>
+          <div class="actions" style="margin-bottom: 6px;">
+            <button id="addFavBtn" title="Save the current camera + title">⭐ Save current view</button>
+          </div>
+          <div class="fav-list" id="favouritesList"></div>
         </div></div>
       </div>
 
@@ -109,6 +114,14 @@
         <button class="disclose-btn"><span class="ico">🎯</span><span class="disclose-label"><span class="disclose-title">Templates</span><span class="disclose-desc">Full looks (palette + frame + texture…)</span></span><span class="chev">›</span></button>
         <div class="body"><div>
           <div class="templates" id="templates"></div>
+          <div class="sub-title" style="margin: 14px 0 6px;">🗃 Theme file</div>
+          <div class="actions">
+            <button id="exportThemeBtn" title="Download the entire poster state as JSON">⬇ Export JSON</button>
+            <label class="actions" style="flex:1; padding:0; margin:0;">
+              <input type="file" id="themeImportInput" accept=".json,application/json" style="display:none">
+              <button type="button" onclick="document.getElementById('themeImportInput').click()" title="Load a theme JSON">⬆ Import JSON</button>
+            </label>
+          </div>
         </div></div>
       </div>
 
@@ -379,6 +392,11 @@
           <div class="chip-group" data-chip-key="bgPattern"
                data-options='[["none","∅ None"],["rings","◎ Rings"],["stripes","╱╱ Stripes"],["dotgrid","· Dot grid"],["isobars","⌗ Isobars"]]'></div>
           <label class="toggle" style="margin-top: 10px;"><input type="checkbox" id="trimGuidesToggle"> Show trim guides (3 mm)</label>
+          <div class="sub-title" style="margin: 14px 0 6px;">📦 Export profiles <span class="sec-hint">save current setup</span></div>
+          <div class="actions" style="margin-bottom: 6px;">
+            <button id="saveProfileBtn" title="Save the current size / format / DPI / bleed setup as a named profile">📦 Save profile</button>
+          </div>
+          <div class="fav-list" id="profilesList"></div>
         </div></div>
       </div>
 
@@ -697,6 +715,7 @@
 <script src="./js/features.js"></script>
 <script src="./js/dials.js"></script>
 <script src="./js/filters.js"></script>
+<script src="./js/storage.js"></script>
 <script src="./js/boot.js"></script>
 </body>
 </html>

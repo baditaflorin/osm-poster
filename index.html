@@ -16,6 +16,7 @@
   <div class="header-row">
     <h1>OSM Poster</h1>
     <div class="header-actions">
+      <button class="help-btn" id="quietModeBtn" title="Quiet mode — dim the sidebar to 40%, hover restores. Stare at the work.">🌫</button>
       <button class="help-btn" id="compactToggleBtn" title="Compact mode — hide panel descriptions and hint text">▾</button>
       <button class="help-btn" id="resetAllBtn" title="Reset everything to defaults">↺</button>
       <button class="help-btn" id="helpBtn" title="Shortcuts (?)">?</button>
@@ -34,6 +35,16 @@
     <button type="button" class="major-tab"        data-tab="Style"   role="tab"><span class="t-ico">🎨</span><span class="t-lbl">Style</span></button>
     <button type="button" class="major-tab"        data-tab="Effects" role="tab"><span class="t-ico">✨</span><span class="t-lbl">Effects</span></button>
     <button type="button" class="major-tab"        data-tab="Compose" role="tab"><span class="t-ico">📐</span><span class="t-lbl">Compose</span></button>
+  </div>
+
+  <!-- ADR-125 — Top action toolbar. The 3 most-used actions pinned
+       just below the search box, always visible. Reuses the existing
+       button handlers so behaviour matches the panel buttons. -->
+  <div class="top-toolbar">
+    <button type="button" id="topRandomizeBtn" class="top-tb-btn" title="🎲 Randomize palette (R)">🎲</button>
+    <button type="button" id="topCycleBtn"     class="top-tb-btn" title="🔄 Cycle templates">🔄</button>
+    <button type="button" id="topPaletteBtn"   class="top-tb-btn" title="⌘K Command palette">⌘K</button>
+    <button type="button" id="topExportBtn"    class="top-tb-btn primary" title="⬇ Export poster (E)">⬇ Export</button>
   </div>
 
   <!-- ADR-101 — Sidebar search. Filters every chip / toggle / slider /
@@ -840,6 +851,7 @@
 <script src="./js/storage.js"></script>
 <script src="./js/cohesion.js"></script>
 <script src="./js/visibility.js"></script>
+<script src="./js/menu.js"></script>
 <script src="./js/boot.js"></script>
 </body>
 </html>

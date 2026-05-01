@@ -851,6 +851,85 @@
   .recent-tpl { font-size: 11.5px; padding: 6px 10px; min-height: 30px; }
 
   /* =====================================================================
+     ADR-125 — Top action toolbar. 3 most-used actions pinned just
+     below the search bar, always visible regardless of scroll.
+     ===================================================================== */
+  .top-toolbar {
+    display: grid; grid-template-columns: auto auto auto 1fr;
+    gap: var(--gap-xs); margin-bottom: var(--gap-m);
+  }
+  .top-tb-btn {
+    padding: 8px 10px; border: none; cursor: pointer;
+    border-radius: var(--r-2);
+    background: var(--bg); color: var(--text-2);
+    font-family: inherit; font-size: 13px; line-height: 1;
+    box-shadow: inset 0 0 0 1px var(--separator);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .top-tb-btn:hover { background: var(--hover); color: var(--text); }
+  .top-tb-btn.primary {
+    background: var(--accent); color: #fff;
+    box-shadow: none; font-weight: 600;
+  }
+  .top-tb-btn.primary:hover { background: #0066d6; color: #fff; }
+
+  /* ADR-126 — Per-panel primary action. Any button inside a sub-panel
+     that's marked .primary gets the accent treatment so the user knows
+     which one is "the" action. Convention rather than restructure —
+     existing buttons can opt into the styling by adding .primary. */
+  aside .actions button.primary,
+  aside .body button.primary {
+    background: var(--accent); color: #fff;
+    box-shadow: none; font-weight: 600;
+  }
+  aside .actions button.primary:hover { background: #0066d6; }
+
+  /* ADR-133 — Tab help button. Small (?) icon at the right edge of
+     each .major-tab that opens the per-major guide. */
+  .major-tab .tab-help {
+    position: absolute; top: 2px; right: 4px;
+    width: 14px; height: 14px; padding: 0; border: none;
+    border-radius: 50%; background: transparent; color: var(--text-3);
+    font-size: 9.5px; cursor: pointer;
+    line-height: 14px;
+    opacity: 0.6;
+    transition: opacity 0.12s ease, background 0.12s ease;
+  }
+  .major-tab { position: relative; }
+  .major-tab .tab-help:hover { opacity: 1; background: var(--hover); color: var(--text); }
+
+  /* ADR-136 — Onboarding progress badges on tabs. Small "1/4..4/4"
+     pip in the top-right corner of each tab. .explored makes it green. */
+  .major-tab .onboard-badge {
+    position: absolute; top: 2px; left: 4px;
+    font-size: 8.5px; font-family: var(--mono);
+    color: var(--accent); font-weight: 700;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+  }
+  .major-tab .onboard-badge.explored { color: var(--ok); }
+
+  /* ADR-134 — Conditional dial visibility. Controls whose
+     preconditions aren't met dim to 40% and route their tooltip via
+     title attribute. Click is allowed; the visual signals "doing
+     this won't have a visible effect right now". */
+  .dial-disabled {
+    opacity: 0.4 !important;
+    cursor: help;
+  }
+
+  /* ADR-139 — Quiet mode. Sidebar dims to 40% opacity; hover anywhere
+     in the sidebar restores 100%. Pure CSS transition. The poster
+     card stays untouched. */
+  body.quiet-mode aside {
+    opacity: 0.40;
+    transition: opacity 0.18s ease;
+  }
+  body.quiet-mode aside:hover, body.quiet-mode aside:focus-within {
+    opacity: 1;
+  }
+
+  /* =====================================================================
      ADR-140 — Tab-style top categories. Replaces the stacked-accordion
      major-level UI. The 4 buttons are pinned at the top of the sidebar
      and only the active major's body renders below. Existing

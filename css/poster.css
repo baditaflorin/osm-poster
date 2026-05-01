@@ -929,6 +929,39 @@
   }
 
   /* =====================================================================
+     ADR-135 — Sticky sub-panel header on scroll. When a .disclose-sub
+     is open and the user scrolls inside the sidebar, its title button
+     stays at the top of the visible area so the user always knows
+     which panel they're in.
+     ===================================================================== */
+  body.tabs-mode aside .disclose-sub.open > .disclose-btn {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--surface);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 1px 0 var(--separator);
+  }
+
+  /* =====================================================================
+     ADR-127 — Footer link consolidation. The old 4-line footer
+     (author / source-license / OSM / OpenFreeMap / version) becomes
+     2 lines via wrapping in flex; map attribution moves into a
+     single muted line.
+     ===================================================================== */
+  .footer-note {
+    display: flex; flex-direction: column; gap: var(--gap-xs);
+    align-items: center;
+  }
+  .footer-note > * { display: inline; }
+  .footer-note .auto-save-tick { display: block; }
+
+  /* ADR-129 — Iconography unification. Chip labels lose their
+     decorative emojis when they were never informative. Pure CSS
+     `font-feature-settings: "tnum"` for tabular nums in monospaced
+     contexts gives the val pills a tighter feel. */
+  aside .val { font-feature-settings: "tnum" 1; }
+
+  /* =====================================================================
      ADR-122 — Compact mode. body.compact-ui hides every .disclose-desc
      and .sec-hint and reduces sub-panel header height ~30%. State is
      localStorage-backed (osm-poster:compact). Toggle in the sidebar

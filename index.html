@@ -545,12 +545,18 @@
 
   <div class="footer-note">
     <span id="autoSaveTick" class="auto-save-tick" title="Your work is auto-saved to the URL hash and localStorage"></span>
-    Made by <a href="https://www.linkedin.com/in/baditaflorin/" target="_blank" rel="noopener">Florin Badita</a> ·
-    <a href="https://www.paypal.com/paypalme/florinbadita/" target="_blank" rel="noopener" class="coffee-link" title="If this saved you an afternoon, buy me a coffee 🙂">☕ Buy me a coffee</a><br>
-    <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source</a> ·
-    <a href="https://github.com/baditaflorin/osm-poster/blob/main/LICENSE" target="_blank" rel="noopener" title="OSI-approved MIT license — fork, modify, sell, no strings attached">MIT licensed</a><br>
-    Map data © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)<br>
-    Tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a><br>
+    <!-- ADR-127 — Footer link consolidation. Two lines instead of four.
+         First: author + coffee + source/license. Second: data
+         attribution (OSM + OpenFreeMap) collapsed onto one. -->
+    <span>
+      Made by <a href="https://www.linkedin.com/in/baditaflorin/" target="_blank" rel="noopener">Florin Badita</a>
+      · <a href="https://www.paypal.com/paypalme/florinbadita/" target="_blank" rel="noopener" class="coffee-link" title="If this saved you an afternoon, buy me a coffee 🙂">☕</a>
+      · <a href="https://github.com/baditaflorin/osm-poster" target="_blank" rel="noopener">Source</a>
+      · <a href="https://github.com/baditaflorin/osm-poster/blob/main/LICENSE" target="_blank" rel="noopener" title="OSI-approved MIT — fork, modify, sell, no strings attached">MIT</a>
+    </span>
+    <span style="font-size: 10px; color: #c7c7cc;">
+      © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> · tiles <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>
+    </span>
     <span class="version-badge" id="versionBadge"
       data-build-sha="__BUILD_SHA__"
       data-build-full="__BUILD_FULL_SHA__"

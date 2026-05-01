@@ -189,7 +189,17 @@ function applyState({ silent } = {}) {
   // Sync new boolean toggles (cleanliness pass).
   ['coastLineToggle:coastLine', 'parkSoftenToggle:parkSoften', 'centerRoundelToggle:centerRoundel',
    'autoLegendToggle:autoLegend', 'edgeFadeToggle:edgeFade', 'captionCompactToggle:captionCompact',
-   'cmykPreviewToggle:cmykPreview', 'monotoneToggle:monotone'].forEach(pair => {
+   'cmykPreviewToggle:cmykPreview', 'monotoneToggle:monotone',
+   // ADR-141..160 caption-variant toggles
+   'captionAutoContrastToggle:captionAutoContrast',
+   'captionBackdropBlurToggle:captionBackdropBlur',
+   'captionTextShadowToggle:captionTextShadow',
+   'titleOnlyToggle:titleOnly',
+   'titleOutlineToggle:titleOutline',
+   'titleGradientToggle:titleGradient',
+   'titleAutoFitToggle:titleAutoFit',
+   'titleWordSpaceToggle:titleWordSpace',
+  ].forEach(pair => {
     const [id, key] = pair.split(':');
     const cb = document.getElementById(id);
     if (cb) cb.checked = !!state[key];
@@ -200,6 +210,17 @@ function applyState({ silent } = {}) {
   if (ds && dv) {
     ds.value = (typeof state.density === 'number') ? state.density : 100;
     dv.textContent = ds.value + '%';
+  }
+  // ADR-141..160 — caption layout / opacity / treatments. The function
+  // is the single entry point; called from applyState so undo/redo
+  // and hash-loads pick up changes for free.
+  if (typeof applyCaptionLayout === 'function') applyCaptionLayout();
+  // Sync caption bg opacity slider value
+  const co = document.getElementById('captionBgOpacity');
+  const cov = document.getElementById('captionBgOpacityVal');
+  if (co && cov) {
+    co.value = (typeof state.captionBgOpacity === 'number') ? state.captionBgOpacity : 100;
+    cov.textContent = co.value + '%';
   }
   // ADR-109/110/118 — recompute the diff badges and recent-templates
   // strip whenever the state changes.

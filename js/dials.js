@@ -342,6 +342,16 @@ const CHIP_AFTER = {
     if (typeof applyTitleOrnament === 'function') applyTitleOrnament();
     if (typeof applyCaptionDivider === 'function') applyCaptionDivider();
   },
+  // ADR-141..159 — caption layout chip-group keys all route through
+  // applyCaptionLayout() which handles classes + CSS variables.
+  captionLayout:  () => typeof applyCaptionLayout === 'function' && applyCaptionLayout(),
+  captionPos:     () => typeof applyCaptionLayout === 'function' && applyCaptionLayout(),
+  captionPadding: () => typeof applyCaptionLayout === 'function' && applyCaptionLayout(),
+  // ADR-160 — caption preset is atomic, like typographyPreset.
+  captionPreset:  () => {
+    if (typeof applyCaptionPreset === 'function') applyCaptionPreset();
+    if (typeof syncChipGroups === 'function') syncChipGroups();
+  },
   titleWeight:    () => applyTypography(),
   titleSize:      () => applyTypography(),
   subtitleStyle:  () => applyTypography(),
@@ -377,6 +387,9 @@ const _chipDefaults = {
   mapPadding: 'none',
   buildingShadow: 'none',
   typographyPreset: 'default',
+  // ADR-141..160 — caption variant chip defaults.
+  captionLayout: 'block', captionPos: 'bc', captionPadding: 'cozy',
+  captionPreset: 'classic',
 };
 
 // ADR-086/087/093/094/100 — toggle a set of CSS classes on #poster
@@ -444,6 +457,31 @@ _bindCleanlinessToggle('monotoneToggle',      'monotone',      () => {
   if (typeof syncSwatches === 'function') syncSwatches();
   restyle();
 });
+
+// ADR-141..160 — caption variant boolean toggles. All route to
+// applyCaptionLayout() which is idempotent.
+_bindCleanlinessToggle('captionAutoContrastToggle', 'captionAutoContrast', () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('captionBackdropBlurToggle', 'captionBackdropBlur', () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('captionTextShadowToggle',   'captionTextShadow',   () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('titleOnlyToggle',           'titleOnly',           () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('titleOutlineToggle',        'titleOutline',        () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('titleGradientToggle',       'titleGradient',       () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('titleAutoFitToggle',        'titleAutoFit',        () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+_bindCleanlinessToggle('titleWordSpaceToggle',      'titleWordSpace',      () => typeof applyCaptionLayout === 'function' && applyCaptionLayout());
+
+// ADR-143 — caption bg opacity slider. Drives the --caption-bg-alpha
+// CSS variable via applyCaptionLayout() which reads state.captionBgOpacity.
+const capOpEl = document.getElementById('captionBgOpacity');
+const capOpVal = document.getElementById('captionBgOpacityVal');
+if (capOpEl && capOpVal) {
+  capOpEl.addEventListener('input', safe(() => {
+    state.captionBgOpacity = parseInt(capOpEl.value, 10);
+    capOpVal.textContent = state.captionBgOpacity + '%';
+    if (typeof applyCaptionLayout === 'function') applyCaptionLayout();
+    persist();
+  }, 'captionBgOpacity'));
+  capOpEl.addEventListener('change', () => pushHistory('caption opacity'));
+}
 
 // ADR-079 — Background pattern under the poster. Toggled via .bg-X
 // class on #poster; CSS handles the actual pattern. None = no class.

@@ -413,6 +413,41 @@
         </div></div>
       </div>
 
+      <!-- ADR-141..160 — Caption layout variants. -->
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🪟</span><span class="disclose-label"><span class="disclose-title">Caption — Layout</span><span class="disclose-desc">Block · overlay · banner · stamp · hidden</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="sub-title">Preset</div>
+          <div class="chip-group" data-chip-key="captionPreset"
+               data-options='[["classic","◧ Classic"],["hidden","∅ Hidden"],["floating","◌ Floating"],["cover","🅰 Cover"],["banner","━ Banner"],["stamp","✉ Stamp"],["monogram","Ⓜ Mono"],["vertical","⇅ Vert"]]'></div>
+
+          <div class="sub-title">Layout mode</div>
+          <div class="chip-group" data-chip-key="captionLayout"
+               data-options='[["block","◧ Block"],["overlay","◌ Overlay"],["banner","━ Banner"],["stamp","✉ Stamp"],["monogram","Ⓜ Monogram"],["vertical-left","⇇ Vertical"],["cover","🅰 Cover"],["hidden","∅ Hidden"]]'></div>
+
+          <div class="sub-title">Position <span class="sec-hint">overlay & stamp only</span></div>
+          <div class="chip-group" data-chip-key="captionPos"
+               data-options='[["tl","↖"],["tc","↑"],["tr","↗"],["ml","←"],["mc","◎"],["mr","→"],["bl","↙"],["bc","↓"],["br","↘"]]'></div>
+
+          <div class="sub-title">Block padding</div>
+          <div class="chip-group" data-chip-key="captionPadding"
+               data-options='[["flush","∅ Flush"],["cozy","▫ Cozy"],["breathing","◫ Breathing"],["loose","⬛ Loose"]]'></div>
+
+          <div class="row" style="margin-top: 8px;"><label>Bg opacity</label><input type="range" id="captionBgOpacity" min="0" max="100" step="5" value="100"><span class="val" id="captionBgOpacityVal">100%</span></div>
+
+          <div class="effects-toggles" style="margin-top: 8px;">
+            <label class="toggle"><input type="checkbox" id="captionAutoContrastToggle"> 🎨 Auto contrast</label>
+            <label class="toggle"><input type="checkbox" id="captionBackdropBlurToggle"> 🌫 Backdrop blur</label>
+            <label class="toggle"><input type="checkbox" id="captionTextShadowToggle"> ☁ Text shadow</label>
+            <label class="toggle"><input type="checkbox" id="titleOnlyToggle"> Title only</label>
+            <label class="toggle"><input type="checkbox" id="titleOutlineToggle"> Outline text</label>
+            <label class="toggle"><input type="checkbox" id="titleGradientToggle"> Gradient fill</label>
+            <label class="toggle"><input type="checkbox" id="titleAutoFitToggle"> Auto-fit width</label>
+            <label class="toggle"><input type="checkbox" id="titleWordSpaceToggle"> Word spacing</label>
+          </div>
+        </div></div>
+      </div>
+
       <div class="disclose disclose-sub">
         <button class="disclose-btn"><span class="ico">✦</span><span class="disclose-label"><span class="disclose-title">Caption — Decoration</span><span class="disclose-desc">Ornament · divider · custom font</span></span><span class="chev">›</span></button>
         <div class="body"><div>
@@ -852,6 +887,7 @@
 <script src="./js/cohesion.js"></script>
 <script src="./js/visibility.js"></script>
 <script src="./js/menu.js"></script>
+<script src="./js/caption.js"></script>
 <script src="./js/boot.js"></script>
 </body>
 </html>

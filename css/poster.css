@@ -1673,13 +1673,211 @@
     background-size: 4px 4px;
   }
 
+  /* =====================================================================
+     ADR-141..160 — Caption layout variants. Master class on #poster
+     drives the layout mode; ancillary classes drive position, padding,
+     and treatments. See js/caption.js for the orchestration.
+     ===================================================================== */
   #caption {
     padding: 22px 28px 26px;
     text-align: center;
-    background: #fff;
+    background: rgba(255, 255, 255, var(--caption-bg-alpha, 1));
     border-top: 1px solid #f0ede3;
     position: relative; z-index: 6;
+    /* CSS variables let JS drive opacity / text colour without rewriting rules. */
   }
+
+  /* ADR-159 — caption padding presets (block mode only). */
+  #poster.caption-pad-flush      #caption { padding: 0 8px 0; }
+  #poster.caption-pad-cozy       #caption { padding: 16px 22px 18px; }
+  #poster.caption-pad-breathing  #caption { padding: 22px 28px 26px; } /* default */
+  #poster.caption-pad-loose      #caption { padding: 32px 36px 36px; }
+
+  /* ADR-141 hidden: caption gone, map fills 100%. */
+  #poster.caption-hidden #caption { display: none; }
+
+  /* ADR-141 overlay: caption position:absolute on top of map.
+     Map fills the entire poster; the caption's positioning class
+     (caption-pos-X) decides where it lands. */
+  #poster.caption-overlay { /* keep flex column but caption is overlaid */ }
+  #poster.caption-overlay #map-wrap { flex: 1; }
+  #poster.caption-overlay #caption {
+    position: absolute;
+    z-index: 30;
+    border: none;
+    border-radius: 8px;
+    /* width auto by default — let the text decide. */
+    max-width: 80%;
+    pointer-events: auto;
+  }
+  /* 9-grid position classes for overlay mode. ADR-142. */
+  #poster.caption-overlay.caption-pos-tl #caption { top: 16px;    left: 16px;  right: auto; bottom: auto; }
+  #poster.caption-overlay.caption-pos-tc #caption { top: 16px;    left: 50%;   right: auto; bottom: auto; transform: translateX(-50%); }
+  #poster.caption-overlay.caption-pos-tr #caption { top: 16px;    right: 16px; left: auto;  bottom: auto; }
+  #poster.caption-overlay.caption-pos-ml #caption { top: 50%;     left: 16px;  right: auto; bottom: auto; transform: translateY(-50%); }
+  #poster.caption-overlay.caption-pos-mc #caption { top: 50%;     left: 50%;   right: auto; bottom: auto; transform: translate(-50%, -50%); }
+  #poster.caption-overlay.caption-pos-mr #caption { top: 50%;     right: 16px; left: auto;  bottom: auto; transform: translateY(-50%); }
+  #poster.caption-overlay.caption-pos-bl #caption { bottom: 16px; left: 16px;  right: auto; top: auto; }
+  #poster.caption-overlay.caption-pos-bc #caption { bottom: 16px; left: 50%;   right: auto; top: auto; transform: translateX(-50%); }
+  #poster.caption-overlay.caption-pos-br #caption { bottom: 16px; right: 16px; left: auto;  top: auto; }
+
+  /* ADR-152 banner: caption strip at the TOP of the poster, accent bg. */
+  #poster.caption-banner {
+    flex-direction: column-reverse; /* caption above map */
+  }
+  #poster.caption-banner #caption {
+    background: var(--accent);
+    color: #fff;
+    border-top: none;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 14px 24px;
+  }
+  #poster.caption-banner #caption-title { color: #fff; }
+  #poster.caption-banner #caption-subtitle, #poster.caption-banner #caption-coords { color: rgba(255,255,255,0.85); }
+
+  /* ADR-153 stamp: tiny corner badge. Position via caption-pos-X. */
+  #poster.caption-stamp #caption {
+    position: absolute;
+    z-index: 30;
+    width: 160px; height: auto;
+    padding: 10px 14px;
+    border: 1.5px solid currentColor;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.92);
+    transform: rotate(-2deg);
+    transform-origin: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.16);
+    font-size: 70%;
+  }
+  #poster.caption-stamp #caption-title { font-size: 14px; letter-spacing: 2px; }
+  #poster.caption-stamp #caption-subtitle, #poster.caption-stamp #caption-coords { font-size: 9.5px; }
+  #poster.caption-stamp #map-wrap { flex: 1; }
+  /* Stamp position picker still uses 9-grid; default br. */
+  #poster.caption-stamp.caption-pos-tl #caption { top: 16px;    left: 16px;  right: auto; bottom: auto; }
+  #poster.caption-stamp.caption-pos-tr #caption { top: 16px;    right: 16px; left: auto;  bottom: auto; }
+  #poster.caption-stamp.caption-pos-bl #caption { bottom: 16px; left: 16px;  right: auto; top: auto; }
+  #poster.caption-stamp.caption-pos-br #caption { bottom: 16px; right: 16px; left: auto;  top: auto; }
+
+  /* ADR-151 monogram: huge first letter of title overlaid. Subtitle/coords hidden. */
+  #poster.caption-monogram #caption-subtitle,
+  #poster.caption-monogram #caption-coords,
+  #poster.caption-monogram #caption-tagline,
+  #poster.caption-monogram .caption-edition,
+  #poster.caption-monogram .caption-mark { display: none; }
+  #poster.caption-monogram #caption {
+    background: transparent;
+    border: none;
+    padding: 0;
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  #poster.caption-monogram #map-wrap { flex: 1; }
+  #poster.caption-monogram #caption-title {
+    font-size: 22vmin;
+    line-height: 0.9;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: var(--caption-text-color, currentColor);
+    text-shadow: 0 4px 24px rgba(0,0,0,0.30);
+    /* The :first-letter pseudo gets the only visible character. */
+  }
+  /* When monogram mode is on, JS replaces #caption-title text with the first letter. */
+
+  /* ADR-147 vertical-left / vertical-right: caption rotated 90° on an edge. */
+  #poster.caption-vertical-left,
+  #poster.caption-vertical-right {
+    /* keep flex column for map; overlay caption with absolute */
+  }
+  #poster.caption-vertical-left #caption,
+  #poster.caption-vertical-right #caption {
+    position: absolute;
+    background: transparent;
+    border: none;
+    z-index: 30;
+    padding: 12px 18px;
+  }
+  #poster.caption-vertical-left #caption {
+    left: 0; top: 50%;
+    transform: rotate(-90deg) translate(-50%, 0);
+    transform-origin: 0 0;
+  }
+  #poster.caption-vertical-right #caption {
+    right: 0; top: 50%;
+    transform: rotate(90deg) translate(-50%, 100%);
+    transform-origin: 100% 0;
+  }
+  #poster[class*="caption-vertical"] #map-wrap { flex: 1; }
+
+  /* ADR-154 cover: huge title overlapping the top edge of the map. */
+  #poster.caption-cover { position: relative; }
+  #poster.caption-cover #map-wrap { flex: 1; }
+  #poster.caption-cover #caption {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    background: transparent;
+    border: none;
+    padding: 8px 24px;
+    z-index: 35;
+    text-align: left;
+  }
+  #poster.caption-cover #caption-title {
+    font-size: 14vmin;
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 0.95;
+    color: var(--caption-text-color, currentColor);
+  }
+  #poster.caption-cover #caption-subtitle { font-size: 13px; margin-top: -4px; }
+  #poster.caption-cover #caption-coords    { font-size: 10px; margin-top: 4px; }
+
+  /* ADR-145 backdrop blur (works in overlay/stamp/vertical/cover modes). */
+  #poster.caption-blur #caption {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, calc(var(--caption-bg-alpha, 1) * 0.5));
+    box-shadow: 0 1px 8px rgba(0,0,0,0.10);
+  }
+
+  /* ADR-148 outline-text: stroke-only title. */
+  #poster.title-outline #caption-title {
+    -webkit-text-stroke: 1.6px currentColor;
+    color: transparent;
+  }
+
+  /* ADR-149 text shadow for overlay legibility. */
+  #poster.caption-text-shadow #caption-title,
+  #poster.caption-text-shadow #caption-subtitle,
+  #poster.caption-text-shadow #caption-tagline,
+  #poster.caption-text-shadow #caption-coords {
+    text-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  }
+
+  /* ADR-157 gradient text fill. */
+  #poster.title-gradient #caption-title {
+    background: linear-gradient(120deg, var(--accent), var(--caption-text-color, var(--text)));
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    /* outline + gradient at the same time would be invisible — outline wins. */
+  }
+
+  /* ADR-146 title-only: hide subtitle / tagline / coords. */
+  #poster.title-only #caption-subtitle,
+  #poster.title-only #caption-tagline,
+  #poster.title-only #caption-coords { display: none; }
+
+  /* ADR-155 inset frame: small bordered box on the map (overlay mode). */
+  #poster.caption-inset #caption {
+    border: 1px solid rgba(0,0,0,0.12);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(255,255,255,0.4);
+    border-radius: 4px;
+  }
+
   #caption-title {
     font-size: 30px; font-weight: 700; letter-spacing: 6px;
     text-transform: uppercase; line-height: 1;

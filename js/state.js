@@ -102,6 +102,20 @@ function defaultState() {
     // ADR-066 — disable scroll-zoom while panning so the user can fine-tune
     // composition without accidental zoom drift.
     scaleLocked: false,
+    // ===== ADR-141..160: caption-block variants =====
+    captionLayout: 'block',     // ADR-141 — block / overlay / banner / stamp / monogram / hidden / vertical-left / vertical-right / cover
+    captionPos: 'bc',           // ADR-142 — overlay position 9-grid (tl|tc|tr|ml|mc|mr|bl|bc|br)
+    captionBgOpacity: 100,      // ADR-143 — block bg alpha 0..100
+    captionPadding: 'cozy',     // ADR-159 — flush | cozy | breathing | loose
+    captionAutoContrast: false, // ADR-144 — sample map luminance, flip text colour
+    captionBackdropBlur: false, // ADR-145 — frosted-glass behind text
+    titleOnly: false,           // ADR-146 — hide subtitle/coords/tagline
+    titleOutline: false,        // ADR-148 — stroke-only title text
+    captionTextShadow: false,   // ADR-149 — drop shadow for overlay legibility
+    titleAutoFit: false,        // ADR-150 — title scales to fit available width
+    titleGradient: false,       // ADR-157 — gradient fill on title
+    titleWordSpace: false,      // ADR-158 — per-word kerning for multi-word titles
+    captionPreset: 'classic',   // ADR-160 — atomic preset of all the above
     mapMask: 'none',          // none | circle | hexagon | heart | star | rounded
     sketchFrame: false,       // wobbly hand-drawn SVG overlay frame
     watermark: '',            // user-typed line shown in caption corner

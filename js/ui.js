@@ -464,9 +464,20 @@ document.querySelectorAll('button[data-frame]').forEach(btn => {
 
 // Disclosure toggling
 document.querySelectorAll('.disclose-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', e => {
     const panel = btn.parentElement;
     panel.classList.toggle('open');
+    // ADR-121 — Single-open sub-panels. When a sub opens, auto-collapse
+    // every other sub inside the same major. Cmd/Ctrl-click bypasses
+    // the auto-collapse so power users can keep two open side-by-side.
+    if (panel.classList.contains('disclose-sub') && panel.classList.contains('open') && !(e.metaKey || e.ctrlKey)) {
+      const major = panel.closest('.disclose-major');
+      if (major) {
+        major.querySelectorAll(':scope > .body > div > .disclose-sub.open').forEach(other => {
+          if (other !== panel) other.classList.remove('open');
+        });
+      }
+    }
     // ADR-117 — When a sub-panel opens, stamp its body with the
     // breadcrumb path so the CSS pseudo-element renders "Major › Sub".
     // The trail is derived from the closest disclose-major's
@@ -480,6 +491,26 @@ document.querySelectorAll('.disclose-btn').forEach(btn => {
     }
   });
 });
+
+// ADR-122 — Compact mode toggle. Wires the header button to a body
+// class + persists the preference in localStorage so power users land
+// in compact every session.
+const COMPACT_KEY = 'osm-poster:compact';
+function applyCompactMode() {
+  const on = localStorage.getItem(COMPACT_KEY) === '1';
+  document.body.classList.toggle('compact-ui', on);
+  const btn = document.getElementById('compactToggleBtn');
+  if (btn) btn.classList.toggle('active', on);
+}
+const compactBtn = document.getElementById('compactToggleBtn');
+if (compactBtn) {
+  compactBtn.addEventListener('click', () => {
+    const cur = localStorage.getItem(COMPACT_KEY) === '1';
+    try { localStorage.setItem(COMPACT_KEY, cur ? '0' : '1'); } catch {}
+    applyCompactMode();
+  });
+}
+applyCompactMode();
 
 // Caption
 const titleInput = document.getElementById('title');

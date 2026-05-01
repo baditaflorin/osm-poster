@@ -4,6 +4,20 @@
    palette (--bg, --accent, --text…) lives in :root at the top.
    ===================================================================== */
 
+  /* =====================================================================
+     ADR-130 — Visual weight reduction for the sidebar surface.
+     Bumped here at the top so the rest of the file inherits.
+     The poster card itself keeps full chrome (ADR-130 is sidebar-only).
+     ADR-132 — Density rhythm: lock vertical spacing to 4-step ladder.
+     ===================================================================== */
+  :root {
+    /* Density rhythm tokens (ADR-132) */
+    --gap-xs: 4px;
+    --gap-s:  8px;
+    --gap-m: 12px;
+    --gap-l: 16px;
+  }
+
   /* ===== Design tokens — single source of truth ===== */
   :root {
     /* Spacing scale */
@@ -835,6 +849,55 @@
      marked with .recent-tpl for any future styling differentiation. */
   .recent-templates { padding: 4px 0; }
   .recent-tpl { font-size: 11.5px; padding: 6px 10px; min-height: 30px; }
+
+  /* =====================================================================
+     ADR-122 — Compact mode. body.compact-ui hides every .disclose-desc
+     and .sec-hint and reduces sub-panel header height ~30%. State is
+     localStorage-backed (osm-poster:compact). Toggle in the sidebar
+     header. The change is purely cosmetic — no controls disappear.
+     ===================================================================== */
+  body.compact-ui .disclose-desc { display: none; }
+  body.compact-ui .sec-hint       { display: none; }
+  body.compact-ui aside           { font-size: 13.5px; }
+  body.compact-ui .disclose-major .disclose-btn { min-height: 52px; padding: 12px 12px; }
+  body.compact-ui .disclose-sub   .disclose-btn { min-height: 36px; padding: 8px 6px;  }
+  body.compact-ui .disclose-major .disclose-title { font-size: 15px; }
+  body.compact-ui .disclose-sub   .disclose-title { font-size: 12.5px; }
+  body.compact-ui .sub-title { margin: 10px 0 4px; font-size: 10.5px; }
+  body.compact-ui aside #sidebarSearch { padding: 7px 12px; font-size: 12.5px; }
+
+  /* =====================================================================
+     ADR-130 — Visual weight reduction. Lighter borders, softer shadows,
+     accent dimmed slightly inside the sidebar. Poster card untouched.
+     ===================================================================== */
+  aside { --accent: #1f7be8; }                /* ~15% darker / less neon */
+  aside .layer-btn { border-width: 1px; }     /* was 1.5px */
+  aside .toggle input { width: 14px; height: 14px; } /* was 16px */
+  aside .disclose-major { box-shadow: 0 1px 2px rgba(0,0,0,0.04); border-color: var(--separator); }
+  aside .disclose-major.open { box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+  aside select, aside input[type="text"], aside input[type="date"] {
+    box-shadow: inset 0 0 0 1px var(--input-stroke);
+  }
+
+  /* =====================================================================
+     ADR-131 — Section header standard. All .sub-title share one shape:
+     [icon · text] [optional .sec-hint pushed right] [(?) help-dot]
+     Margin and font-size locked. Help dot always at the right edge,
+     never inline in the title text.
+     ===================================================================== */
+  aside .sub-title {
+    display: flex; align-items: center; gap: var(--gap-xs);
+    font-size: 11px; color: #86868b; font-weight: 600;
+    letter-spacing: 0.2px;
+    margin: var(--gap-l) 0 var(--gap-xs);
+    text-transform: uppercase;
+  }
+  aside .sub-title:first-of-type { margin-top: var(--gap-xs); }
+  aside .sub-title .sec-hint { margin-left: auto; text-transform: none; letter-spacing: 0; }
+  aside .sub-title .help-dot { margin-left: auto; }
+  /* If sub-title has BOTH .sec-hint and a help-dot, push the dot last
+     and let .sec-hint flex-grow into the gap. */
+  aside .sub-title .sec-hint + .help-dot { margin-left: var(--gap-xs); }
 
   /* ADR-101 — Sidebar search input. Pinned just below the header. */
   #sidebarSearch {

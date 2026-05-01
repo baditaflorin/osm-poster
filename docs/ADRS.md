@@ -2500,3 +2500,333 @@ ADR-061..080 — MapToPoster-inspired roadmap (not yet shipped):
    caption, background patterns).
 
 All shipped in a single index.html file. No build step.
+
+---
+
+# Caption block variants: invisible, overlaid, repositioned, restyled
+
+Today the caption block is fixed: a white box at the bottom of the
+poster with title + subtitle + coords. The user wants variants where
+the lower text block is invisible (full-bleed map) or where the map
+continues underneath and only the text floats on top. These 20 ADRs
+give the caption every layout life it needs to feel intentional.
+
+---
+
+## ADR-141 — Caption layout master chip
+
+**Context.** Today's caption is a white box at the bottom — one mode.
+Users want variants: hidden / overlaid on map / banner / stamp / etc.
+Independent toggles for each would multiply state; a single
+authoritative chip-group is cleaner.
+
+**Decision.** New chip-group `captionLayout` in Compose → Caption with
+the canonical modes:
+`block · overlay · banner · stamp · monogram · hidden`. Each mode
+applies a CSS class on `#poster` that re-positions / re-styles the
+caption block. Internal text content (title/subtitle/tagline/coords)
+is unchanged — only the container's layout flips.
+
+**Consequences.** One state key controls the whole caption layout
+story. New modes added later just register a class.
+
+---
+
+## ADR-142 — Caption position 9-grid (overlay only)
+
+**Context.** When the caption is in `overlay` mode (ADR-141), users
+want it placed in any of the 9 grid positions inside the map area,
+not just bottom-center.
+
+**Decision.** When `captionLayout === 'overlay'`, a 3×3 mini-grid
+appears beneath the layout chip, letting the user pick top-left /
+top-center / top-right / middle-left / center / middle-right /
+bottom-left / bottom-center / bottom-right. Pure CSS via
+`captionPos` state key + `caption-pos-X` class on `#poster`.
+
+**Consequences.** Caption sits anywhere over the map. Pairs with
+ADR-145 (backdrop blur) for legibility on busy maps.
+
+---
+
+## ADR-143 — Caption block opacity slider
+
+**Context.** With caption in `block` mode (the current default), the
+white box edge can feel jarring against a vibrant map. Users want
+the box to fade.
+
+**Decision.** Slider `captionBgOpacity` 0..100. CSS variable
+`--caption-bg-alpha` on `#caption` controls the background-color
+alpha. 100 = today's solid; 0 = invisible block, text floats free.
+
+**Consequences.** Continuous spectrum from "designer block" to "ghost
+text on map".
+
+---
+
+## ADR-144 — Caption auto-contrast text color
+
+**Context.** When caption is overlaid on a busy map, text colour
+needs to flip dynamically: light text on dark map areas, dark on
+light. Manually picking is tedious and changes per pan.
+
+**Decision.** Toggle `captionAutoContrast`. When on, run a pixel
+sample of the caption's bounding box (via `getImageData` on the map
+canvas), compute the average luminance, and set CSS variable
+`--caption-text-color` to white or near-black accordingly.
+Throttled to map idle.
+
+**Consequences.** Captions stay legible across themes and zooms
+without user intervention.
+
+---
+
+## ADR-145 — Caption backdrop blur
+
+**Context.** Overlay text on a busy map needs separation. Solid bg
+defeats the overlay; pure transparency can be illegible.
+
+**Decision.** Toggle `captionBackdropBlur`. CSS rule:
+`#caption { backdrop-filter: blur(8px); background:
+rgba(255,255,255,0.45); }` for light themes, equivalent for dark.
+Pairs with `captionBgOpacity` (ADR-143) — set bg low + blur high
+for the iOS-style frosted glass effect.
+
+**Consequences.** Frosted-glass caption that works on every map.
+
+---
+
+## ADR-146 — Title-only mode
+
+**Context.** Some users want only the title visible — no subtitle,
+no coords, no tagline. Today the only way is to clear each field
+manually, which doesn't survive a template apply.
+
+**Decision.** Toggle `titleOnly`. CSS hides
+`#caption-subtitle`, `#caption-tagline`, `#caption-coords`,
+`.caption-edition` when on. No state mutation — text values stay
+intact under the hood, just hidden.
+
+**Consequences.** Cleanest possible caption: one big word.
+
+---
+
+## ADR-147 — Vertical caption (rotated edge)
+
+**Context.** Some posters work with a vertical title spine running
+up the left or right edge. Common in editorial design.
+
+**Decision.** New `captionLayout: 'vertical-left'` and `'vertical-right'`
+modes. Caption box rotates 90° via `transform: rotate(-90deg)` and
+positions absolutely along the chosen edge. Map fills the rest of
+the poster.
+
+**Consequences.** A whole new poster shape unlocked from a single
+chip click.
+
+---
+
+## ADR-148 — Caption outline text (stroke only)
+
+**Context.** Outlined text reads as graphical/editorial. Currently
+text is always solid fill.
+
+**Decision.** Toggle `titleOutline`. CSS rule:
+`#caption-title.outline { -webkit-text-stroke: 1.5px currentColor;
+color: transparent; }`. Stroke width scales with title-size.
+
+**Consequences.** Modernist editorial vibe in one click.
+
+---
+
+## ADR-149 — Caption text shadow for overlays
+
+**Context.** When caption sits over a busy map (overlay mode), even
+auto-contrast text can wash out. A subtle drop shadow lifts it off
+the surface.
+
+**Decision.** Toggle `captionTextShadow`. CSS:
+`text-shadow: 0 2px 8px rgba(0,0,0,0.45)`. On dark text the shadow
+is white. Auto-on when `captionLayout === 'overlay'` and
+`captionBgOpacity < 30`.
+
+**Consequences.** Overlay captions stay legible everywhere.
+
+---
+
+## ADR-150 — Caption text scales to width
+
+**Context.** A long title ("CONSTANTINOPLE") overflows when the
+poster is narrow (Story aspect, mobile). A short title ("ROMA") looks
+small on a wide poster.
+
+**Decision.** New `titleAutoFit` toggle. When on, JS measures the
+title's rendered width and adjusts font-size up/down so it fills
+~85% of the available caption width. Re-runs on title input + on
+window resize.
+
+**Consequences.** The title always feels intentional, regardless of
+length or poster size.
+
+---
+
+## ADR-151 — Caption monogram mode
+
+**Context.** Some posters work with a single huge initial letter
+overlaid on the map (think Letterform-of-the-day). Today no way to
+get there.
+
+**Decision.** `captionLayout: 'monogram'` shows just the FIRST letter
+of the title at very large size (~25% of poster height), positioned
+per `captionPos` (ADR-142). The full title moves to a small footer
+strip. Other caption fields hidden.
+
+**Consequences.** Lookbook / typographic-poster aesthetic in one
+chip.
+
+---
+
+## ADR-152 — Caption full-bleed banner
+
+**Context.** Magazine covers often run a coloured strip behind the
+title across the top of the layout. Powerful, instantly recognisable.
+
+**Decision.** `captionLayout: 'banner'` flips the caption to the top
+of the poster as a coloured strip (background = palette accent), with
+the map filling the remaining ~85% below. Caption text uses a
+contrasting colour (white on accent typically).
+
+**Consequences.** Editorial-magazine feel from one chip.
+
+---
+
+## ADR-153 — Caption corner stamp
+
+**Context.** A small corner badge (postage-stamp / certification feel)
+adds gravitas to a clean map without competing with it.
+
+**Decision.** `captionLayout: 'stamp'` shrinks the caption to a small
+~120×80px box positioned in one corner (per `captionPos`), with a
+subtle border and rotated by a small random angle for a hand-stuck
+feel. Map fills the rest.
+
+**Consequences.** Travel-souvenir / library-stamp aesthetic.
+
+---
+
+## ADR-154 — Caption magazine-cover overlap
+
+**Context.** Magazine covers often have the title typeset SO LARGE
+that it overlaps both above and below the photo. Strong layout
+affordance for posters too.
+
+**Decision.** New `captionLayout: 'cover'` mode. Title rendered at
+~18% of poster height in heavy weight, positioned to overlap the
+top edge of the map. Subtitle below in normal size. Coords/edition
+demoted to the very bottom in small mono.
+
+**Consequences.** Cover-magazine aesthetic; stronger title presence.
+
+---
+
+## ADR-155 — Caption inset frame on map
+
+**Context.** A small framed caption ON the map (rather than below)
+gives an "art print plate" feel.
+
+**Decision.** When `captionLayout === 'overlay'` AND a new toggle
+`captionFrame` is on, the caption gets a 1.5px inset border + small
+shadow + bg colour matching palette.bg, sitting INSIDE the map area
+at the chosen position.
+
+**Consequences.** Engraved-plate vibe.
+
+---
+
+## ADR-156 — Caption divider variant pack
+
+**Context.** ADR-038 gave us divider variants (line / dotted / double
+/ wave). With overlays, more divider styles fit (chevron, brackets,
+ornamental).
+
+**Decision.** Extend `captionDivider` chip-group with: `chevron`
+(`〈〈 〉〉` ornamental), `brackets` (`[ ... ]`), `tick` (small
+center pip), `none-but-padded` (no line, just spacing).
+
+**Consequences.** More creative options for the most-customised
+caption styling primitive.
+
+---
+
+## ADR-157 — Caption text gradient fill
+
+**Context.** Solid-color caption text is the only option today.
+Gradient fills (palette accent → palette label) add visual richness
+without competing with the map.
+
+**Decision.** Toggle `titleGradient` + chip for direction
+(horizontal / vertical / diagonal). CSS uses
+`background: linear-gradient(...);
+background-clip: text; -webkit-background-clip: text;
+color: transparent;`.
+
+**Consequences.** Custom typographic effect tier without external
+fonts.
+
+---
+
+## ADR-158 — Caption letter-spacing per word
+
+**Context.** ADR-088 added kerning by total title length. Multi-word
+titles ("NEW YORK CITY") could benefit from per-word spacing logic
+(spaces stretched more, letters within words tighter).
+
+**Decision.** Toggle `titleWordSpace` (boolean). When on, JS
+splits the title by spaces, wraps each word in a `<span>`, and
+applies `word-spacing: 0.5em; letter-spacing: 2px;` for a
+spread-magazine look.
+
+**Consequences.** Multi-word titles look hand-set.
+
+---
+
+## ADR-159 — Caption padding mode
+
+**Context.** Block-mode caption can have either edge-flush layout
+(text touches the poster trim) or padded (margin from edge).
+
+**Decision.** New `captionPadding` chip with `flush · cozy ·
+breathing · loose`. Mirrors the map padding chip (ADR-086) for
+consistency. flush = 0 padding, loose = 24px on all sides.
+
+**Consequences.** Captions can feel as tight or as airy as the
+poster's overall mood.
+
+---
+
+## ADR-160 — Caption layout presets (one-click looks)
+
+**Context.** With ADRs 141..159 the user has many primitives. They
+also want one-click "looks": "make it editorial" should set
+captionLayout + position + opacity + autoContrast + textShadow at
+once.
+
+**Decision.** Chip-group `captionPreset` with presets:
+- `Classic` — block bottom, solid bg (today's default)
+- `Hidden` — captionLayout=hidden, full map
+- `Floating` — overlay bottom-center, blur, autoContrast, shadow
+- `Cover` — magazine-style overlap
+- `Banner` — accent strip at top
+- `Stamp` — corner stamp at bottom-right
+- `Monogram` — big initial overlay
+- `Vertical` — rotated edge spine
+
+Each preset writes the underlying state fields atomically. Custom
+edits afterward don't reset; the chip just shows "Custom" until a
+preset is re-selected.
+
+**Consequences.** Eight beautiful caption variants are one click
+away. Full control via the underlying primitives stays available.
+
+---
+

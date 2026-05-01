@@ -851,6 +851,84 @@
   .recent-tpl { font-size: 11.5px; padding: 6px 10px; min-height: 30px; }
 
   /* =====================================================================
+     ADR-140 — Tab-style top categories. Replaces the stacked-accordion
+     major-level UI. The 4 buttons are pinned at the top of the sidebar
+     and only the active major's body renders below. Existing
+     .disclose-major buttons stay in DOM but are hidden via tabs-mode.
+     ===================================================================== */
+  .major-tabs {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: var(--gap-xs);
+    margin-bottom: var(--gap-m);
+  }
+  .major-tab {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding: 8px 4px; border: none; border-radius: var(--r-2);
+    background: var(--bg); cursor: pointer; font-family: inherit;
+    color: var(--text-2); font-size: 10.5px; font-weight: 500;
+    box-shadow: inset 0 0 0 1px var(--separator);
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+    min-height: 52px;
+  }
+  .major-tab:hover { color: var(--text); background: var(--hover); }
+  .major-tab.active {
+    background: var(--surface); color: var(--accent);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+  }
+  .major-tab .t-ico { font-size: 18px; line-height: 1; }
+  .major-tab .t-lbl { letter-spacing: 0.2px; }
+
+  /* In tabs-mode the major's own .disclose-btn is hidden (its job is now
+     done by the tab) and the major's body renders without needing
+     .open — the tab-active class drives visibility instead. */
+  body.tabs-mode aside .disclose-major > .disclose-btn { display: none; }
+  body.tabs-mode aside .disclose-major:not(.tab-active) { display: none; }
+  body.tabs-mode aside .disclose-major.tab-active > .body { grid-template-rows: 1fr; }
+  body.tabs-mode aside .disclose-major.tab-active > .body > div { padding: 0; }
+  /* Reduce spacing between subs when the parent's button isn't there. */
+  body.tabs-mode aside .disclose-major.tab-active .disclose-sub { margin-top: var(--gap-xs); }
+  body.tabs-mode aside .disclose-major.tab-active .disclose-sub:first-child { margin-top: 0; }
+
+  /* =====================================================================
+     ADR-138 — Mobile drawer. At <800px the sidebar slides off-canvas
+     by default; a hamburger button toggles drawer-open. The map fills
+     the viewport. The desktop layout (and existing layouts above 800px)
+     are unchanged.
+     ===================================================================== */
+  .drawer-toggle {
+    display: none;
+    position: fixed; top: 12px; left: 12px; z-index: 60;
+    width: 44px; height: 44px; border-radius: 50%;
+    border: none; cursor: pointer; font-size: 20px;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.20);
+  }
+  .drawer-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.42);
+    z-index: 55;
+    opacity: 0; transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .drawer-backdrop.visible { opacity: 1; pointer-events: auto; }
+  @media (max-width: 800px) {
+    body { flex-direction: row; height: 100vh; overflow: hidden; }
+    aside {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: min(360px, 86vw); max-width: 360px;
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(0.32, 0.72, 0.0, 1);
+      z-index: 56; overflow-y: auto;
+      box-shadow: 4px 0 18px rgba(0,0,0,0.10);
+    }
+    aside.drawer-open { transform: translateX(0); }
+    main { padding: 12px; flex: 1; min-width: 0; }
+    .drawer-toggle { display: block; }
+    .drawer-backdrop { display: block; }
+  }
+
+  /* =====================================================================
      ADR-122 — Compact mode. body.compact-ui hides every .disclose-desc
      and .sec-hint and reduces sub-panel header height ~30%. State is
      localStorage-backed (osm-poster:compact). Toggle in the sidebar

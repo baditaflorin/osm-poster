@@ -512,6 +512,43 @@ if (compactBtn) {
 }
 applyCompactMode();
 
+// ADR-140 — Tab-style major navigation. Replaces the stacked accordion
+// at the .disclose-major level. The 4 tab buttons toggle which major's
+// body is visible; the major's own .disclose-btn is hidden via CSS in
+// tabs-mode. Number-key shortcuts (ADR-105) keep working — they call
+// the same activateMajorTab below via the existing 1/2/3/4 handler.
+function activateMajorTab(crumb) {
+  document.querySelectorAll('aside .major-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === crumb);
+  });
+  document.querySelectorAll('aside .disclose-major').forEach(major => {
+    const isActive = major.dataset.crumb === crumb;
+    major.classList.toggle('open', isActive);
+    major.classList.toggle('tab-active', isActive);
+  });
+}
+document.querySelectorAll('aside .major-tab').forEach(tab => {
+  tab.addEventListener('click', () => activateMajorTab(tab.dataset.tab));
+});
+// Activate the first tab (Place) on load. Body class enables tabs-mode CSS.
+document.body.classList.add('tabs-mode');
+activateMajorTab('Place');
+
+// ADR-138 — Mobile drawer. At <800px, sidebar transforms into an
+// off-canvas drawer. Hamburger button toggles aside.drawer-open and
+// the backdrop. Tap on backdrop closes it.
+const drawerToggle = document.getElementById('drawerToggle');
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+const asideEl = document.querySelector('aside');
+function setDrawerOpen(open) {
+  if (!asideEl) return;
+  asideEl.classList.toggle('drawer-open', open);
+  if (drawerBackdrop) drawerBackdrop.classList.toggle('visible', open);
+  if (drawerToggle) drawerToggle.setAttribute('aria-expanded', String(!!open));
+}
+if (drawerToggle) drawerToggle.addEventListener('click', () => setDrawerOpen(!asideEl.classList.contains('drawer-open')));
+if (drawerBackdrop) drawerBackdrop.addEventListener('click', () => setDrawerOpen(false));
+
 // Caption
 const titleInput = document.getElementById('title');
 const subtitleInput = document.getElementById('subtitle');

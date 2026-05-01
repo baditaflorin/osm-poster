@@ -25,6 +25,17 @@
   <!-- ADR-110 — Diff-from-template badge. Hidden when zero changes. -->
   <button type="button" id="diffBadge" class="diff-badge" style="display: none;"></button>
 
+  <!-- ADR-140 — Tab-style top categories. Replaces the stacked
+       accordion at the major level. Each tab toggles which
+       .disclose-major's body shows. The original .disclose-major
+       buttons are hidden via CSS in tabs-mode. -->
+  <div class="major-tabs" role="tablist">
+    <button type="button" class="major-tab active" data-tab="Place"   role="tab"><span class="t-ico">📍</span><span class="t-lbl">Place</span></button>
+    <button type="button" class="major-tab"        data-tab="Style"   role="tab"><span class="t-ico">🎨</span><span class="t-lbl">Style</span></button>
+    <button type="button" class="major-tab"        data-tab="Effects" role="tab"><span class="t-ico">✨</span><span class="t-lbl">Effects</span></button>
+    <button type="button" class="major-tab"        data-tab="Compose" role="tab"><span class="t-ico">📐</span><span class="t-lbl">Compose</span></button>
+  </div>
+
   <!-- ADR-101 — Sidebar search. Filters every chip / toggle / slider /
        sub-panel by query as the user types. Empty restores everything. -->
   <input type="search" id="sidebarSearch" placeholder="🔎 Search any control… (try 'shadow', 'glitch', 'A2')" autocomplete="off" style="margin-bottom: 14px;">
@@ -356,42 +367,52 @@
     </button>
     <div class="body"><div>
 
+      <!-- ADR-124 — Caption split. Was one dense panel; now three. -->
       <div class="disclose disclose-sub">
-        <button class="disclose-btn"><span class="ico">📝</span><span class="disclose-label"><span class="disclose-title">Caption</span><span class="disclose-desc">Text, typography, ornament, font</span></span><span class="chev">›</span></button>
+        <button class="disclose-btn"><span class="ico">📝</span><span class="disclose-label"><span class="disclose-title">Caption — Text</span><span class="disclose-desc">Title · subtitle · tagline · watermark</span></span><span class="chev">›</span></button>
         <div class="body"><div>
-          <div class="sub-title" style="margin: 4px 0 6px;">Text</div>
           <input type="text" id="title" placeholder="Title" maxlength="40">
           <input type="text" id="subtitle" placeholder="Subtitle" maxlength="80">
           <input type="text" id="tagline" placeholder="Tagline (optional, italic small)" maxlength="80">
           <input type="text" id="watermark" placeholder="Custom watermark (optional, replaces URL)" maxlength="60">
           <div class="subtitle-chips" id="subtitleChips"></div>
+        </div></div>
+      </div>
 
-          <div class="sub-title" style="margin: 12px 0 6px;">✨ Typography preset <span class="sec-hint">designer pairings</span></div>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">🅰</span><span class="disclose-label"><span class="disclose-title">Caption — Typography</span><span class="disclose-desc">Weight · size · subtitle · coords</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="sub-title">✨ Typography preset <span class="sec-hint">designer pairings</span></div>
           <div class="chip-group" data-chip-key="typographyPreset"
                data-options='[["default","Default"],["editorial","Editorial"],["modern","Modern"],["vintage","Vintage"],["brutalist","Brutalist"],["quiet","Quiet"]]'></div>
 
-          <div class="sub-title" style="margin: 12px 0 6px;">Title weight</div>
+          <div class="sub-title">Title weight</div>
           <div class="chip-group" data-chip-key="titleWeight"
                data-options='[["regular","Reg"],["medium","Med"],["bold","Bold"],["heavy","Heavy"]]'></div>
-          <div class="sub-title" style="margin: 12px 0 6px;">Title size</div>
+          <div class="sub-title">Title size</div>
           <div class="chip-group" data-chip-key="titleSize"
                data-options='[["small","S"],["medium","M"],["large","L"],["xl","XL"]]'></div>
-          <div class="sub-title" style="margin: 12px 0 6px;">Subtitle</div>
+          <div class="sub-title">Subtitle</div>
           <div class="chip-group" data-chip-key="subtitleStyle"
                data-options='[["regular","Aa Regular"],["italic","Aa Italic"],["hidden","🙈 Hidden"]]'></div>
-          <div class="sub-title" style="margin: 12px 0 6px;">Coordinates</div>
+          <div class="sub-title">Coordinates</div>
           <div class="chip-group" data-chip-key="coordsStyle"
                data-options='[["decimal","48.8°"],["dms","48° 51′"],["hidden","🙈 Hidden"]]'></div>
+          <div class="row" style="margin-top: 8px;"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
+        </div></div>
+      </div>
 
-          <div class="sub-title" style="margin: 14px 0 6px;">Title ornament</div>
+      <div class="disclose disclose-sub">
+        <button class="disclose-btn"><span class="ico">✦</span><span class="disclose-label"><span class="disclose-title">Caption — Decoration</span><span class="disclose-desc">Ornament · divider · custom font</span></span><span class="chev">›</span></button>
+        <div class="body"><div>
+          <div class="sub-title">Title ornament</div>
           <div class="chip-group" data-chip-key="titleOrnament"
                data-options='[["none","∅ Plain"],["bullets","● ●"],["dashes","— —"],["brackets","[ ]"],["asterisks","✦ ✦"]]'></div>
-          <div class="sub-title" style="margin: 12px 0 6px;">Caption divider</div>
+          <div class="sub-title">Caption divider</div>
           <div class="chip-group" data-chip-key="captionDivider"
                data-options='[["line","─ Line"],["none","∅ None"],["dotted","┄ Dotted"],["double","═ Double"],["wave","∿ Wavy"]]'></div>
-          <div class="row" style="margin-top: 8px;"><label>Spacing</label><input type="range" id="titleSpacing" min="-4" max="12" step="1" value="0"><span class="val" id="titleSpacingVal">0px</span></div>
 
-          <div class="sub-title" style="margin: 12px 0 6px;">Custom font</div>
+          <div class="sub-title">Custom font</div>
           <label class="drop-zone" id="fontDrop">
             <input type="file" id="fontFile" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf">
             <span>🅰️ Drop a .woff2 / .ttf for the caption</span>
@@ -754,6 +775,10 @@
     <div class="cmd-palette-hint">↑↓ navigate · ↵ apply · esc close · ⌘K toggle</div>
   </div>
 </div>
+
+<!-- ADR-138 — Mobile drawer. Hamburger toggles aside.drawer-open. -->
+<button type="button" id="drawerToggle" class="drawer-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+<div id="drawerBackdrop" class="drawer-backdrop"></div>
 
 <!-- ADR-120 — Mobile floating action buttons. Visible only on <800px
      via CSS media query. Tap targets are 56px (Apple HIG +). The

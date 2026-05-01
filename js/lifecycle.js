@@ -25,19 +25,21 @@ window.addEventListener('keydown', e => {
   else if (e.key === '[') { e.preventDefault(); cyclePreset(-1); }
   else if (e.key === ']') { e.preventDefault(); cyclePreset(1); }
   // ADR-105 — Number-key panel shortcuts. 1=Place 2=Style 3=Effects
-  // 4=Compose · 0=collapse all. The 4 disclose-major elements are
-  // queried fresh each press so dynamic IA changes are picked up.
+  // 4=Compose · 0=collapse all. After ADR-140 (tabs), these activate
+  // the matching tab; collapse-all keeps the legacy accordion close
+  // semantic for the few users who run with body.no-tabs.
   else if (/^[0-4]$/.test(e.key)) {
     e.preventDefault();
-    const majors = document.querySelectorAll('aside > .disclose.disclose-major');
+    const order = ['Place', 'Style', 'Effects', 'Compose'];
     if (e.key === '0') {
-      majors.forEach(m => m.classList.remove('open'));
+      // Collapse all subs in the active tab.
+      document.querySelectorAll('aside .disclose-major.tab-active .disclose-sub.open').forEach(s => s.classList.remove('open'));
       return;
     }
     const idx = parseInt(e.key, 10) - 1;
-    majors.forEach((m, i) => m.classList.toggle('open', i === idx));
-    // Scroll the picked panel into view smoothly so it lands at the top.
-    if (majors[idx]) majors[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof activateMajorTab === 'function' && order[idx]) {
+      activateMajorTab(order[idx]);
+    }
   }
 });
 

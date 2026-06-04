@@ -119,7 +119,17 @@ function renderAnnotations() {
   (state.annotations || []).forEach((a, idx) => {
     const el = document.createElement('div');
     el.className = 'annotation-marker';
-    el.style.color = state.palette.accent || '#007aff';
+    // Issue #1 — the accent drives the ring + leader line only. Most
+    // palette accents (neon cyan, pastels, light blues) fail WCAG
+    // contrast as text on the white pill, which reads as washed-out /
+    // transparent on busy map styles. Give the text an auto-contrast ink
+    // against the pill surface so labels stay legible on every theme.
+    const accent = state.palette.accent || '#007aff';
+    const surfaceHex = (getComputedStyle(document.documentElement)
+      .getPropertyValue('--surface').trim()) || '#ffffff';
+    const ink = (/^#/.test(surfaceHex) && lum(surfaceHex) < 0.5) ? '#f4f5f7' : '#16181d';
+    el.style.setProperty('--ann-accent', accent);
+    el.style.color = ink;
     el.textContent = a.text;
     el.title = 'Click to remove';
     el.addEventListener('click', () => {

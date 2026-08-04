@@ -127,8 +127,13 @@ function applyLegend() {
   if (state.layers.railways)  entries.push(['Rail',      p.rail]);
   // Color the text in palette.label so contrast is automatic.
   host.style.color = p.label;
+  // `color` comes from state.palette, which round-trips through the
+  // URL-hash share state verbatim (mergeState merges it as-is) — escape
+  // it before interpolating into the style attribute, or a crafted
+  // share link (autoLegend:true + a poisoned palette color) runs script
+  // the instant applyState() renders this legend on boot.
   host.innerHTML = entries.map(([label, color]) => `
-    <span class="legend-row"><span class="legend-swatch" style="background:${color}"></span>${label}</span>
+    <span class="legend-row"><span class="legend-swatch" style="background:${escapeHtml(String(color))}"></span>${escapeHtml(label)}</span>
   `).join('');
 }
 

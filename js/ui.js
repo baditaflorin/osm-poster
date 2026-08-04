@@ -331,13 +331,22 @@ document.querySelectorAll('button[data-roads]').forEach(btn => {
   const densHost = document.getElementById('iconCatDensities');
   if (densHost) {
     if (!state.icons.densities) state.icons.densities = {};
-    densHost.innerHTML = ICON_CATEGORIES.map(cat => `
+    densHost.innerHTML = ICON_CATEGORIES.map(cat => {
+      // ADR-070 density values are attacker-reachable via the URL-hash
+      // share state (mergeState merges `icons.densities` verbatim), so
+      // coerce to a finite number instead of trusting it into markup —
+      // a crafted value like '0" onmouseover="…' would otherwise break
+      // out of the range input's value attribute.
+      const raw = state.icons.densities[cat.key];
+      const n = (raw == null) ? null : Math.max(0, Math.min(50, Number(raw) || 0));
+      return `
       <div class="row" style="margin-bottom: 4px;">
-        <label style="font-size: 11.5px; min-width: 64px;">${cat.icon} ${cat.label}</label>
-        <input type="range" data-poi-cat="${cat.key}" min="0" max="50" step="1" value="${state.icons.densities[cat.key] ?? 0}">
-        <span class="val" data-poi-cat-val="${cat.key}">${state.icons.densities[cat.key] == null ? 'auto' : state.icons.densities[cat.key]}</span>
+        <label style="font-size: 11.5px; min-width: 64px;">${escapeHtml(cat.icon)} ${escapeHtml(cat.label)}</label>
+        <input type="range" data-poi-cat="${escapeHtml(cat.key)}" min="0" max="50" step="1" value="${n ?? 0}">
+        <span class="val" data-poi-cat-val="${escapeHtml(cat.key)}">${n == null ? 'auto' : n}</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
     densHost.addEventListener('input', safe(e => {
       const slider = e.target.closest('input[data-poi-cat]');
       if (!slider) return;

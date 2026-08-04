@@ -171,57 +171,79 @@ function renderFilterStack() {
 }
 
 // Build the body (type-specific inputs) for a single filter row.
+// Every f.* field here round-trips through the URL-hash share state
+// (mergeState merges state.filters verbatim), so a crafted share link
+// can hand us arbitrary strings for color/from/to/inner/outer/dataUrl —
+// escape them before interpolating into HTML attributes, or a payload
+// like `#fff" onmouseover="…` (or one that closes the tag outright)
+// executes as soon as this row renders.
 function _buildFilterBody(f) {
+  const fid = escapeHtml(String(f.id));
+  const col = (v, fallback) => escapeHtml(String(v || fallback));
+  // Opacity/angle are meant to be numeric — coerce instead of trusting
+  // the raw value into a `value="…"` attribute.
+  const opacity = Math.max(0, Math.min(100, Number(f.opacity) || 0));
+  const angle = Math.max(0, Math.min(360, Number(f.angle) || 0));
   if (f.type === 'color') {
     return `
       <div class="filter-color-block">
         <label>Color
-          <input type="color" data-id="${f.id}" data-field="color" value="${f.color || '#ffffff'}">
+          <input type="color" data-id="${fid}" data-field="color" value="${col(f.color, '#ffffff')}">
         </label>
       </div>
-      <div class="row"><label>Opacity</label><input type="range" data-id="${f.id}" data-field="opacity" min="0" max="100" value="${f.opacity}"><span class="val">${f.opacity}%</span></div>
+      <div class="row"><label>Opacity</label><input type="range" data-id="${fid}" data-field="opacity" min="0" max="100" value="${opacity}"><span class="val">${opacity}%</span></div>
     `;
   }
   if (f.type === 'linear') {
     return `
       <div class="filter-color-grid">
-        <label>From <input type="color" data-id="${f.id}" data-field="from" value="${f.from || '#000000'}"></label>
-        <label>To <input type="color" data-id="${f.id}" data-field="to" value="${f.to || '#ffffff'}"></label>
+        <label>From <input type="color" data-id="${fid}" data-field="from" value="${col(f.from, '#000000')}"></label>
+        <label>To <input type="color" data-id="${fid}" data-field="to" value="${col(f.to, '#ffffff')}"></label>
       </div>
-      <div class="row"><label>Angle</label><input type="range" data-id="${f.id}" data-field="angle" min="0" max="360" step="5" value="${f.angle}"><span class="val">${f.angle}&deg;</span></div>
-      <div class="row"><label>Opacity</label><input type="range" data-id="${f.id}" data-field="opacity" min="0" max="100" value="${f.opacity}"><span class="val">${f.opacity}%</span></div>
+      <div class="row"><label>Angle</label><input type="range" data-id="${fid}" data-field="angle" min="0" max="360" step="5" value="${angle}"><span class="val">${angle}&deg;</span></div>
+      <div class="row"><label>Opacity</label><input type="range" data-id="${fid}" data-field="opacity" min="0" max="100" value="${opacity}"><span class="val">${opacity}%</span></div>
     `;
   }
   if (f.type === 'radial') {
     return `
       <div class="filter-color-grid">
-        <label>Inner <input type="color" data-id="${f.id}" data-field="inner" value="${f.inner || '#ffffff'}"></label>
-        <label>Outer <input type="color" data-id="${f.id}" data-field="outer" value="${f.outer || '#000000'}"></label>
+        <label>Inner <input type="color" data-id="${fid}" data-field="inner" value="${col(f.inner, '#ffffff')}"></label>
+        <label>Outer <input type="color" data-id="${fid}" data-field="outer" value="${col(f.outer, '#000000')}"></label>
       </div>
-      <div class="row"><label>Opacity</label><input type="range" data-id="${f.id}" data-field="opacity" min="0" max="100" value="${f.opacity}"><span class="val">${f.opacity}%</span></div>
+      <div class="row"><label>Opacity</label><input type="range" data-id="${fid}" data-field="opacity" min="0" max="100" value="${opacity}"><span class="val">${opacity}%</span></div>
     `;
   }
   if (f.type === 'photo') {
-    const thumb = f.dataUrl ? `<img class="filter-photo-thumb" src="${f.dataUrl}" alt="">` : '';
-    const action = f.dataUrl
-      ? `<button class="filter-photo-clear" data-id="${f.id}" data-action="clearPhoto">Remove</button>`
+    // dataUrl is expected to be a data: URL from FileReader, but treat it
+    // as untrusted text for markup purposes just the same.
+    const safeDataUrl = f.dataUrl ? escapeHtml(String(f.dataUrl)) : '';
+    const thumb = safeDataUrl ? `<img class="filter-photo-thumb" src="${safeDataUrl}" alt="">` : '';
+    const action = safeDataUrl
+      ? `<button class="filter-photo-clear" data-id="${fid}" data-action="clearPhoto">Remove</button>`
       : '';
     return `
       ${thumb}
       <div class="filter-photo-row">
         <label class="filter-photo-pick">
-          <input type="file" data-id="${f.id}" data-field="dataUrl" accept="image/*">
-          <span>${f.dataUrl ? 'Replace photo' : 'Drop or pick a photo'}</span>
+          <input type="file" data-id="${fid}" data-field="dataUrl" accept="image/*">
+          <span>${safeDataUrl ? 'Replace photo' : 'Drop or pick a photo'}</span>
         </label>
         ${action}
       </div>
-      <div class="row"><label>Opacity</label><input type="range" data-id="${f.id}" data-field="opacity" min="0" max="100" value="${f.opacity}"><span class="val">${f.opacity}%</span></div>
+      <div class="row"><label>Opacity</label><input type="range" data-id="${fid}" data-field="opacity" min="0" max="100" value="${opacity}"><span class="val">${opacity}%</span></div>
     `;
   }
   return '';
 }
 
 function _buildFilterRow(f) {
+  // f.id (and every field _buildFilterBody reads) round-trips through the
+  // URL-hash share state — mergeState() merges state.filters verbatim, so
+  // a crafted share link can hand us an arbitrary string here. Escape it
+  // before interpolating into an HTML attribute, or a payload like
+  // `id"><img src=x onerror=…>` runs the instant this row renders (which
+  // happens automatically on boot via applyState() → renderFilters()).
+  const fid = escapeHtml(String(f.id));
   const target = f.target || 'all';
   const typeOpts   = FILTER_TYPES.map(([v, lbl])  => `<option value="${v}"${v === f.type  ? ' selected' : ''}>${lbl}</option>`).join('');
   const blendOpts  = FILTER_BLEND_MODES.map(([v, lbl]) => `<option value="${v}"${v === f.blend ? ' selected' : ''}>${lbl}</option>`).join('');
@@ -231,17 +253,17 @@ function _buildFilterRow(f) {
   row.dataset.id = f.id;
   row.innerHTML = `
     <div class="filter-row-head">
-      <input type="checkbox" data-id="${f.id}" data-field="enabled"${f.enabled ? ' checked' : ''} title="Enable">
-      <select data-id="${f.id}" data-field="type" title="Layer type">${typeOpts}</select>
-      <select data-id="${f.id}" data-field="blend" title="Blend mode">${blendOpts}</select>
-      <button data-id="${f.id}" data-action="up"   title="Move up">▲</button>
-      <button data-id="${f.id}" data-action="down" title="Move down">▼</button>
-      <button class="filter-del" data-id="${f.id}" data-action="del" title="Delete">×</button>
+      <input type="checkbox" data-id="${fid}" data-field="enabled"${f.enabled ? ' checked' : ''} title="Enable">
+      <select data-id="${fid}" data-field="type" title="Layer type">${typeOpts}</select>
+      <select data-id="${fid}" data-field="blend" title="Blend mode">${blendOpts}</select>
+      <button data-id="${fid}" data-action="up"   title="Move up">▲</button>
+      <button data-id="${fid}" data-action="down" title="Move down">▼</button>
+      <button class="filter-del" data-id="${fid}" data-action="del" title="Delete">×</button>
     </div>
     <div class="filter-row-target" style="margin-top: 6px;">
       <label style="font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 6px;">
         Target
-        <select data-id="${f.id}" data-field="target" title="Which map stratum this filter blends with">${targetOpts}</select>
+        <select data-id="${fid}" data-field="target" title="Which map stratum this filter blends with">${targetOpts}</select>
       </label>
     </div>
     <div class="filter-row-body">${_buildFilterBody(f)}</div>

@@ -274,8 +274,12 @@ function applyCustomFont() {
   cap.classList.toggle('custom-font', !!state.customFontOn);
   const status = document.getElementById('fontStatus');
   if (status) {
+    // state.customFontName round-trips through the URL-hash share state
+    // (mergeState pulls it in verbatim), so it must be escaped before
+    // going into innerHTML — otherwise opening a crafted share link runs
+    // arbitrary script the moment applyState() renders this on boot.
     status.innerHTML = state.customFontName
-      ? `Using <b>${state.customFontName}</b> — <span class="clear" id="fontClear">remove</span>`
+      ? `Using <b>${escapeHtml(state.customFontName)}</b> — <span class="clear" id="fontClear">remove</span>`
       : '';
     const clear = document.getElementById('fontClear');
     if (clear) clear.addEventListener('click', () => {

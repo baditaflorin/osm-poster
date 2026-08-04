@@ -13,12 +13,22 @@
 // =====================================================================
 // EXPORT (ADR-011, 012, 013)
 // =====================================================================
+// mm page sizes are derived from FRAME_GEOMETRY.mmForFrame(longEdge, frame)
+// at export time (see below), not hard-coded per frame here — a prior
+// version hand-authored an mm table per size×frame combo that quietly
+// drifted out of sync with the CSS aspect-ratio values as frames were
+// added/tweaked, so PDF exports for portrait/landscape/story (and ALWAYS
+// for screen/4k, which had no mm table at all and silently fell back to
+// A4-portrait) came out a different shape than the on-screen poster and
+// got non-uniformly stretched by jsPDF's addImage(). longEdge mirrors the
+// nominal ISO tier (A4 ≈ 297mm, A3 ≈ 420mm, A2 ≈ 594mm) so every frame at
+// a given export tier prints at a comparable physical scale.
 const SIZE_PRESETS = {
-  screen: { mul: 4 },
-  a2:     { mul: 8, mm: { portrait: [420, 594], square: [594, 594], landscape: [594, 420], story: [420, 594], a4: [420, 594], banner: [594, 200] } },
-  a3:     { mul: 6, mm: { portrait: [297, 420], square: [420, 420], landscape: [420, 297], story: [297, 420], a4: [297, 420], banner: [420, 140] } },
-  a4:     { mul: 4, mm: { portrait: [210, 297], square: [297, 297], landscape: [297, 210], story: [210, 297], a4: [210, 297], banner: [297, 100] } },
-  '4k':   { mul: 6 },
+  screen: { mul: 4, longEdge: 297 },
+  a2:     { mul: 8, longEdge: 594 },
+  a3:     { mul: 6, longEdge: 420 },
+  a4:     { mul: 4, longEdge: 297 },
+  '4k':   { mul: 6, longEdge: 420 },
 };
 
 let jsPdfPromise;
@@ -171,7 +181,11 @@ document.getElementById('export').addEventListener('click', async () => {
     } else if (fmt === 'pdf') {
       const dataUrl = result;
       const jsPDF = await loadJsPdf();
-      const sizeMm = (SIZE_PRESETS[sz]?.mm || {})[state.frame] || [210, 297];
+      // ADR-fix — derive the page size from the frame's actual on-screen
+      // aspect ratio (FRAME_GEOMETRY, shared with the CSS) instead of a
+      // hard-coded mm table, so the PDF page always matches the preview.
+      const tierLongEdge = SIZE_PRESETS[sz]?.longEdge || 297;
+      const sizeMm = window.FRAME_GEOMETRY.mmForFrame(tierLongEdge, state.frame);
       const orientation = sizeMm[0] > sizeMm[1] ? 'l' : 'p';
       const trimW = Math.min(...sizeMm), trimH = Math.max(...sizeMm);
       // ADR-026 — print bleed + corner crop marks

@@ -314,11 +314,19 @@ Request flow at the gateway:
 
 1. **nginx vhost** captures the key into `$api_key_in` (Bearer regex →
    X-API-Key header → ?api_key query, in that order).
-2. **Static fallback** — if `$api_key_in` matches the universal demo
-   key (`$default_token`, from `/etc/nginx/conf.d/_default_token.conf`),
-   accept immediately and set `X-Auth-User: demo`. Survives keystore
-   outages for the public demo path. The default token is rate-limited
-   to 1 req/s and ~60 req/h per IP at this layer.
+2. ~~**Static fallback**~~ — **sunset 2026-08-22 (security risk).** This
+   step previously accepted the universal demo key (`$default_token`,
+   from `/etc/nginx/conf.d/_default_token.conf`) immediately and set
+   `X-Auth-User: demo`, surviving keystore outages for the public demo
+   path. A static, undifferentiated, rate-limit-only gate in front of
+   every service was judged too broad a bypass and has been removed
+   from the gateway. `$api_key_in == default_token` now falls through to
+   step 3 like any other value and gets a normal 401 from the keystore.
+   There is currently no public, unauthenticated demo path — every
+   caller needs a real keystore-issued key. Don't reference
+   `default_token` as a working example in service docs; if you find one,
+   fix it the same way this passage was fixed (mark it sunset, point at
+   real auth) rather than leaving it looking live.
 3. Otherwise nginx POSTs `X-Verify-Key: $api_key_in` to the keystore's
    `/verify` via `auth_request`.
 4. Keystore checks SQLite → returns 200 + `X-Auth-User` / `X-Auth-Scope`,
@@ -417,6 +425,7 @@ auth shapes documented above.
 | jsbundle     | `github.com/baditaflorin/go-common/jsbundle`      | source-map recovery for scanning JS bundles             |
 | apikey       | `github.com/baditaflorin/go-common/apikey`        | keystore client (`Verify`, `Cache`, admin endpoints)    |
 | middleware   | `github.com/baditaflorin/go-common/middleware`    | `TokenAuthKeystore` HTTP middleware (≥ v0.7.0)          |
+| loadshed     | `github.com/baditaflorin/go-common/loadshed`      | non-blocking concurrency gate: cap calls to a slow upstream, fast-503 the excess (`loadshed_shed_total`) (≥ v0.65.0) |
 
 ```go
 import (
@@ -483,6 +492,33 @@ patches live in `services-registry/overrides.json`. Two shapes coexist:
   "node-search-bing": { "vhost": { "proxy_buffering": "off" } }
 }
 ```
+
+**Per-slug container resource caps** (`cpus`, `mem_limit`, `pids_limit`).
+The fleet-wide backstop lives in `host-conventions.yaml`
+(`container_defaults`, default `cpus: 2.0` / `mem_limit: "1g"` /
+`pids_limit: 512`). Heavy/browser services raise them per-slug in
+`overrides.json`, which **wins over** `mesh_defaults` and
+`container_defaults` (precedence rule #4):
+
+```json
+{
+  "infrastructure-fetch-cache": { "cpus": 4.0, "mem_limit": "3g" },
+  "html-proxy":                 { "cpus": 8,   "mem_limit": "6g" }
+}
+```
+
+`cpus` is a number (e.g. `4` or `4.0`); `mem_limit` is a docker size
+string (e.g. `"3g"`). These are honored by `fleet-runner render-compose`
+(and `deploy --render-compose`) **only with fleet-runner ≥ the version
+from go_fleet_runner PR #82** — earlier binaries silently rendered the
+`host-conventions.yaml` default. A service that hand-maintains its own
+caps in its base `docker-compose.yml` opts OUT of overlay injection with
+`"compose_self_managed": true`.
+
+> **Operational gotcha:** a live `docker update --cpus N` on a running
+> container **reverts** to the rendered value on the next
+> `render-compose` / `deploy` unless the per-slug `cpus` override is set
+> in `overrides.json`. Declare the cap there to make it durable.
 
 **Bulk rules** (new, via reserved `$rules` key):
 ```json
@@ -576,10 +612,10 @@ service).
 
 ## Temporary degradations — read before deploying
 
-The fleet has two TEMPORARY workarounds active as of 2026-05-21. Both
-are tracked, both have separate fixes in flight, both must be removed
-from this doc when the underlying issue ships. Treat them as known
-degradations, NOT "this is fine".
+The fleet has one TEMPORARY workaround active. It is tracked, has a
+separate fix in flight, and must be removed from this doc when the
+underlying issue ships. Treat it as a known degradation, NOT "this is
+fine".
 
 ### `fleet-runner new-service` is broken — DO NOT USE (until further notice)
 
@@ -618,20 +654,6 @@ gh repo edit --add-topic mesh-0crawl \
 Remove this section when `fleet-runner new-service` is fixed and the
 LXC 108 binary is updated.
 
-### `--skip-cosign` is the temporary norm (vault key empty)
-
-Cosign signing is currently disabled fleet-wide because the vault's
-`cosign-signing-key` is empty (separate investigation in flight).
-Until it's restored, deploy with `--skip-cosign`:
-
-```bash
-fleet-runner deploy go_<repo> --skip-cosign
-```
-
-**Production images going through `deploy` right now are NOT
-cosign-verified.** This is a security degradation, not a stylistic
-choice — re-enable cosign as soon as the vault key is restored.
-
 ## fleet-runner
 
 Binary at `/usr/local/bin/fleet-runner` on **Builder LXC 108**. From
@@ -643,6 +665,7 @@ fleet-runner smoke  [--insecure]             # GET example_url on all container 
 fleet-runner pages-audit                     # verify pages_url 200s for every kind=static entry
 fleet-runner build-test                      # go test ./... in every kind=container,language=go workspace
 fleet-runner update-dep <mod@ver>            # bump dep across all language=go repos (or a subset: --repos a,b / --filter mesh=…,category=…,ids=a;b)
+fleet-runner rollout --dep <mod@ver> [--grep REGEX] [--graph-callers-of S,…] [--depends-on S,…] [--clone] [--apply [--pr]]  # blast-radius: discover EVERY affected service (grep ∪ graph ∪ depends_on), bump + build/test, land only the green (plan-only by default)
 fleet-runner deploy-all                       # redeploy a filtered set (--repos a,b / --mesh / --framework); honors the exclude list (won't touch infra)
 fleet-runner inject <src> <dest>             # copy a file into every repo (still all kinds, on purpose)
 fleet-runner exec   "<cmd>"                  # shell command in every repo (filterable)
@@ -700,8 +723,11 @@ or health-check a static Pages site.
 | Webgateway      | `ssh -J root@0docker.com florin@10.10.10.10`                   |
 
 - **Builder LXC 108** is a Proxmox container on `0docker.com`. Hosts
-  per-service build workspaces at `/root/workspace/<repo>/` and the
-  `fleet-runner` binary.
+  per-service build workspaces at `/root/workspace/<repo>/`, the
+  `fleet-runner` binary, and (pilot, ADR-0035) Woodpecker CI
+  server+agent at `/opt/woodpecker/` — `docker compose ps` there to
+  check status; `.env` holds the generated secrets, not committed
+  anywhere.
 
   **AI-agent rule — always use a git worktree, never the shared
   workspace directly.** Multiple AI sessions (or a session + a human)
@@ -1013,24 +1039,28 @@ Tag *after* the commit, push *both*.
 **Canonical (only one right answer):**
 
 ```bash
-fleet-runner deploy go_<repo> \
-  --services /root/workspace/services-registry/services.json \
-  --skip-cosign
+fleet-runner deploy go_<repo>
 ```
 
-Two non-obvious flags above, both TEMPORARY (see "Temporary
-degradations" near the top of this file):
+No extra flags needed on Builder LXC 108 — both historical workarounds
+are resolved as of 2026-08-23:
 
-- `--services /root/workspace/services-registry/services.json` —
-  `raw.githubusercontent.com/.../services.json` is Fastly-cached with
-  `max-age=300`, so after a freshly-pushed `overrides.json` the
-  registry slice can lag 3–5 minutes. Pointing at the local copy on
-  LXC 108 sidesteps the cache. Apply the same flag to `nginx-render`
-  and any other subcommand that reads the registry. Remove when
-  `fleet-runner` defaults to the local copy.
-- `--skip-cosign` — vault's `cosign-signing-key` is currently empty;
-  signing is disabled fleet-wide. Remove when the vault key is
-  restored.
+- **Registry cache race** — `raw.githubusercontent.com/.../services.json`
+  is still Fastly-cached with `max-age=300`, but `fleet-runner` now
+  resolves the registry source itself: when `--services` isn't passed
+  and `/root/workspace/services-registry/services.json` exists, it
+  prefers that local working copy over the CDN automatically
+  (`ResolveServicesSource`, shipped 2026-05-21). An explicit
+  `--services <path>` still works if you ever need to force a
+  different source.
+- **Cosign signing** — restored fleet-wide; the vault's
+  `cosign-signing-key`, `cosign-signing-key-password`, and
+  `cosign-public-key` are all populated again (verified directly
+  against `go-fleet-secrets` on 2026-08-23). A plain `deploy` signs on
+  push and verifies on pull with no flag. `--skip-cosign` still exists
+  as an emergency-only bypass (vault unreachable, key mid-rotation) —
+  don't pass it by default; it prints a loud bypass warning and lands
+  an audit-log row precisely so it's never silently routine.
 
 **Post-deploy: re-render the vhost.** The embedded `nginx-render`
 step inside `deploy` often misses the new vhost due to the same
@@ -1038,9 +1068,7 @@ registry-fetch race. Until `fleet-runner deploy` folds in the local
 fetch (separate fix in flight), follow every new-service deploy with:
 
 ```bash
-fleet-runner nginx-render \
-  --services /root/workspace/services-registry/services.json \
-  --filter <slug> --push --reload
+fleet-runner nginx-render --filter <slug> --push --reload
 ```
 
 `fleet-runner deploy` is idempotent end-to-end. The pipeline is built
@@ -1119,16 +1147,60 @@ container is running. Don't declare done until both succeed.
 ### Recipe — Self-check before declaring "done"
 
 Three commands. Run all three. If anything in the category you touched
-is flagged, fix it before stopping. Pass `--services
-/root/workspace/services-registry/services.json` so a just-registered
-service doesn't get missed because of the 5-minute Fastly cache on
-`raw.githubusercontent.com`:
+is flagged, fix it before stopping. **Do not pass `--services`** to any
+of these three — `converge`, `audit`, and `state snapshot` don't accept
+that flag (confirmed on v0.7.11: `flag provided but not defined:
+-services`). They already read the registry correctly without it — see
+"Recipe — Deploying a service" above for why the local-copy race no
+longer needs a flag at all:
 
 ```bash
-fleet-runner converge       --services /root/workspace/services-registry/services.json
-fleet-runner audit --all    --services /root/workspace/services-registry/services.json
-fleet-runner state snapshot --services /root/workspace/services-registry/services.json
+fleet-runner converge
+fleet-runner audit --all
+fleet-runner state snapshot
 ```
+
+### Recipe — Rolling out a blast-radius change (shared lib / shared dep)
+
+**When a change to a shared thing affects N services** — a `go-common`
+bump, a changed client signature, a new env contract — don't hand-grep
+and hope. `fleet-runner rollout` finds EVERY affected service, propagates
+the change, and proves each still builds.
+
+```bash
+# 1. PLAN (read-only, the default): see the complete affected set.
+#    Run on Builder LXC 108 so the code-grep sees the full workspace.
+fleet-runner rollout \
+  --dep github.com/baditaflorin/go-common@<LATEST> \
+  --grep 'client\.JSProxy(DOM)?\(|GetRendered\(|FetchNetwork\(|RenderJS' \
+  --graph-callers-of go-js-proxy,go-js-proxy-network,infrastructure-fetch-cache
+
+# 2. APPLY: bump + build/test each consumer, land one auto-merge PR per repo,
+#    emit a fleet-state/sweeps manifest (revertable via sweep-rollback).
+fleet-runner rollout --dep …@<LATEST> --grep '…' --clone --apply --pr
+```
+
+Discovery is the **union** of three sources, because each has blind spots:
+`--grep` (code signature — catches cold consumers the runtime graph never
+saw), `--graph-callers-of` (go-fleet-graph inbound callers), `--depends-on`
+(services.json declared edges). The union is intersected with
+`kind=container,language=go` + excludes, and the backend slugs themselves
+are dropped.
+
+Three non-obvious rules:
+
+- **The runtime graph is blind to intra-mesh calls.** Sibling-service calls
+  (fetch-cache, js-proxy) use a plain `net/http.Client`, not `safehttp`, so
+  go-fleet-graph never records the edge. `fleet-runner deps <slug>` will show
+  ZERO callers for an intra-mesh backend even when 48 services depend on it.
+  For intra-mesh deps the **code-grep is authoritative** — that's why rollout
+  unions grep with the graph instead of trusting the graph alone.
+- **`--clone` first** (or run on LXC 108 where the workspace is kept
+  complete): the grep is only as complete as the local checkouts, and the
+  registry has ~110 repos that may not be cloned on a given host. rollout
+  reports a "code-grep is PARTIAL" warning when repos are missing.
+- **Always pass the actual LATEST dep version**, never a stale literal —
+  `go get dep@vOld` on a repo already ahead silently *downgrades* it.
 
 ### Recipe — Closing a capability gap (gap → fix loop)
 
@@ -1273,6 +1345,67 @@ for the canonical pattern.
    *must* bind a port, use `127.0.0.1:0` (ephemeral) and `kill` it on
    the same line that started it.
 
+## Deploy failure class — a saturated slow upstream sheds load and rolls back deploys (2026-06-08)
+
+**Symptom.** `fleet-runner deploy <enricher>` (or any container deploy)
+rolls back at the smoke gate because the new image's `GET /selftest`
+times out — even though `/health` is green and the code is fine. The
+real cause is somewhere else entirely: a *different* service is piling
+goroutines on a slow shared upstream and starving the whole dockerhost's
+scheduler, so every service's `/selftest` probe stalls past its 8 s
+deadline. One service's overload silently fails everyone's deploys.
+
+The canonical instance: `go_infrastructure_fetch_cache` (port 18205)
+proxies render requests to `go-js-proxy` / `go-html-proxy`, each held up
+to 95 s. A backfill fan-out fires thousands of concurrent `render=*`
+requests; ~8.3k goroutines pile on the saturated renderer (host loadavg
+56/20 cores); the scheduler thrashes; downstream enrichers' `/selftest`
+probes time out; healthy deploys fleet-wide roll back. Any service that
+proxies to a saturatable sibling (a renderer, a headless browser, a
+rate-limited upstream) can produce the same blast radius.
+
+**Diagnosis.** Confirm it's goroutine pile-up, not the deploying service:
+
+```bash
+# Goroutine count on the suspected proxy (fetch-cache here): a healthy
+# box sits in the low hundreds; a pile-up reads thousands.
+curl -s http://<dockerhost>:18205/metrics | grep '^go_goroutines'
+
+# The human-readable stats page surfaces the shed + upstream-error
+# counters: a climbing render_shed means the gate is actively shedding
+# (good — it's protecting the box); a high upstream_errors means the
+# renderer itself is failing/slow (the root cause).
+curl -s http://<dockerhost>:18205/ | grep -E 'render_shed|upstream_errors'
+```
+
+For the fleet-standard signal, `loadshed_shed_total{service,gate}` is
+emitted on `/metrics` by every service using `go-common/loadshed` — a
+sustained nonzero rate is the "this box is shedding load" alert.
+
+**Live mitigation (no rebuild).** The render cap is env-tunable. Lower
+`MAX_RENDER_INFLIGHT` on the host to shed sooner and shrink the pile-up,
+then bounce the container — no image rebuild, no `fleet-runner deploy`:
+
+```bash
+# On the dockerhost, in the service's compose dir:
+cd /opt/services/go_infrastructure_fetch_cache
+sed -i 's/^MAX_RENDER_INFLIGHT=.*/MAX_RENDER_INFLIGHT=24/' .env   # or add it
+sudo docker compose up -d   # picks up the new env; no pull/rebuild
+```
+
+Once the pile-up drains, the stalled `/selftest` probes pass and deploys
+stop rolling back. Re-run the blocked deploy. Set the cap back up (or
+remove it for the default 64) when the upstream recovers. The durable
+fix for the root-cause backfill is to rate-limit the fan-out producer,
+not just shed at the cache.
+
+**Building a new proxy-to-slow-upstream service?** Don't hand-roll the
+shed semaphore — use `go-common/loadshed` (`loadshed.New(name, limit)` +
+`TryAcquire`/`WriteShed`, or `gate.Guard` middleware). It gives you the
+fast-503 + `Retry-After` path and the `loadshed_shed_total` metric for
+free. See `go_infrastructure_fetch_cache`'s `renderGate` for the
+canonical in-line (gate only the expensive sub-path) usage.
+
 ## SQLite safety — mandatory three rules (enforced 2026-05-26)
 
 `modernc.org/sqlite` uses real `fcntl` syscalls for WAL file locking.
@@ -1387,8 +1520,26 @@ entry.
 - Local workspace root: `/Users/live/Documents/Codex/2026-05-08/`.
   Sibling repos sit next to this one — read them directly when you
   need to understand a dependency.
-- CI: there is none. Husky pre-commit hooks + local `npm run smoke`
-  (Node repos) or `go test ./...` (Go repos) are the gate. Don't
-  scaffold GitHub Actions build workflows.
+- CI: self-hosted **Woodpecker CI** is live at
+  [https://ci.0exec.com](https://ci.0exec.com) on Builder LXC 108 (see
+  [ADR-0035](docs/adr/0035-self-hosted-ci-on-builder-lxc.md)) —
+  server + agent at `/opt/woodpecker/` on the LXC, capped at 2
+  concurrent workflows so it doesn't contend with `fleet-runner
+  deploy-all` batches on the same box. GitHub webhooks are wired
+  (OAuth App + nginx vhost reusing the `wildcard.0exec.com` cert);
+  pushes and PRs trigger `go build ./... && go test ./...` on every
+  activated repo — the same gate `fleet-runner deploy`'s pre-flight
+  already runs, now push-triggered instead of deploy-time-only. A
+  daily cron (`docker builder prune -af --filter unused-for=24h`,
+  3:15am) keeps the LXC's build-cache disk usage bounded. Fleet-wide
+  rollout is in progress (batches of `.woodpecker.yml` + repo
+  activation via the API, tracked via `git log` on this file / repo
+  PRs — no separate rollout ledger). Still don't scaffold GitHub
+  Actions build workflows — that's the billing model this exists to
+  avoid. Repos without their own `go.mod` (composite-pattern services
+  built on a shared `go_composite_runner` base image) don't get a
+  pipeline — there's no local Go source for `go build` to act on.
+- Supply chain: prefer npm packages ≥ 3 days old over `@latest` —
+  accept known CVEs over zero-day supply-chain injection.
 - Supply chain: prefer npm packages ≥ 3 days old over `@latest` —
   accept known CVEs over zero-day supply-chain injection.
